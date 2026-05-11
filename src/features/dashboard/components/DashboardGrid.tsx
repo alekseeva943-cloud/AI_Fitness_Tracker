@@ -3,34 +3,45 @@ import { GlassCard } from "../../../components/ui/GlassCard";
 import { StatCard } from "../../../components/ui/StatCard";
 import { RU } from "../../../constants";
 import { Activity, Target, TrendingUp, Clock } from "lucide-react";
+import { AnalyticsSummary } from "../../analytics/types";
 
-export const DashboardGrid: React.FC = () => {
+interface DashboardGridProps {
+  summary: AnalyticsSummary | null;
+}
+
+export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatCard 
         label={RU.DASHBOARD.ACTIVE_GOAL}
-        value="Сбросить 5кг"
-        unit="кг"
+        value={summary?.goal.completionPercentage ?? 0}
+        unit="%"
         icon={<Target className="w-4 h-4" />}
-        trend={{ value: "12%", isPositive: true }}
+        trend={summary ? { 
+          value: `${Math.abs(summary.weight.weeklyChange).toFixed(1)}кг`, 
+          isPositive: summary.weight.weeklyChange < 0 
+        } : undefined}
       />
       <StatCard 
         label="Средний темп"
-        value="4.2"
+        value={summary?.workouts.avgWorkoutsPerWeek ?? 0}
         unit="тр/нед"
         icon={<Activity className="w-4 h-4" />}
-        trend={{ value: "+12%", isPositive: true }}
+        trend={summary ? { 
+          value: `${summary.workouts.consistencyScore}%`, 
+          isPositive: summary.workouts.consistencyScore > 70 
+        } : undefined}
       />
       <StatCard 
         label={RU.ENTRIES.DURATION}
-        value="345"
+        value={summary?.workouts.avgDuration ?? 0}
         unit="мин"
         icon={<Clock className="w-4 h-4" />}
       />
       <StatCard 
-        label="Прогноз"
-        value="15"
-        unit="Окт"
+        label="Прогноз веса"
+        value={summary?.weight.currentWeight ?? '--'}
+        unit="кг"
         icon={<TrendingUp className="w-4 h-4" />}
       />
     </div>

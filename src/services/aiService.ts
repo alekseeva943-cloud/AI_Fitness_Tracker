@@ -18,22 +18,28 @@ export class AIService {
     });
   }
 
-  static async analyzeProgress(state: FitnessState): Promise<AIAnalysis> {
+  static async analyzeProgress(state: FitnessState, analytics: any): Promise<AIAnalysis> {
     const openai = this.getClient();
     
     const userPrompt = `
-      Данные пользователя:
-      Цели: ${JSON.stringify(state.goals)}
-      Недавние тренировки: ${JSON.stringify(state.workouts.slice(0, 5))}
-      История веса: ${JSON.stringify(state.weightHistory.slice(0, 10))}
-      Профиль: ${JSON.stringify(state.profile)}
-
-      Выдай JSON с анализом:
-      - summary (короткий отчет)
-      - trend (IMPROVING/STAGNATING/DECLINING)
-      - forecastDate (ISO дата достижения цели)
-      - forecastValue (прогнозное значение)
-      - recommendations (список объектов: type, text, priority)
+      Данные аналитики (сформированные движком):
+      - Тренд веса: ${JSON.stringify(analytics.weight)}
+      - Статистика тренировок: ${JSON.stringify(analytics.workouts)}
+      - Прогресс цели: ${JSON.stringify(analytics.goal)}
+      
+      Интерпретируй эти данные как профессиональный фитнес-коуч.
+      Выдай ответ ТОЛЬКО в формате JSON на РУССКОМ языке:
+      {
+        "summary": "Глубокая интерпретация текущего состояния (как профессиональный коуч)",
+        "trend": "IMPROVING" | "STAGNATING" | "DECLINING",
+        "recommendations": [
+          {
+            "type": "EXERCISE" | "DIET" | "REST" | "MOTIVATION",
+            "text": "Конкретный совет на основе этих данных",
+            "priority": "LOW" | "MEDIUM" | "HIGH"
+          }
+        ]
+      }
     `;
 
     try {

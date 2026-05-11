@@ -15,9 +15,9 @@ export const GradientButton: React.FC<GradientButtonProps> = ({
   ...props
 }) => {
   const variants = {
-    primary: "bg-primary text-primary-foreground hover:shadow-[0_0_20px_rgba(223,255,0,0.3)]",
+    primary: "bg-linear-to-r from-brand-primary/90 to-brand-secondary/90 text-black font-bold shadow-lg shadow-brand-primary/10 hover:shadow-brand-primary/30",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    outline: "border border-white/10 hover:bg-white/5",
+    outline: "border-2 border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40",
   };
 
   const sizes = {

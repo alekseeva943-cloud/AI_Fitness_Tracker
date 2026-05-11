@@ -17,7 +17,7 @@ Powered by **Zustand**.
 - **Persistence**: Automatically synced with `localStorage` via the `persist` middleware.
 
 ### 📂 `src/services/` (AI & Storage)
-- **AIService**: Orchestrates communication with Gemini API. It handles prompting logic, structured JSON data analysis, and generates progress forecasts.
+- **AIService**: Orchestrates communication with OpenAI API (GPT-4o-mini). It handles prompting logic, result interpretation, and generates progress forecasts.
 - **StorageService**: Low-level abstraction for `localStorage` (backup/manual operations).
 
 ### 📂 `src/features/` (UI Modules)
@@ -38,7 +38,7 @@ The application is divided into feature-based blocks:
 1. **User Action**: User logs a workout or weight change.
 2. **State Transition**: Zustand store updates, triggering a local storage sync.
 3. **Reactive Analysis**: Hooks detect state change and periodically trigger `AIService.analyzeProgress`.
-4. **AI Generation**: Gemini processes historical trends and returns structured Russian recommendations.
+4. **AI Generation**: OpenAI processes historical trends and deterministic analytics to return structured Russian recommendations.
 5. **UI Update**: Dashboard cards reflect new forecasts and progress percentage.
 
 ## Deployment

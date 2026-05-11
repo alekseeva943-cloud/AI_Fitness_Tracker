@@ -1,88 +1,216 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { RU } from "../../constants";
 import { AppLayout } from "../../components/layout/AppLayout";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight, Sparkles, TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale } from "lucide-react";
+import { useFitnessStore, useGoals, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
+import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
+import { formatDate } from "../../lib/utils";
+import { Modal } from "../../components/ui/Modal";
+import { GoalForm } from "../goals/components/GoalForm";
+import { EntryForm } from "../entries/components/EntryForm";
+import { AIRecommendationsSection } from "../ai/components/AIRecommendationsSection";
+import { WeightChart } from "./components/WeightChart";
 
 export const DashboardView: React.FC = () => {
+  const goals = useGoals();
+  const workouts = useWorkouts();
+  const weightHistory = useWeightHistory();
+  const initialize = useFitnessStore((state) => state.initialize);
+  const addGoal = useFitnessStore((state) => state.addGoal);
+  const addWorkout = useFitnessStore((state) => state.addWorkout);
+  const addWeightEntry = useFitnessStore((state) => state.addWeightEntry);
+
+  const stateForSummary = useFitnessStore(); // Need full state for summary selector for now or refactor selector
+  const summary = selectAnalyticsSummary(stateForSummary);
+  const activeGoal = goals[0];
+
+  const [isGoalModalOpen, setGoalModalOpen] = useState(false);
+  const [isEntryModalOpen, setEntryModalOpen] = useState(false);
+  const [entryType, setEntryType] = useState<'workout' | 'weight'>('workout');
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  const handleGoalSubmit = (data: any) => {
+    addGoal({
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      currentValue: summary?.weight.currentWeight || 0,
+      unit: 'кг',
+      startDate: new Date().toISOString(),
+      ...data,
+      targetValue: Number(data.targetValue),
+    });
+    setGoalModalOpen(false);
+  };
+
+  const handleEntrySubmit = (data: any) => {
+    if (entryType === 'workout') {
+      addWorkout({
+        id: crypto.randomUUID(),
+        ...data,
+        duration: Number(data.duration),
+        caloriesBurned: Number(data.caloriesBurned),
+      });
+    } else {
+      addWeightEntry({
+        id: crypto.randomUUID(),
+        unit: 'кг',
+        ...data,
+        value: Number(data.value),
+      });
+    }
+    setEntryModalOpen(false);
+  };
+
+  const getTrendIcon = (trend: string) => {
+    if (trend === 'IMPROVING') return <TrendingUp className="w-4 h-4 text-green-400" />;
+    if (trend === 'DECLINING') return <TrendingDown className="w-4 h-4 text-red-400" />;
+    return <Minus className="w-4 h-4 text-yellow-400" />;
+  };
+
   return (
     <AppLayout>
-      <div className="space-y-8">
-        <header className="flex justify-between items-end">
+      <div className="space-y-10">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-4xl font-display font-medium mb-2">{RU.NAV.DASHBOARD}</h1>
-            <p className="text-muted-foreground">Добро пожаловать в ваш персональный трекер на базе ИИ.</p>
+            <p className="text-muted-foreground">
+              {summary ? `Ваш прогресс: ${summary.goal.status === 'AHEAD_OF_SCHEDULE' ? 'Опережаете график' : 'На верном пути'}` : 'Начните добавлять данные для анализа'}
+            </p>
           </div>
-          <div className="hidden md:block">
-            <GradientButton className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              {RU.DASHBOARD.GET_RECOMMENDATION}
+          <div className="flex gap-3 w-full md:w-auto">
+            <GradientButton 
+              variant="secondary"
+              onClick={() => { setEntryType('workout'); setEntryModalOpen(true); }}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              {RU.ENTRIES.ADD_WORKOUT}
+            </GradientButton>
+            <GradientButton 
+              onClick={() => { setEntryType('weight'); setEntryModalOpen(true); }}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2"
+            >
+              <Scale className="w-4 h-4" />
+              {RU.ENTRIES.ADD_WEIGHT}
             </GradientButton>
           </div>
         </header>
 
-        <DashboardGrid />
+        <DashboardGrid summary={summary} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <GlassCard className="lg:col-span-2 min-h-[400px] flex flex-col justify-between p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Динамика веса</h2>
-              <div className="flex gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                <span className="text-primary border-b border-primary pb-1">Анализ ИИ: Стабильно</span>
+          <div className="lg:col-span-2 space-y-8">
+            <GlassCard className="min-h-[400px] flex flex-col justify-between p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">{RU.DASHBOARD.WEIGHT_TREND}</h2>
+                {summary && (
+                  <div className="flex gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                    <span className="text-primary border-b border-primary pb-1 flex items-center gap-1">
+                      {getTrendIcon(summary.weight.isPlateau ? 'STAGNATING' : (summary.weight.weeklyChange < 0 ? 'IMPROVING' : 'DECLINING'))}
+                      ИИ Анализ: {summary.weight.isPlateau ? 'Плато' : (summary.weight.weeklyChange < 0 ? 'Снижение' : 'Стабильно')}
+                    </span>
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="flex-1 flex items-center justify-center border-t border-white/5 mt-4">
-              <p className="text-muted-foreground italic opacity-50">Место для графика Recharts...</p>
-            </div>
-          </GlassCard>
+              <div className="flex-1 border-t border-border mt-4 pt-6">
+                {weightHistory.length > 1 ? (
+                  <WeightChart data={weightHistory} />
+                ) : (
+                  <div className="h-full flex items-center justify-center opacity-50">
+                    <p className="text-muted-foreground">Недостаточно данных для графика</p>
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+
+            <AIRecommendationsSection />
+          </div>
 
           <div className="space-y-8">
             <GlassCard className="p-6 border-l-4 border-l-primary">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                {RU.DASHBOARD.FORECAST}
-              </h3>
-              <div className="bg-white/5 rounded-2xl p-4 mb-4">
-                <p className="text-2xl font-bold mb-1">15 Октября</p>
-                <p className="text-xs text-muted-foreground">На основе ваших последних 14 тренировок.</p>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  {RU.DASHBOARD.FORECAST}
+                </h3>
+                <button 
+                  onClick={() => setGoalModalOpen(true)}
+                  className="p-1 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Target className="w-4 h-4" />
+                </button>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Вы достигнете цели на 5 дней раньше графика. Добавьте 15 минут кардио.
-              </p>
+
+              {summary?.goal.estimatedCompletionDate ? (
+                <>
+                  <div className="bg-secondary/50 rounded-2xl p-4 mb-4">
+                    <p className="text-2xl font-bold mb-1">
+                      {formatDate(summary.goal.estimatedCompletionDate)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Прогноз достижения цели: {activeGoal?.title}</p>
+                  </div>
+                  <div className="w-full bg-secondary h-2 rounded-full mb-2 overflow-hidden">
+                    <div 
+                      className="bg-primary h-full transition-all duration-500" 
+                      style={{ width: `${summary.goal.completionPercentage}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Завершено на {summary.goal.completionPercentage}%
+                  </p>
+                </>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground italic mb-4">Активная цель не установлена или данных недостаточно</p>
+                  <GradientButton variant="outline" size="sm" onClick={() => setGoalModalOpen(true)}>
+                    Добавить цель
+                  </GradientButton>
+                </div>
+              )}
             </GlassCard>
 
             <GlassCard className="p-6">
               <h3 className="text-lg font-semibold mb-4">{RU.ENTRIES.TITLE}</h3>
-              <div className="space-y-4">
-                {[1, 2].map(i => (
-                  <div key={i} className="flex justify-between items-center p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer group">
+              <div className="space-y-3">
+                {workouts.slice(0, 3).map(workout => (
+                  <div key={workout.id} className="flex justify-between items-center p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer group">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                        <Activity className="w-5 h-5" />
+                      <div className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center">
+                        <Dumbbell className="w-5 h-5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium">Силовая: Плечи</p>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Сегодня</p>
+                        <p className="text-sm font-medium">{workout.type}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 ))}
+                {workouts.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-4">Журнал пуст</p>
+                )}
               </div>
-              <GradientButton variant="outline" className="w-full mt-6">
-                Смотреть все
+              <GradientButton variant="outline" className="w-full mt-6" onClick={() => { setEntryType('workout'); setEntryModalOpen(true); }}>
+                {RU.ENTRIES.ADD_WORKOUT}
               </GradientButton>
             </GlassCard>
           </div>
         </div>
       </div>
+
+      <Modal isOpen={isGoalModalOpen} onClose={() => setGoalModalOpen(false)} title="Установить цель">
+        <GoalForm onSubmit={handleGoalSubmit} />
+      </Modal>
+
+      <Modal isOpen={isEntryModalOpen} onClose={() => setEntryModalOpen(false)} title={entryType === 'workout' ? 'Добавить тренировку' : 'Новый замер веса'}>
+        <EntryForm type={entryType} onSubmit={handleEntrySubmit} />
+      </Modal>
     </AppLayout>
   );
 };
-
-// Activity icon for list
-const Activity = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-);

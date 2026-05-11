@@ -1,71 +1,50 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { FitnessState, Goal, WorkoutEntry, WeightEntry, AIAnalysis, UserProfile } from '../types';
+import { FitnessState } from '../types';
+import { INITIAL_DEMO_STATE } from '../types/demoData';
+import { createProfileSlice, ProfileSlice } from './slices/profileSlice';
+import { createGoalsSlice, GoalsSlice } from './slices/goalsSlice';
+import { createEntriesSlice, EntriesSlice } from './slices/entriesSlice';
+import { createAISlice, AISlice } from './slices/aiSlice';
+import { createThemeSlice, ThemeSlice } from './slices/themeSlice';
 
-export type ThemeType = 'light' | 'dark';
-
-interface FitnessStore extends FitnessState {
-  theme: ThemeType;
-  toggleTheme: () => void;
-  setTheme: (theme: ThemeType) => void;
-  
-  // Actions
-  setProfile: (profile: UserProfile) => void;
-  addGoal: (goal: Goal) => void;
-  updateGoal: (id: string, updates: Partial<Goal>) => void;
-  removeGoal: (id: string) => void;
-  addWorkout: (workout: WorkoutEntry) => void;
-  addWeightEntry: (entry: WeightEntry) => void;
-  addAIAnalysis: (analysis: AIAnalysis) => void;
-}
+export type FitnessStore = FitnessState & 
+  ProfileSlice & 
+  GoalsSlice & 
+  EntriesSlice & 
+  AISlice & 
+  ThemeSlice & {
+    initialize: () => void;
+  };
 
 export const useFitnessStore = create<FitnessStore>()(
   persist(
-    (set) => ({
-      profile: null,
-      goals: [],
-      workouts: [],
-      weightHistory: [],
-      analyses: [],
-      theme: 'dark',
+    (set, get, api) => ({
+      ...createProfileSlice(set as any, get as any, api as any),
+      ...createGoalsSlice(set as any, get as any, api as any),
+      ...createEntriesSlice(set as any, get as any, api as any),
+      ...createAISlice(set as any, get as any, api as any),
+      ...createThemeSlice(set as any, get as any, api as any),
 
-      toggleTheme: () => set((state) => ({ 
-        theme: state.theme === 'dark' ? 'light' : 'dark' 
-      })),
-      
-      setTheme: (theme) => set({ theme }),
-
-      setProfile: (profile) => set({ profile }),
-      
-      addGoal: (goal) => set((state) => ({ 
-        goals: [...state.goals, goal] 
-      })),
-
-      updateGoal: (id, updates) => set((state) => ({
-        goals: state.goals.map((g) => g.id === id ? { ...g, ...updates } : g)
-      })),
-
-      removeGoal: (id) => set((state) => ({
-        goals: state.goals.filter((g) => g.id !== id)
-      })),
-
-      addWorkout: (workout) => set((state) => ({
-        workouts: [workout, ...state.workouts]
-      })),
-
-      addWeightEntry: (entry) => set((state) => ({
-        weightHistory: [entry, ...state.weightHistory].sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-      })),
-
-      addAIAnalysis: (analysis) => set((state) => ({
-        analyses: [analysis, ...state.analyses].slice(0, 50) 
-      })),
+      initialize: () => {
+        const state = get();
+        if (state.goals.length === 0 && state.weightHistory.length === 0) {
+          set({ ...INITIAL_DEMO_STATE });
+        }
+      },
     }),
     {
-      name: 'fitness-tracker-storage',
+      name: 'fitness-tracker-storage-v2',
       storage: createJSONStorage(() => localStorage),
     }
   )
 );
+
+// Selectors for performance
+export const useTheme = () => useFitnessStore((state) => state.theme);
+export const useProfile = () => useFitnessStore((state) => state.profile);
+export const useGoals = () => useFitnessStore((state) => state.goals);
+export const useWorkouts = () => useFitnessStore((state) => state.workouts);
+export const useWeightHistory = () => useFitnessStore((state) => state.weightHistory);
+export const useAnalyses = () => useFitnessStore((state) => state.analyses);
+export const useAnalysisRequest = () => useFitnessStore((state) => state.analysisRequest);

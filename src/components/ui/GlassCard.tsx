@@ -19,6 +19,8 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     <Component
       initial={animate ? { opacity: 0, y: 20 } : undefined}
       animate={animate ? { opacity: 1, y: 0 } : undefined}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={animate ? { y: -4, transition: { duration: 0.3 } } : undefined}
       className={cn(
         "glass dashboard-card overflow-hidden",
         className
