@@ -1,0 +1,6 @@
+{
+  "name": "AI Fitness Tracker",
+  "description": "Персональный фитнес-трекер на базе ИИ для мониторинга целей, прогресса и прогнозов.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
