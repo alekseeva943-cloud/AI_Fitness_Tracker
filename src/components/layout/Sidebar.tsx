@@ -1,8 +1,8 @@
-import React from "react";
+import { NavLink } from "react-router-dom";
 import { useFitnessStore } from "../../store/useFitnessStore";
 import { NAVIGATION_CONFIG } from "../../config/navigation.config";
 import { cn } from "../../lib/utils";
-import { Dumbbell, LogOut, Sun, Moon } from "lucide-react";
+import { Dumbbell, Sun, Moon } from "lucide-react";
 
 export const Sidebar: React.FC = () => {
   const { theme, toggleTheme } = useFitnessStore();
@@ -18,17 +18,17 @@ export const Sidebar: React.FC = () => {
 
       <nav className="flex-1 px-4 space-y-2">
         {NAVIGATION_CONFIG.map((item) => (
-          <a
+          <NavLink
             key={item.id}
-            href={item.path}
-            className={cn(
+            to={item.path}
+            className={({ isActive }) => cn(
               "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group text-muted-foreground hover:text-foreground hover:bg-white/5",
-              item.id === 'dashboard' && "bg-white/5 text-foreground border border-white/10"
+              isActive && "bg-white/5 text-foreground border border-white/10"
             )}
           >
             <item.icon className="w-5 h-5" />
             <span className="font-medium text-sm">{item.label}</span>
-          </a>
+          </NavLink>
         ))}
       </nav>
 

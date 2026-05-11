@@ -7,6 +7,7 @@ import { createGoalsSlice, GoalsSlice } from './slices/goalsSlice';
 import { createEntriesSlice, EntriesSlice } from './slices/entriesSlice';
 import { createAISlice, AISlice } from './slices/aiSlice';
 import { createThemeSlice, ThemeSlice } from './slices/themeSlice';
+import { logger } from '../lib/logger';
 
 export type FitnessStore = FitnessState & 
   ProfileSlice & 
@@ -27,8 +28,10 @@ export const useFitnessStore = create<FitnessStore>()(
       ...createThemeSlice(set as any, get as any, api as any),
 
       initialize: () => {
+        logger.store('Initializing store state');
         const state = get();
         if (state.goals.length === 0 && state.weightHistory.length === 0) {
+          logger.store('Populating with initial demo data');
           set({ ...INITIAL_DEMO_STATE });
         }
       },
@@ -36,6 +39,9 @@ export const useFitnessStore = create<FitnessStore>()(
     {
       name: 'fitness-tracker-storage-v2',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        logger.store('Store rehydrated from localStorage', { hasState: !!state });
+      }
     }
   )
 );
