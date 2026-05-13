@@ -24,7 +24,7 @@ export const WorkoutsView: React.FC = () => {
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutEntry | null>(null);
   const [filter, setFilter] = useState<string>('all');
-  const [viewMetric, setViewMetric] = useState<'calories' | 'weight' | 'duration'>('calories');
+  const [viewMetric, setViewMetric] = useState<'calories' | 'weight' | 'duration'>('weight');
 
   const categoryLabels: Record<string, string> = {
     'STRENGTH': 'Силовая',
@@ -37,10 +37,12 @@ export const WorkoutsView: React.FC = () => {
   const activeCategories = Array.from(new Set(workouts.map(w => w.category || 'OTHER')));
   const filterOptions = ['all', ...activeCategories];
 
-  const filteredWorkouts = workouts.filter(w => {
-    if (filter === 'all') return true;
-    return w.category === filter;
-  });
+  const filteredWorkouts = workouts
+    .filter(w => {
+      if (filter === 'all') return true;
+      return w.category === filter;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleCreateWorkout = (data: any) => {
     const workoutId = crypto.randomUUID();

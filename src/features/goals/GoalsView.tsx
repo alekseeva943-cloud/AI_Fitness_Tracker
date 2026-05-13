@@ -33,7 +33,7 @@ export const GoalsView: React.FC = () => {
   const [isDetailOpen, setDetailOpen] = useState(false);
   const [isEditPanelOpen, setEditPanelOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-  const [selectedMetricId, setSelectedMetricId] = useState<string>('weight');
+  const [detailMetric, setDetailMetric] = useState<'calories' | 'weight' | 'duration'>('weight');
 
   useEffect(() => {
     const goalId = searchParams.get('id');
@@ -441,13 +441,43 @@ export const GoalsView: React.FC = () => {
 
               {/* Workouts Section */}
               <div className="space-y-4">
-                <div className="flex justify-between items-center px-1">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
                   <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
                      <Dumbbell className="w-3 h-3 text-primary" />
                      {selectedGoal.workoutTypeFilter ? `Тренировки: ${categoryLabels[selectedGoal.workoutTypeFilter]}` : 'Все тренировки'}
                   </h4>
-                  <span className="text-[10px] text-muted-foreground font-bold">{filteredWorkouts.length} сессий</span>
+                  
+                  <div className="flex items-center gap-2 p-1 bg-secondary/30 rounded-xl border border-white/5">
+                    <button 
+                      onClick={() => setDetailMetric('weight')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                        detailMetric === 'weight' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+                      )}
+                    >
+                      Вес
+                    </button>
+                    <button 
+                      onClick={() => setDetailMetric('calories')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                        detailMetric === 'calories' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+                      )}
+                    >
+                      Ккал
+                    </button>
+                    <button 
+                      onClick={() => setDetailMetric('duration')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                        detailMetric === 'duration' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+                      )}
+                    >
+                      Время
+                    </button>
+                  </div>
                 </div>
+
                 <div className="space-y-3">
                   {filteredWorkouts.slice(0, 5).map(workout => (
                     <div 
@@ -474,8 +504,24 @@ export const GoalsView: React.FC = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-primary">{workout.caloriesBurned || 0}</p>
-                        <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-tighter">ККАЛ</p>
+                        {detailMetric === 'weight' && (
+                          <>
+                            <p className="text-sm font-bold text-primary">{workout.weight || '-'}</p>
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-tighter">КГ</p>
+                          </>
+                        )}
+                        {detailMetric === 'calories' && (
+                          <>
+                            <p className="text-sm font-bold text-primary">{workout.caloriesBurned || 0}</p>
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-tighter">ККАЛ</p>
+                          </>
+                        )}
+                        {detailMetric === 'duration' && (
+                          <>
+                            <p className="text-sm font-bold text-primary">{workout.duration || 0}</p>
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-tighter">МИН</p>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
