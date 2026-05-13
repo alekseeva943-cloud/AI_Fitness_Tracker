@@ -5,6 +5,7 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
 import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles } from "lucide-react";
 import { useFitnessStore, useGoals, useActiveGoalId, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
+import { METRICS } from "../../constants/metrics";
 import { useNavigate } from "react-router-dom";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
 import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
@@ -45,6 +46,7 @@ export const DashboardView: React.FC = () => {
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
   const [entryType, setEntryType] = useState<'workout' | 'weight'>('workout');
+  const [chartMetric, setChartMetric] = useState<string>('weight');
 
   const [isWeightHistoryModalOpen, setWeightHistoryModalOpen] = useState(false);
   const [isWeightDetailModalOpen, setWeightDetailModalOpen] = useState(false);
@@ -59,17 +61,31 @@ export const DashboardView: React.FC = () => {
     if (data.id) {
       updateGoal(data.id, data);
     } else {
+      const goalId = crypto.randomUUID();
       addGoal({
         ...data,
-        id: crypto.randomUUID(),
+        id: goalId,
         createdAt: new Date().toISOString(),
-        currentValue: summary?.weight?.currentWeight || 0,
-        startValue: summary?.weight?.currentWeight || 0,
+        currentValue: data.startValue || summary?.weight?.currentWeight || 0,
+        startValue: data.startValue || summary?.weight?.currentWeight || 0,
         status: 'ACTIVE',
-        unit: 'кг',
         startDate: new Date().toISOString(),
-        targetValue: Number(data.targetValue),
       });
+
+      // Update profile baselines if measurements were provided
+      if (data.baselineMeasurements) {
+        Object.entries(data.baselineMeasurements).forEach(([id, value]) => {
+          if (value) {
+            useFitnessStore.getState().updateBaseline({
+              id,
+              name: METRICS[id]?.label || id,
+              value: Number(value),
+              unit: METRICS[id]?.unit || '',
+              date: new Date().toISOString()
+            });
+          }
+        });
+      }
     }
     setGoalModalOpen(false);
   };
@@ -96,6 +112,20 @@ export const DashboardView: React.FC = () => {
         id: crypto.randomUUID(),
         unit: 'кг',
         ...data,
+      });
+
+      // Update baselines for any provided body measurements
+      Object.entries(data).forEach(([key, value]) => {
+        const metric = METRICS[key];
+        if (metric && metric.category === 'BODY' && key !== 'weight' && value) {
+          useFitnessStore.getState().updateBaseline({
+            id: key,
+            name: metric.label,
+            value: Number(value),
+            unit: metric.unit,
+            date: data.date || new Date().toISOString()
+          });
+        }
       });
     }
     setEntryModalOpen(false);
@@ -204,8 +234,50 @@ export const DashboardView: React.FC = () => {
                         <span>•</span>
                         <span>Цель: {formatWeight(activeGoal.targetValue)}</span>
                       </div>
+                      {activeGoal.baselineMeasurements && Object.keys(activeGoal.baselineMeasurements).length > 0 && (
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+                          {Object.entries(activeGoal.baselineMeasurements).map(([id, val]) => (
+                            <div key={id} className="flex items-center gap-1.5 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all">
+                              <span className="text-[10px]">{METRICS[id]?.icon}</span>
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                                {METRICS[id]?.label}: <span className="text-foreground">{val} {METRICS[id]?.unit}</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1 p-1 bg-secondary/30 rounded-xl border border-white/5 mr-2">
+                        <button 
+                          onClick={() => setChartMetric('weight')}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                            chartMetric === 'weight' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+                          )}
+                        >
+                          Вес
+                        </button>
+                        <button 
+                          onClick={() => setChartMetric('caloriesBurned')}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                            chartMetric === 'caloriesBurned' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+                          )}
+                        >
+                          Ккал
+                        </button>
+                        <button 
+                          onClick={() => setChartMetric('duration')}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                            chartMetric === 'duration' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+                          )}
+                        >
+                          Время
+                        </button>
+                      </div>
+
                       {summary && (() => {
                         const isWeightLoss = activeGoal.type === 'WEIGHT_LOSS';
                         const isImproving = isWeightLoss 
@@ -214,7 +286,7 @@ export const DashboardView: React.FC = () => {
                         
                         return (
                           <div className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 border rounded-full",
+                            "flex items-center gap-1.5 px-3 py-1.5 border rounded-full hidden md:flex",
                             summary.weight.isPlateau 
                               ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" 
                               : isImproving 
@@ -232,28 +304,35 @@ export const DashboardView: React.FC = () => {
                           </div>
                         );
                       })()}
-                      <button 
-                        onClick={() => setWeightHistoryModalOpen(true)}
-                        className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-primary transition-colors bg-secondary/50 px-3 py-1.5 rounded-full"
-                      >
-                        История
-                      </button>
                     </div>
                   </div>
-                  <div className="flex-1 mt-4">
-                    {weightHistory.length > 0 ? (
-                      <MetricChart 
-                        data={weightHistory} 
-                        goal={activeGoal} 
-                        forecastedDate={summary?.goal.estimatedCompletionDate}
-                        workouts={workouts}
-                      />
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-4">
-                        <Scale className="w-12 h-12 text-muted-foreground" />
-                        <p className="text-muted-foreground">Добавьте первый замер веса для начала анализа</p>
-                      </div>
-                    )}
+                  <div className="flex-1 mt-4 h-[350px]">
+                    {(() => {
+                      let chartData: { date: string, value: number }[] = [];
+                      if (chartMetric === 'weight') {
+                        chartData = weightHistory.map(w => ({ date: w.date, value: w.value }));
+                      } else {
+                        chartData = workouts
+                          .filter(w => w[chartMetric as keyof typeof w])
+                          .map(w => ({ date: w.date, value: Number(w[chartMetric as keyof typeof w] || 0) }));
+                      }
+
+                      return chartData.length > 0 || (chartMetric === 'weight' && activeGoal) ? (
+                        <MetricChart 
+                          data={chartData} 
+                          goal={chartMetric === 'weight' ? activeGoal : null} 
+                          forecastedDate={chartMetric === 'weight' ? summary?.goal.estimatedCompletionDate : null}
+                          workouts={workouts}
+                          unit={METRICS[chartMetric]?.unit}
+                          color={chartMetric === 'weight' ? '#DFFF00' : chartMetric === 'caloriesBurned' ? '#fb923c' : '#60a5fa'}
+                        />
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center opacity-40 space-y-4">
+                          <Activity className="w-12 h-12 text-muted-foreground" />
+                          <p className="text-muted-foreground text-sm uppercase font-bold tracking-widest italic">Нет данных для этого показателя</p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </GlassCard>
 

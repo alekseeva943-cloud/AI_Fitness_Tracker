@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, ChevronDown, ChevronUp, Sparkles, Scale, Dumbbell, Zap, Trophy, Heart, Calendar } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, Sparkles, Scale, Dumbbell, Zap, Trophy, Heart, Calendar, Ruler } from 'lucide-react';
 import { Goal, GoalType } from '../../../types';
 import { RU } from '../../../constants';
 import { METRICS } from '../../../constants/metrics';
@@ -30,10 +30,20 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   const [title, setTitle] = useState(initialData?.title || '');
   const [showPresets, setShowPresets] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [measurementBaselines, setMeasurementBaselines] = useState<Record<string, number>>(initialData?.baselineMeasurements || {});
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(initialData?.metricId || (selectedType === GoalType.STRENGTH ? 'workingWeight' : selectedType === GoalType.ENDURANCE ? 'distance' : 'weight'));
 
   const metric = METRICS[selectedMetricId] || METRICS.weight;
+
+  const bodyMetrics = Object.values(METRICS).filter(m => m.category === 'BODY' && m.id !== 'weight');
+
+  const handleMeasurementChange = (id: string, value: string) => {
+    setMeasurementBaselines(prev => ({
+      ...prev,
+      [id]: Number(value)
+    }));
+  };
 
   const getBaselineValue = () => {
     if (selectedMetricId === 'weight') return weightHistory[0]?.value || profile?.startingWeight || 0;
@@ -99,6 +109,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
 
     onSubmit({
       ...data,
+      baselineMeasurements: measurementBaselines,
       unit: metric.unit
     });
   };
@@ -187,6 +198,34 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
               <span className="absolute right-8 top-1/2 -translate-y-1/2 text-sm font-black text-primary uppercase tracking-widest">{metric.unit}</span>
             </div>
           </div>
+
+        {/* Measurement Baseline section */}
+        <div className="space-y-4 p-6 bg-secondary/30 rounded-[2.5rem] border border-white/5">
+          <div className="flex items-center gap-2 mb-2">
+            <Ruler className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-foreground">Замеры на старте</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">Укажите текущие параметры для более точного будущего анализа</p>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {bodyMetrics.map(bm => (
+              <div key={bm.id} className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">{bm.label}</label>
+                <div className="relative">
+                  <input 
+                    type="number"
+                    step="0.1"
+                    value={measurementBaselines[bm.id] || ''}
+                    onChange={(e) => handleMeasurementChange(bm.id, e.target.value)}
+                    placeholder={bm.placeholder}
+                    className="w-full bg-black/20 border border-white/5 rounded-2xl px-4 py-3 outline-none focus:border-primary/30 transition-all text-sm font-bold pr-10"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground">{bm.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Info Box about Baseline */}
         <div className="p-5 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-center gap-4">

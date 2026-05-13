@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { AreaChart, Area, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { WeightEntry, Goal } from '../../../types';
 import { formatDate } from '../../../lib/utils';
-import { isAfter, parseISO } from 'date-fns';
+import { motion } from 'motion/react';
 
 interface DataPoint {
   date: string;
@@ -188,7 +188,12 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
   );
 
   return (
-    <div className="w-full h-full min-h-[200px] relative">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="w-full h-full min-h-[200px] relative"
+    >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
           <defs>
@@ -236,6 +241,24 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             />
           )}
 
+          {goal && (
+            <ReferenceLine 
+              y={goal.startValue} 
+              stroke="#71717a" 
+              strokeDasharray="4 4" 
+              strokeOpacity={0.3}
+              label={{ 
+                position: 'insideLeft', 
+                value: `СТАРТ: ${goal.startValue} ${propUnit || goal.unit}`, 
+                fill: '#71717a', 
+                fontSize: 9, 
+                fontWeight: 'bold',
+                opacity: 0.5,
+                dy: 10
+              }} 
+            />
+          )}
+
           <Area 
             name="current"
             type="monotone" 
@@ -275,7 +298,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           />
         </AreaChart>
       </ResponsiveContainer>
-    </div>
+    </motion.div>
   );
 };
 

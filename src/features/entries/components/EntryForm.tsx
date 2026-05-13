@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { RU } from "../../../constants";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
-import { ChevronDown, ChevronUp, Settings2, Activity, Timer, Heart, Scale, Calendar, Info, Plus, Trash2, Dumbbell } from "lucide-react";
+import { ChevronDown, ChevronUp, Settings2, Activity, Timer, Heart, Scale, Calendar, Info, Plus, Trash2, Dumbbell, Ruler } from "lucide-react";
 import { METRICS, getMetricsByCategory } from "../../../constants/metrics";
 import { FitnessSelect } from "../../../components/ui/FitnessSelect";
 import { cn } from "../../../lib/utils";
@@ -387,6 +387,32 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
               <span className="absolute right-8 top-1/2 -translate-y-1/2 text-lg font-black text-primary/20 uppercase tracking-tighter">кг</span>
             </div>
             {errors.value && <p className="text-center text-[10px] text-red-400 font-medium animate-pulse">{errors.value}</p>}
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-white/5">
+            <div className="flex items-center gap-2 px-1">
+              <Ruler className="w-3.5 h-3.5 text-primary" />
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Замеры тела</label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {Object.values(METRICS).filter(m => m.category === 'BODY' && m.id !== 'weight').map(bm => (
+                <div key={bm.id} className="space-y-1.5">
+                  <span className="text-[9px] font-bold uppercase text-muted-foreground/50 px-1">{bm.label}</span>
+                  <div className="relative">
+                    <input 
+                      name={bm.id}
+                      type="number"
+                      step="0.1"
+                      placeholder={bm.placeholder}
+                      defaultValue={initialData?.[bm.id]}
+                      className="w-full bg-secondary/20 border border-white/5 rounded-2xl px-4 py-3 outline-none focus:border-primary/30 transition-all text-xs font-bold pr-10"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted-foreground/40">{bm.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
