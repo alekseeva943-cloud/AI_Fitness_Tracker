@@ -16,6 +16,7 @@ export const INITIAL_DEMO_STATE: FitnessState = {
       id: MOCK_GOAL_ID,
       title: 'Сбросить 5 кг',
       type: GoalType.WEIGHT_LOSS,
+      metricId: 'weight',
       targetValue: 80,
       currentValue: 82.3,
       startValue: 85.5,

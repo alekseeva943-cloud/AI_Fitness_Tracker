@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { RU } from "../../../constants";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
 import { ChevronDown, ChevronUp, Settings2, Dumbbell, Activity, Timer, Weight, Heart, Scale, Calendar } from "lucide-react";
+import { METRICS, getMetricsByCategory } from "../../../constants/metrics";
 
 interface EntryFormProps {
   type: 'workout' | 'weight';
@@ -25,38 +26,35 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
         newErrors.type = "Введите корректное название тренировки (минимум 3 символа)";
       }
 
+      // Validate primary metrics
+      ['duration', 'caloriesBurned', 'weight'].forEach(metricId => {
+        if (rawData[metricId]) {
+          const metric = METRICS[metricId];
+          const err = validateNumeric(String(rawData[metricId]), { min: metric.min || 0, max: metric.max || 10000 });
+          if (err) newErrors[metricId] = err;
+        }
+      });
+      
       const durationErr = validateNumeric(String(rawData.duration), VALIDATION_LIMITS.workout.duration);
       if (durationErr) newErrors.duration = durationErr;
 
-      // Conditional validation
-      if (category === 'STRENGTH') {
-        if (rawData.sets) {
-           const err = validateNumeric(String(rawData.sets), VALIDATION_LIMITS.workout.sets);
-           if (err) newErrors.sets = err;
+      // Dynamic validation based on registry for category metrics
+      const categoryMetrics = getMetricsByCategory(category as any);
+      categoryMetrics.forEach(metric => {
+        if (rawData[metric.id]) {
+          const err = validateNumeric(String(rawData[metric.id]), { min: metric.min || 0, max: metric.max || 10000 });
+          if (err) newErrors[metric.id] = err;
         }
-        if (rawData.reps) {
-           const err = validateNumeric(String(rawData.reps), VALIDATION_LIMITS.workout.reps);
-           if (err) newErrors.reps = err;
-        }
-        if (rawData.workingWeight) {
-           const err = validateNumeric(String(rawData.workingWeight), VALIDATION_LIMITS.workout.workingWeight);
-           if (err) newErrors.workingWeight = err;
-        }
-      }
-
-      if (category === 'CARDIO' || category === 'ENDURANCE') {
-        if (rawData.distance) {
-          const err = validateNumeric(String(rawData.distance), VALIDATION_LIMITS.workout.distance);
-          if (err) newErrors.distance = err;
-        }
-      }
-
+      });
+      
       if (rawData.heartRate) {
-        const err = validateNumeric(String(rawData.heartRate), VALIDATION_LIMITS.workout.heartRate);
+        const metric = METRICS.heartRate;
+        const err = validateNumeric(String(rawData.heartRate), { min: metric.min || 0, max: metric.max || 250 });
         if (err) newErrors.heartRate = err;
       }
     } else {
-      const weightErr = validateNumeric(String(rawData.value), VALIDATION_LIMITS.weight.value);
+      const metric = METRICS.weight;
+      const weightErr = validateNumeric(String(rawData.value), { min: metric.min || 0, max: metric.max || 500 });
       if (weightErr) newErrors.value = weightErr;
     }
 
@@ -68,17 +66,9 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
     // Process and cast types
     const data: any = { ...rawData };
     if (type === 'workout') {
-      data.duration = Number(data.duration);
-      if (data.caloriesBurned) data.caloriesBurned = Number(data.caloriesBurned);
-      if (data.weight) data.weight = Number(data.weight);
-      if (data.sets) data.sets = Number(data.sets);
-      if (data.reps) data.reps = Number(data.reps);
-      if (data.workingWeight) data.workingWeight = Number(data.workingWeight);
-      if (data.distance) data.distance = Number(data.distance);
-      if (data.heartRate) data.heartRate = Number(data.heartRate);
-      if (data.speed) data.speed = Number(data.speed);
-      if (data.incline) data.incline = Number(data.incline);
-      if (data.cadence) data.cadence = Number(data.cadence);
+      Object.keys(METRICS).forEach(metricId => {
+        if (data[metricId]) data[metricId] = Number(data[metricId]);
+      });
       
       // Auto-calculate volume for strength
       if (data.sets && data.reps && data.workingWeight) {
@@ -144,14 +134,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
                 <Timer className="w-3 h-3" />
-                Время (мин)
+                {METRICS.duration.label} ({METRICS.duration.unit})
               </label>
               <input 
                 name="duration" 
                 type="number" 
                 inputMode="numeric" 
                 required 
-                placeholder="45"
+                placeholder={METRICS.duration.placeholder}
                 className={`w-full bg-secondary/80 border ${errors.duration ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-sm`} 
               />
               {errors.duration && <p className="text-[10px] text-red-400 font-medium">{errors.duration}</p>}
@@ -159,26 +149,26 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
                 <Activity className="w-3 h-3" />
-                {RU.ENTRIES.CALORIES}
+                {METRICS.caloriesBurned.label} ({METRICS.caloriesBurned.unit})
               </label>
               <input 
                 name="caloriesBurned" 
                 type="number" 
                 inputMode="numeric" 
-                placeholder="300"
+                placeholder={METRICS.caloriesBurned.placeholder}
                 className={`w-full bg-secondary/80 border ${errors.caloriesBurned ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-sm`} 
               />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-primary block flex items-center gap-1.5">
                 <Scale className="w-3 h-3" />
-                Вес (кг)
+                {METRICS.weight.label} ({METRICS.weight.unit})
               </label>
               <input 
                 name="weight" 
                 type="number" 
                 step="0.1"
-                placeholder="75.0"
+                placeholder={METRICS.weight.placeholder}
                 className="w-full bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-bold shadow-lg shadow-primary/5" 
               />
             </div>
@@ -190,39 +180,23 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
               Метрики по категории
             </h4>
             
-            {category === 'STRENGTH' && (
-              <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground">Подходы</label>
-                  <input name="sets" type="number" placeholder="4" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground">Повт.</label>
-                  <input name="reps" type="number" placeholder="12" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground">Вес (кг)</label>
-                  <input name="workingWeight" type="number" step="0.5" placeholder="60" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition-colors" />
-                </div>
-              </div>
-            )}
-
-            {(category === 'CARDIO' || category === 'ENDURANCE') && (
-              <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground">Дист. (км)</label>
-                  <input name="distance" type="number" step="0.1" placeholder="5" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground">Темп</label>
-                  <input name="pace" type="text" placeholder="5:30" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground">Скорость</label>
-                  <input name="speed" type="number" step="0.1" placeholder="10" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition-colors" />
-                </div>
-              </div>
-            )}
+            <div className={`grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${category === 'FLEXIBILITY' || category === 'OTHER' ? 'hidden' : ''}`}>
+               {getMetricsByCategory(category as any).map(metric => (
+                 <div key={metric.id} className="space-y-2">
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground leading-tight">
+                      {metric.label} {metric.unit ? `(${metric.unit})` : ''}
+                    </label>
+                    <input 
+                      name={metric.id} 
+                      type="number" 
+                      step={metric.id === 'workingWeight' || metric.id === 'distance' ? '0.1' : '1'}
+                      placeholder={metric.placeholder} 
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition-colors font-medium" 
+                    />
+                    {errors[metric.id] && <p className="text-[8px] text-red-400 font-bold uppercase mt-1">{errors[metric.id]}</p>}
+                 </div>
+               ))}
+            </div>
 
             {(category === 'FLEXIBILITY' || category === 'OTHER') && (
               <div className="text-center py-4 px-2 bg-background/50 rounded-xl border border-dashed border-border border-white/10">

@@ -7,6 +7,8 @@ import { AnalyticsSummary } from "../../analytics/types";
 import { useNavigate } from "react-router-dom";
 import { formatPercent, formatWeight } from "../../../lib/utils";
 
+import { METRICS } from "../../../constants/metrics";
+
 interface DashboardGridProps {
   summary: AnalyticsSummary | null;
 }
@@ -39,24 +41,24 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
         } : undefined}
       />
       <StatCard 
-        label={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? "Общая дистанция" : summary?.workouts.totalVolume && summary.workouts.totalVolume > 0 ? "Общий объем" : RU.ENTRIES.DURATION}
+        label={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? METRICS.distance.label : summary?.workouts.totalVolume && summary.workouts.totalVolume > 0 ? METRICS.volume.label : METRICS.duration.label}
         value={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 
           ? summary.workouts.totalDistance.toFixed(1) 
           : summary?.workouts.totalVolume && summary.workouts.totalVolume > 0 
             ? (summary.workouts.totalVolume / 1000).toFixed(1)
             : summary?.workouts.avgDuration ?? 0}
         unit={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 
-          ? "км" 
+          ? METRICS.distance.unit 
           : summary?.workouts.totalVolume && summary.workouts.totalVolume > 0 
             ? "т" 
-            : "мин"}
+            : METRICS.duration.unit}
         icon={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? <Activity className="w-4 h-4 text-blue-400" /> : <Clock className="w-4 h-4" />}
         onClick={() => navigate('/workouts')}
       />
       <StatCard 
         label="Прогноз веса"
         value={formatWeight(summary?.weight.forecastedWeight ?? 0).replace(' кг', '')}
-        unit="кг"
+        unit={METRICS.weight.unit}
         icon={<TrendingUp className="w-4 h-4" />}
         onClick={() => navigate('/analytics')}
       />

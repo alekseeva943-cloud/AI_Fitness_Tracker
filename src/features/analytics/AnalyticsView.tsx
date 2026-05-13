@@ -9,6 +9,7 @@ import { Modal } from '../../components/ui/Modal';
 import { TrendingUp, Activity, Target, Zap, Clock, Calendar, BarChart3, Info, ChevronRight, Scale, Flame, ArrowRight, Dumbbell, Sparkles, ChevronLeft, FileText } from 'lucide-react';
 import { RU } from '../../constants';
 import { cn, formatWeight, formatVelocity, formatPercent, formatDate } from '../../lib/utils';
+import { METRICS } from '../../constants/metrics';
 
 export const AnalyticsView: React.FC = () => {
   const navigate = useNavigate();
@@ -50,9 +51,9 @@ export const AnalyticsView: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Текущий вес"
+          label={METRICS.weight.label}
           value={summary.weight.currentWeight.toFixed(1)}
-          unit="кг"
+          unit={METRICS.weight.unit}
           icon={<Target className="w-4 h-4" />}
           trend={{ value: formatWeight(Math.abs(summary.weight.totalChange)), isPositive: summary.weight.totalChange < 0 }}
           onClick={() => setActiveModal('weight')}

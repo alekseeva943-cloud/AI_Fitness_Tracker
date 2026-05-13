@@ -14,11 +14,16 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
 
   // Completion Percentage
   let completionPercentage = 0;
-  if (goal.type === GoalType.WEIGHT_LOSS) {
+  
+  // Directions: lower is better for WEIGHT_LOSS, higher is better for others usually
+  const isLoss = goal.type === GoalType.WEIGHT_LOSS;
+  const isGain = goal.type === GoalType.MUSCLE_GAIN || goal.type === GoalType.STRENGTH;
+
+  if (isLoss) {
     const totalToLose = initial - target;
     const lostSoFar = initial - current;
     completionPercentage = totalToLose > 0 ? (lostSoFar / totalToLose) * 100 : 0;
-  } else if (goal.type === GoalType.MUSCLE_GAIN) {
+  } else if (isGain) {
     const totalToGain = target - initial;
     const gainedSoFar = current - initial;
     completionPercentage = totalToGain > 0 ? (gainedSoFar / totalToGain) * 100 : 0;
@@ -26,7 +31,7 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
   
   completionPercentage = Math.max(0, Math.min(100, completionPercentage));
 
-  // Forecasting completion date
+  // Forecasting completion date - logic currently optimized for weight (velocity in kg/day)
   let estimatedCompletionDate: string | null = null;
   let status: GoalProgress['status'] = 'ON_TRACK';
 
@@ -34,9 +39,8 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
     const remainingValue = Math.abs(target - current);
     const velocity = trend.velocity;
     
-    const isMovingTowardsGoal = 
-      (goal.type === GoalType.WEIGHT_LOSS && velocity < 0) || 
-      (goal.type === GoalType.MUSCLE_GAIN && velocity > 0);
+    // Check if moving towards goal based on type
+    const isMovingTowardsGoal = (isLoss && velocity < 0) || (isGain && velocity > 0);
 
     if (isMovingTowardsGoal) {
       const absVelocity = Math.abs(velocity);

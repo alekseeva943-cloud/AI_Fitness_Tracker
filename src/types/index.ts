@@ -22,6 +22,7 @@ export interface Goal {
   id: string;
   title: string;
   type: GoalType;
+  metricId: string; // The ID from METRICS registry
   targetValue: number;
   currentValue: number;
   startValue: number;

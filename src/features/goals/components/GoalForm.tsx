@@ -3,6 +3,7 @@ import { RU } from "../../../constants";
 import { GoalType } from "../../../types";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
 import { ChevronDown } from "lucide-react";
+import { METRICS } from "../../../constants/metrics";
 
 interface GoalFormProps {
   onSubmit: (data: any) => void;
@@ -11,6 +12,10 @@ interface GoalFormProps {
 
 export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedType, setSelectedType] = useState<GoalType>(initialData?.type || GoalType.WEIGHT_LOSS);
+
+  // Find primary metric for this goal type
+  const metric = Object.values(METRICS).find(m => m.compatibleGoalTypes?.includes(selectedType)) || METRICS.weight;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +27,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
       newErrors.title = "Введите корректное название цели (минимум 3 символа)";
     }
 
-    const valErr = validateNumeric(String(data.targetValue), VALIDATION_LIMITS.weight.value);
+    const valErr = validateNumeric(String(data.targetValue), { min: metric.min || 0, max: metric.max || 10000 });
     if (valErr) newErrors.targetValue = valErr;
 
     if (Object.keys(newErrors).length > 0) {
@@ -30,14 +35,22 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
       return;
     }
 
-    onSubmit(data);
+    onSubmit({
+      ...data,
+      metricId: metric.id,
+      unit: metric.unit
+    });
   };
 
   return (
     <form 
       onSubmit={handleSubmit} 
       onChange={(e) => {
-        const name = (e.target as HTMLInputElement).name;
+        const target = e.target as HTMLInputElement | HTMLSelectElement;
+        const name = target.name;
+        if (name === 'type') {
+          setSelectedType(target.value as GoalType);
+        }
         if (errors[name]) {
           const newErrors = { ...errors };
           delete newErrors[name];
@@ -64,7 +77,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
           <div className="relative group">
             <select 
               name="type" 
-              defaultValue={initialData?.type || GoalType.WEIGHT_LOSS} 
+              defaultValue={selectedType} 
               className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all appearance-none cursor-pointer text-sm font-medium pr-10 shadow-lg backdrop-blur-sm"
             >
               <option value={GoalType.WEIGHT_LOSS}>📉 {RU.GOALS.TYPES.WEIGHT_LOSS}</option>
@@ -77,15 +90,15 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Цель (кг)</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Цель ({metric.unit})</label>
           <input 
             name="targetValue" 
             type="number" 
-            step="0.1"
+            step={metric.id === 'workingWeight' ? '0.5' : '1'}
             inputMode="decimal"
             defaultValue={initialData?.targetValue}
             required
-            placeholder="70.0"
+            placeholder={metric.placeholder}
             className={`w-full bg-secondary/80 border ${errors.targetValue ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-bold shadow-lg backdrop-blur-sm`}
           />
           {errors.targetValue && <p className="text-[10px] text-red-400 font-medium px-1">{errors.targetValue}</p>}
