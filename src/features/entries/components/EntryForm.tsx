@@ -27,6 +27,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
 
       const calErr = validateNumeric(String(data.caloriesBurned), VALIDATION_LIMITS.workout.calories);
       if (calErr) newErrors.caloriesBurned = calErr;
+
+      if (data.weight) {
+        const workoutWeightErr = validateNumeric(String(data.weight), VALIDATION_LIMITS.weight.value);
+        if (workoutWeightErr) newErrors.weight = workoutWeightErr;
+      }
     } else {
       const weightErr = validateNumeric(String(data.value), VALIDATION_LIMITS.weight.value);
       if (weightErr) newErrors.value = weightErr;
@@ -87,6 +92,18 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
               />
               {errors.caloriesBurned && <p className="text-[10px] text-red-400 font-medium">{errors.caloriesBurned}</p>}
             </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Вес (кг, опционально)</label>
+            <input 
+              name="weight" 
+              type="number" 
+              step="0.1" 
+              inputMode="decimal" 
+              className={`w-full bg-secondary/50 border ${errors.weight ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
+              placeholder="Укажите вес, если актуально"
+            />
+            {errors.weight && <p className="text-[10px] text-red-400 font-medium">{errors.weight}</p>}
           </div>
         </>
       ) : (

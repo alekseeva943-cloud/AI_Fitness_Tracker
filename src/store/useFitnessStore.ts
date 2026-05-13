@@ -16,6 +16,7 @@ export type FitnessStore = FitnessState &
   AISlice & 
   ThemeSlice & {
     initialize: () => void;
+    resetData: () => void;
   };
 
 export const useFitnessStore = create<FitnessStore>()(
@@ -27,21 +28,35 @@ export const useFitnessStore = create<FitnessStore>()(
       ...createAISlice(set as any, get as any, api as any),
       ...createThemeSlice(set as any, get as any, api as any),
 
+      resetData: () => {
+        logger.store('Resetting all data to empty state');
+        set({
+          goals: [],
+          workouts: [],
+          weightHistory: [],
+          analyses: [],
+          isDemoMode: false
+        });
+        localStorage.removeItem('fitness-tracker-storage-v2');
+      },
+
       initialize: () => {
         try {
           logger.store('Initializing store state');
           const state = get();
           
-          // Safety check for critical properties
-          if (!state.goals || !state.workouts || !state.weightHistory) {
-            logger.warn('Corrupted state detected, resetting to demo data');
-            set({ ...INITIAL_DEMO_STATE });
+          // If the user has already loaded some data (even 1 entry), don't auto-populate demo data
+          if (state.goals.length > 0 || state.workouts.length > 0 || state.weightHistory.length > 0) {
             return;
           }
 
-          if (state.goals.length === 0 && state.weightHistory.length === 0) {
-            logger.store('Populating empty store with initial demo data');
-            set({ ...INITIAL_DEMO_STATE });
+          // If we are strictly empty and not explicitly marked as NOT demo, we can show demo data
+          // But according to user request: "Users do not understand where demo data comes from"
+          // Let's populate demo data only if they haven't "cleaned" the state yet.
+          // Since resetData sets isDemoMode to false, we can use that.
+          if (state.isDemoMode !== false) {
+             logger.store('Populating empty store with initial demo data');
+             set({ ...INITIAL_DEMO_STATE, isDemoMode: true });
           }
         } catch (err) {
           logger.error('Store initialization failed', err);
