@@ -26,6 +26,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         unit="%"
         icon={<Target className="w-4 h-4" />}
         onClick={() => navigate('/goals')}
+        title="Прогресс достижения вашей текущей основной цели"
         trend={summary ? { 
           value: formatWeight(Math.abs(summary.weight.totalChange)), 
           isPositive: summary.goal.isImproving 
@@ -37,13 +38,14 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         unit="тр/нед"
         icon={<Activity className="w-4 h-4" />}
         onClick={() => navigate('/workouts')}
+        title="Среднее количество тренировок в неделю за все время"
         trend={summary ? { 
           value: `${summary.workouts.consistencyScore}%`, 
           isPositive: summary.workouts.consistencyScore > 70 
         } : undefined}
       />
       <StatCard 
-        label={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? METRICS.distance.label : METRICS.duration.label}
+        label={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? METRICS.distance.label : "Средняя тренировка"}
         value={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 
           ? summary.workouts.totalDistance.toFixed(1) 
           : summary?.workouts.avgDuration ?? 0}
@@ -52,6 +54,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
           : METRICS.duration.unit}
         icon={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? <Activity className="w-4 h-4 text-blue-400" /> : <Clock className="w-4 h-4" />}
         onClick={() => navigate('/workouts')}
+        title="Средняя продолжительность одной тренировки"
       />
       <StatCard 
         label="Вес (прогноз 30 дн)"
@@ -60,6 +63,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         unit={METRICS.weight.unit}
         icon={<TrendingUp className="w-4 h-4" />}
         onClick={() => navigate('/analytics')}
+        title="Прогноз вашего веса через 30 дней на основе текущей динамики"
       />
     </div>
   );

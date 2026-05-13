@@ -40,8 +40,11 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
   if (sanitized.length === 0) return null;
 
   const sorted = [...sanitized].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const current = sorted[0].value;
+  const analyticsCurrent = sorted[0].value;
   const starting = sorted[sorted.length - 1].value;
+
+  // Real current weight from non-outlier filtered data (but still statistically valid)
+  const actualCurrentWeight = chronological[chronological.length - 1].value;
 
   // 4. Moving Average (Smoothing)
   const now = new Date();
@@ -53,11 +56,11 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
 
   const avg7 = last7Days.length > 0 
     ? last7Days.reduce((sum, e) => sum + e.value, 0) / last7Days.length 
-    : current;
+    : analyticsCurrent;
   
   const avgPrev7 = prev7Days.length > 0 
     ? prev7Days.reduce((sum, e) => sum + e.value, 0) / prev7Days.length 
-    : current;
+    : (last7Days.length > 0 ? (sorted.find(e => !isAfter(new Date(e.date), subDays(now, 7)))?.value ?? starting) : analyticsCurrent);
 
   const weeklyChange = avg7 - avgPrev7;
   
@@ -66,7 +69,7 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
 
   // 5. Robust Velocity Calculation
   const daysDiff = Math.max(1, differenceInDays(new Date(sorted[0].date), new Date(sorted[sorted.length - 1].date)));
-  const overallVelocity = (current - starting) / daysDiff;
+  const overallVelocity = (analyticsCurrent - starting) / daysDiff;
   
   // Recent trend (last 14 days or last 5 entries)
   const recentThreshold = subDays(new Date(sorted[0].date), 14);
@@ -78,7 +81,7 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
     shortTermVelocity = (recentEntries[0].value - recentEntries[recentEntries.length - 1].value) / stDays;
   }
 
-  // Blended Velocity: stays responsive to new data but anchored to overall progress
+  // Blended Velocity
   let velocity = (overallVelocity * ANALYTICS_CONSTANTS.WEIGHT.TOTAL_WEIGHT) + 
                  (shortTermVelocity * ANALYTICS_CONSTANTS.WEIGHT.RECENT_WEIGHT);
 
@@ -88,16 +91,16 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
     velocity = velocity > 0 ? maxV : -maxV;
   }
 
-  // Forecast for 30 days based on blended velocity
-  const forecastedWeight = current + (velocity * 30);
+  // Forecast uses the actual current weight for projection
+  const forecastedWeight = actualCurrentWeight + (velocity * 30);
 
   return {
-    currentWeight: current,
+    currentWeight: actualCurrentWeight,
     startingWeight: starting,
     averageWeightLast7Days: avg7,
     averageWeightPrev7Days: avgPrev7,
     weeklyChange,
-    totalChange: current - starting,
+    totalChange: actualCurrentWeight - starting,
     isPlateau,
     velocity,
     overallVelocity,

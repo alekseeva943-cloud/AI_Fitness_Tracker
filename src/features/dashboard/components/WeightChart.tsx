@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { WeightEntry, Goal } from '../../../types';
-import { formatDate, formatWeight } from '../../../lib/utils';
+import { formatDate } from '../../../lib/utils';
 import { isAfter, parseISO } from 'date-fns';
 
 interface WeightChartProps {
@@ -12,6 +12,7 @@ interface WeightChartProps {
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const unit = payload[0].payload.unit || 'кг';
     return (
       <div className="bg-zinc-900/90 border border-white/10 p-3 rounded-2xl shadow-2xl backdrop-blur-xl">
         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-2">{label}</p>
@@ -30,7 +31,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
                 <p className="text-sm font-display font-medium" style={{ color: p.color }}>
                   {nameMap[p.name] || p.name}
-                  <span className="font-bold text-white ml-1">{formatWeight(p.value)}</span>
+                  <span className="font-bold text-white ml-1">{p.value} {unit}</span>
                 </p>
               </div>
             );
@@ -44,10 +45,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecastedDate }) => {
   const chartData = useMemo(() => {
-    if (!data.length) return [];
+    if (!data.length && !goal) return [];
+
+    const unit = goal?.unit || 'кг';
 
     // Combine real data and forecast
-    // First, get sorted real measurements
     const realSorted = [...data]
       .filter(e => e.date && !isNaN(new Date(e.date).getTime()))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -56,7 +58,6 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
     const dailyMap = new Map<string, number[]>();
     realSorted.forEach(e => {
       const d = new Date(e.date);
-      // Use full ISO date for map key to ensure correct sorting later
       const dayKey = d.toISOString().split('T')[0];
       const vals = dailyMap.get(dayKey) || [];
       vals.push(e.value);
@@ -71,22 +72,22 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
           displayDate: formatDate(new Date(dateKey)),
           current: Number(avg.toFixed(1)),
           forecast: null as number | null,
-          goal: goal?.targetValue
+          goal: goal?.targetValue,
+          unit
         };
       })
       .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
     if (processed.length === 0 && goal) {
-      // If no data, show start point if available
       processed.push({
         dateKey: goal.startDate.split('T')[0],
         displayDate: formatDate(goal.startDate),
         current: goal.startValue,
         forecast: null as number | null,
-        goal: goal.targetValue
+        goal: goal.targetValue,
+        unit
       });
     } else if (goal && processed.length > 0) {
-      // Ensure start point is included if it's earlier than first measurement
       const startIso = goal.startDate.split('T')[0];
       if (startIso < processed[0].dateKey) {
         processed.unshift({
@@ -94,7 +95,8 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
           displayDate: formatDate(goal.startDate),
           current: goal.startValue,
           forecast: null as number | null,
-          goal: goal.targetValue
+          goal: goal.targetValue,
+          unit
         });
       }
     }
@@ -104,19 +106,12 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
     const lastRealPoint = processed[processed.length - 1];
     if (!lastRealPoint) return processed;
     
-    // Add forecast points
     if (forecastedDate && goal && goal.status === 'ACTIVE') {
       const fDate = new Date(forecastedDate);
       if (!isNaN(fDate.getTime())) {
         const forecastIso = fDate.toISOString().split('T')[0];
         
-        // Only add if forecast is actually in the future or today
         if (forecastIso >= lastRealPoint.dateKey) {
-          // We add two points for the forecast line: 
-          // 1. The starting point of forecast (last real point)
-          // 2. The end point (target)
-          
-          // Mark last point as start of forecast to connect lines
           lastRealPoint.forecast = lastRealPoint.current;
   
           processed.push({
@@ -124,7 +119,8 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
             displayDate: formatDate(forecastedDate),
             current: null as any,
             forecast: goal.targetValue,
-            goal: goal.targetValue
+            goal: goal.targetValue,
+            unit
           });
         }
       }
@@ -140,7 +136,8 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
     if (goal && !isNaN(goal.targetValue)) values.push(goal.targetValue);
     
     if (values.length === 0) return 0;
-    return Math.max(0, Math.min(...values) - 5);
+    const min = Math.min(...values);
+    return Math.max(0, min - (min * 0.05));
   }, [chartData, goal]);
 
   const maxVal = useMemo(() => {
@@ -150,7 +147,8 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
     if (goal && !isNaN(goal.targetValue)) values.push(goal.targetValue);
     
     if (values.length === 0) return 100;
-    return Math.max(...values) + 5;
+    const max = Math.max(...values);
+    return max + (max * 0.05);
   }, [chartData, goal]);
 
   if (!data.length) return (
@@ -198,7 +196,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
               strokeOpacity={0.2}
               label={{ 
                 position: 'insideRight', 
-                value: `ЦЕЛЬ: ${goal.targetValue}`, 
+                value: `ЦЕЛЬ: ${goal.targetValue} ${goal.unit}`, 
                 fill: '#DFFF00', 
                 fontSize: 10, 
                 fontWeight: 'bold',

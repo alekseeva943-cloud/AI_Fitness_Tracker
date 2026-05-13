@@ -123,7 +123,22 @@ export const GoalsView: React.FC = () => {
           }
 
           // Use summary status only for the primary goal
-          const goalTrendStatus = isActive ? summary?.goal.status : 'ON_TRACK';
+          // Correct moving direction logic: 
+          // If losing weight: goal is improving if current weight <= start weight AND current weight >= target weight (moving down)
+          // If gaining weight: goal is improving if current weight >= start weight AND current weight <= target weight (moving up)
+          // WRONG_DIRECTION means we are moving AWAY from the target from the STARTING point.
+          
+          let goalTrendStatus: 'ON_TRACK' | 'WRONG_DIRECTION' = 'ON_TRACK';
+          if (isWeightLoss) {
+            if (currentWeight > goal.startValue + 0.1) goalTrendStatus = 'WRONG_DIRECTION';
+          } else {
+            if (currentWeight < goal.startValue - 0.1) goalTrendStatus = 'WRONG_DIRECTION';
+          }
+
+          // But for active goal, we can use the summary if it's more sophisticated
+          if (isActive && summary) {
+            goalTrendStatus = summary.goal.status === 'WRONG_DIRECTION' ? 'WRONG_DIRECTION' : 'ON_TRACK';
+          }
 
           return (
             <GlassCard 

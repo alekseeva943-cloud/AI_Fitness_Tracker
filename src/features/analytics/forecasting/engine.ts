@@ -38,22 +38,31 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
   if (trend) {
     const remainingValue = Math.abs(target - current);
     
+    // Direction Check
+    const isWeightLoss = goal.type === GoalType.WEIGHT_LOSS;
+    const isWeightGain = goal.type === GoalType.MUSCLE_GAIN || goal.type === GoalType.STRENGTH;
+    
+    // Moving correct direction based on overall progress
+    const isImprovingOverall = isWeightLoss ? (current < initial + 0.1) : (current > initial - 0.1);
+    
     // Status is primarily determined by blended (recent) velocity
-    const isMovingTowardsGoal = (isLoss && trend.velocity < 0) || (isGain && trend.velocity > 0);
+    const isMovingTowardsGoalRecent = (isWeightLoss && trend.velocity < 0) || (isWeightGain && trend.velocity > 0);
     
     // Forecast uses blended velocity if it's the right way, 
     // otherwise fall back to overall velocity if THAT is the right way.
-    // This provides a "recovery" date if current trend is a temporary setback.
     let effectiveVelocity = trend.velocity;
-    const isOverallMovingTowardsGoal = (isLoss && trend.overallVelocity < 0) || (isGain && trend.overallVelocity > 0);
+    const isOverallMovingTowardsGoal = (isWeightLoss && trend.overallVelocity < 0) || (isWeightGain && trend.overallVelocity > 0);
 
-    if (!isMovingTowardsGoal && isOverallMovingTowardsGoal) {
+    if (!isMovingTowardsGoalRecent && isOverallMovingTowardsGoal) {
       effectiveVelocity = trend.overallVelocity;
     }
 
-    const canForecast = (isLoss && effectiveVelocity < 0) || (isGain && effectiveVelocity > 0);
-
-    if (canForecast) {
+    const canForecast = (isWeightLoss && effectiveVelocity < 0) || (isWeightGain && effectiveVelocity > 0);
+    
+    // Final check for status
+    if (!isImprovingOverall) {
+      status = 'WRONG_DIRECTION';
+    } else if (canForecast) {
       const absVelocity = Math.abs(effectiveVelocity);
       
       if (absVelocity > ANALYTICS_CONSTANTS.WEIGHT.MIN_VELOCITY_FOR_FORECAST) {
@@ -79,16 +88,11 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
       estimatedCompletionDate = null;
     }
 
-    // Recent status override if actually in WRONG_DIRECTION even with fallback
-    if (!isMovingTowardsGoal) {
-      status = 'WRONG_DIRECTION';
-    }
-
     return {
       completionPercentage: Math.round(completionPercentage),
       remainingValue: Math.abs(target - current),
       estimatedCompletionDate,
-      isImproving: isMovingTowardsGoal,
+      isImproving: isImprovingOverall && (isMovingTowardsGoalRecent || isOverallMovingTowardsGoal),
       status
     };
   }

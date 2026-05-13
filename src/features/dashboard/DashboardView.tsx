@@ -161,6 +161,7 @@ export const DashboardView: React.FC = () => {
               variant="secondary"
               onClick={() => { setEntryType('workout'); setEntryModalOpen(true); }}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6"
+              title="Добавить новую тренировку в журнал"
             >
               <Plus className="w-4 h-4" />
               {RU.ENTRIES.ADD_WORKOUT}
@@ -168,6 +169,7 @@ export const DashboardView: React.FC = () => {
             <GradientButton 
               onClick={() => { setEntryType('weight'); setEntryModalOpen(true); }}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6"
+              title="Зафиксировать текущий вес"
             >
               <Scale className="w-4 h-4" />
               {RU.ENTRIES.ADD_WEIGHT}
@@ -175,7 +177,7 @@ export const DashboardView: React.FC = () => {
             <button 
               onClick={handleResetData}
               className="p-3 bg-secondary/50 hover:bg-red-500/10 text-muted-foreground hover:text-red-400 rounded-2xl transition-all"
-              title="Сбросить прогресс"
+              title="Полный сброс всех данных"
             >
               <Trash2 className="w-5 h-5" />
             </button>
