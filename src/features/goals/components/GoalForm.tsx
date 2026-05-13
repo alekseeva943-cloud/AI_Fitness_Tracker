@@ -26,6 +26,7 @@ interface GoalFormProps {
 export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCancel }) => {
   const { profile, weightHistory } = useFitnessStore();
   const [selectedType, setSelectedType] = useState<GoalType>(initialData?.type || GoalType.WEIGHT_LOSS);
+  const [workoutTypeFilter, setWorkoutTypeFilter] = useState<string>(initialData?.workoutTypeFilter || '');
   const [title, setTitle] = useState(initialData?.title || '');
   const [showPresets, setShowPresets] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,6 +63,14 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
     return 0;
   };
 
+  const categoryOptions = [
+    { value: 'STRENGTH', label: 'Силовая', icon: '⚡' },
+    { value: 'CARDIO', label: 'Кардио', icon: '❤️' },
+    { value: 'ENDURANCE', label: 'Выносливость', icon: '🏃' },
+    { value: 'FLEXIBILITY', label: 'Йога и растяжка', icon: '🧘' },
+    { value: 'OTHER', label: 'Другое', icon: '✨' },
+  ];
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -71,6 +80,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
     const data: any = {
       title: title,
       type: selectedType,
+      workoutTypeFilter: workoutTypeFilter || undefined,
       targetValue: Number(formData.get('targetValue')),
       deadline: formData.get('deadline') as string,
       motivation: formData.get('motivation') as string,
@@ -264,6 +274,22 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
             className="w-full bg-secondary/40 border border-white/10 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all resize-none text-base font-semibold placeholder:text-muted-foreground/40 h-[68px] flex items-center shadow-inner"
           />
         </div>
+      </div>
+
+      <div className="space-y-4 pt-8 border-t border-white/5">
+        <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
+          <Dumbbell className="w-3.5 h-3.5 text-primary/60" />
+          Связать с тренировками (фильтр)
+        </label>
+        <p className="text-[10px] text-muted-foreground px-1 -mt-2">
+          Выберите группу тренировок, которая будет отображаться в деталях этой цели
+        </p>
+        <FitnessSelect
+          options={[{ value: '', label: 'Все тренировки', icon: '📎' }, ...categoryOptions]}
+          value={workoutTypeFilter}
+          onChange={setWorkoutTypeFilter}
+          selectClassName="h-[68px] rounded-3xl"
+        />
       </div>
 
       <div className="flex gap-4 pt-6">

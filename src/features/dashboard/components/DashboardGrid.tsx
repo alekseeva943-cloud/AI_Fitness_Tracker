@@ -25,7 +25,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         value={formatPercent(summary?.goal.completionPercentage ?? 0)}
         unit="%"
         icon={<Target className="w-4 h-4" />}
-        onClick={() => navigate('/goals')}
+        onClick={() => navigate(activeGoal ? `/goals?id=${activeGoal.id}` : '/goals')}
         title="Прогресс достижения вашей текущей основной цели"
         trend={summary ? { 
           value: formatWeight(Math.abs(summary.weight.totalChange)), 
@@ -63,7 +63,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         value={formatWeight(summary?.weight.forecastedWeight ?? 0).replace(' кг', '')}
         unit={METRICS.weight.unit}
         icon={<TrendingUp className="w-4 h-4" />}
-        onClick={() => navigate('/analytics')}
+        onClick={() => navigate(activeGoal ? `/goals?id=${activeGoal.id}` : '/analytics')}
         title="Прогноз вашего веса через 30 дней на основе текущей динамики"
       />
     </div>

@@ -24,6 +24,7 @@ export interface Goal {
   id: string;
   title: string;
   type: GoalType;
+  workoutTypeFilter?: string; // Optional filter to link specific workout types to this goal
   metricId: string; // The ID from METRICS registry
   targetValue: number;
   currentValue: number;

@@ -311,33 +311,33 @@ export const DashboardView: React.FC = () => {
                   </div>
 
                   <div className="space-y-6">
-                    <GlassCard className="p-6 h-full flex flex-col justify-between border-l-4 border-l-primary relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <GlassCard 
+                      className="p-6 h-full flex flex-col justify-between border-l-4 border-l-primary relative overflow-hidden cursor-pointer hover:bg-primary/5 transition-all group"
+                      onClick={() => navigate(activeGoal ? `/goals?id=${activeGoal.id}` : '/goals')}
+                    >
+                      <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
                         <Sparkles className="w-24 h-24 text-primary" />
                       </div>
                       <div className="relative z-10">
                         <div className="flex justify-between items-start mb-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+                            <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
                               <Target className="w-6 h-6" />
                             </div>
                             <div>
-                              <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Прогресс цели</p>
+                              <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground group-hover:text-primary/60 transition-colors">Прогресс цели</p>
                               <p className="text-3xl font-bold">{formatPercent(summary?.goal.completionPercentage ?? 0)}</p>
                             </div>
                           </div>
-                          <button 
-                            onClick={() => setGoalModalOpen(true)}
-                            className="p-2 hover:bg-white/5 rounded-xl text-muted-foreground hover:text-primary transition-colors"
-                          >
+                          <div className="p-2 hover:bg-white/5 rounded-xl text-muted-foreground group-hover:text-primary transition-colors">
                             <Target className="w-5 h-5" />
-                          </button>
+                          </div>
                         </div>
 
                         {summary?.goal.estimatedCompletionDate ? (
                           <div className="space-y-4">
                             <div className={cn(
-                              "rounded-2xl p-4 backdrop-blur-sm border transition-colors",
+                              "rounded-2xl p-4 backdrop-blur-sm border transition-all group-hover:border-primary/30",
                               summary.goal.status === 'WRONG_DIRECTION' 
                                 ? "bg-red-500/5 border-red-500/20" 
                                 : "bg-secondary/50 border-white/5"
@@ -381,7 +381,7 @@ export const DashboardView: React.FC = () => {
                                 ? "Текущая динамика направлена в обратную сторону. Для прогноза необходимо стабилизировать прогресс."
                                 : "Добавьте больше данных (минимум 3-5 замеров) для активации аналитического прогноза."}
                             </p>
-                            <GradientButton variant="outline" size="sm" onClick={() => setGoalModalOpen(true)} className="w-full">
+                            <GradientButton variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setGoalModalOpen(true); }} className="w-full">
                                Изменить цель
                             </GradientButton>
                           </div>

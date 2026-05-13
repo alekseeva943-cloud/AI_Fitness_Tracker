@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFitnessStore, useGoals, useActiveGoalId } from '../../store/useFitnessStore';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { GoalForm } from './components/GoalForm';
-import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles, Star } from 'lucide-react';
+import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles, Star, Dumbbell, Activity, Zap } from 'lucide-react';
 import { GoalType, Goal } from '../../types';
 import { cn, formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
@@ -14,9 +14,11 @@ import { ModalFooter } from '../../components/ui/ModalFooter';
 
 export const GoalsView: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const goals = useGoals();
   const activeGoalId = useActiveGoalId();
   const weightHistory = useFitnessStore((state) => state.weightHistory);
+  const workouts = useFitnessStore((state) => state.workouts);
   const removeGoal = useFitnessStore((state) => state.removeGoal);
   const addGoal = useFitnessStore((state) => state.addGoal);
   const updateGoal = useFitnessStore((state) => state.updateGoal);
@@ -28,6 +30,18 @@ export const GoalsView: React.FC = () => {
   const [isDetailOpen, setDetailOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+
+  useEffect(() => {
+    const goalId = searchParams.get('id');
+    if (goalId && goals.length > 0) {
+      const idToFind = goalId === 'active' ? activeGoalId : goalId;
+      const goal = goals.find(g => g.id === idToFind);
+      if (goal) {
+        setSelectedGoal(goal);
+        setDetailOpen(true);
+      }
+    }
+  }, [searchParams, goals, activeGoalId]);
 
   const handleCreateGoal = (data: any) => {
     addGoal({
@@ -366,6 +380,67 @@ export const GoalsView: React.FC = () => {
                  Путь от {selectedGoal.startValue} кг до {selectedGoal.targetValue} кг
                </p>
             </div>
+
+            {(() => {
+              const categoryLabels: Record<string, string> = {
+                'STRENGTH': 'Силовая',
+                'CARDIO': 'Кардио',
+                'ENDURANCE': 'Выносливость',
+                'FLEXIBILITY': 'Йога и растяжка',
+                'OTHER': 'Другое'
+              };
+
+              const filteredWorkouts = workouts.filter(w => {
+                if (!selectedGoal.workoutTypeFilter) return true; // Show all if no filter
+                return w.category === selectedGoal.workoutTypeFilter;
+              }).slice(0, 5);
+
+              return (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center px-1">
+                    <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                       <Dumbbell className="w-3 h-3 text-primary" />
+                       {selectedGoal.workoutTypeFilter ? `Тренировки: ${categoryLabels[selectedGoal.workoutTypeFilter]}` : 'Все тренировки'}
+                    </h4>
+                  </div>
+                  <div className="space-y-3">
+                    {filteredWorkouts.map(workout => (
+                      <div 
+                        key={workout.id} 
+                        className="flex justify-between items-center p-4 bg-secondary/30 rounded-2xl border border-white/5 group hover:bg-white/5 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                           <div className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                            workout.category === 'STRENGTH' ? "bg-orange-500/10 text-orange-400" :
+                            workout.category === 'CARDIO' ? "bg-blue-500/10 text-blue-400" :
+                            "bg-primary/20 text-primary"
+                          )}>
+                            {workout.category === 'STRENGTH' ? <Zap className="w-5 h-5" /> :
+                             workout.category === 'CARDIO' ? <Activity className="w-5 h-5" /> :
+                             <Dumbbell className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold">{workout.type}</p>
+                            <p className="text-[9px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-primary">{workout.caloriesBurned || 0}</p>
+                          <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-tighter">ККАЛ</p>
+                        </div>
+                      </div>
+                    ))}
+                    {filteredWorkouts.length === 0 && (
+                      <div className="py-8 text-center bg-secondary/10 rounded-2xl border border-dashed border-white/5 opacity-50">
+                        <Dumbbell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Нет тренировок в этой категории</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {summary?.goal.estimatedCompletionDate && selectedGoal.status === 'ACTIVE' && (
                <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-3xl border border-primary/20 flex items-center justify-between">
