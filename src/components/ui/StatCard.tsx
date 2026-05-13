@@ -28,28 +28,30 @@ export const StatCard: React.FC<StatCardProps> = ({
     <GlassCard 
       onClick={onClick}
       className={cn(
-        "p-7 flex flex-col gap-1 group",
+        "p-6 flex flex-col gap-1 group relative overflow-hidden",
         className
       )}
     >
-      <div className="flex justify-between items-start text-muted-foreground/60 mb-4">
-        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+      <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-500" />
+      
+      <div className="flex justify-between items-start text-muted-foreground/40 mb-3">
+        <span className="text-[10px] font-bold uppercase tracking-[0.25em] group-hover:text-muted-foreground transition-colors">{label}</span>
         {icon && (
-          <div className="text-muted-foreground group-hover:text-primary transition-colors duration-500">
+          <div className="text-muted-foreground/40 group-hover:text-primary transition-all duration-500 group-hover:scale-110">
             {icon}
           </div>
         )}
       </div>
       
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-3xl font-display font-semibold tracking-tighter">{value}</span>
-        {unit && <span className="text-sm text-muted-foreground font-medium lowercase">{unit}</span>}
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-display font-medium tracking-tight group-hover:scale-[1.02] origin-left transition-transform duration-500">{value}</span>
+        {unit && <span className="text-xs text-muted-foreground/60 font-bold uppercase tracking-widest">{unit}</span>}
       </div>
 
       {trend && (
         <div className={cn(
-          "text-[10px] font-bold mt-4 flex items-center gap-1 px-2 py-1 rounded-lg w-fit",
-          trend.isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+          "text-[10px] font-bold mt-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full w-fit backdrop-blur-sm border transition-all duration-500",
+          trend.isPositive ? "bg-primary/10 text-primary border-primary/10" : "bg-red-500/10 text-red-400 border-red-500/10"
         )}>
           {trend.isPositive ? "+" : ""}{trend.value}
         </div>

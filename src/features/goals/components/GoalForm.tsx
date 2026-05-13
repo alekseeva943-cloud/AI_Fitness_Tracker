@@ -59,72 +59,79 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
       }}
       className="space-y-6"
     >
-      <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Название цели</label>
-        <input 
-          name="title" 
-          defaultValue={initialData?.title}
-          required
-          placeholder="Напр: Сбросить 5 кг"
-          className={`w-full bg-secondary/80 border ${errors.title ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-lg backdrop-blur-sm`}
-        />
-        {errors.title && <p className="text-[10px] text-red-400 font-medium px-1">{errors.title}</p>}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-4">
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Тип</label>
-          <div className="relative group">
-            <select 
-              name="type" 
-              defaultValue={selectedType} 
-              className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all appearance-none cursor-pointer text-sm font-medium pr-10 shadow-lg backdrop-blur-sm"
-            >
-              <option value={GoalType.WEIGHT_LOSS}>📉 {RU.GOALS.TYPES.WEIGHT_LOSS}</option>
-              <option value={GoalType.MUSCLE_GAIN}>💪 {RU.GOALS.TYPES.MUSCLE_GAIN}</option>
-              <option value={GoalType.STRENGTH}>⚡ {RU.GOALS.TYPES.STRENGTH}</option>
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-hover:text-primary transition-colors">
-              <ChevronDown className="w-4 h-4" />
+          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Твоя главная цель</label>
+          <input 
+            name="title" 
+            defaultValue={initialData?.title}
+            required
+            placeholder="Напр: Сбросить 5 кг к лету"
+            className={`w-full bg-secondary/40 border ${errors.title ? 'border-red-500/50' : 'border-white/5'} rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium shadow-inner placeholder:text-muted-foreground/20`}
+          />
+          {errors.title && <p className="text-[10px] text-red-400 font-medium px-2">{errors.title}</p>}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 text-center block">Направление</label>
+            <div className="relative group">
+              <select 
+                name="type" 
+                defaultValue={selectedType} 
+                className="w-full bg-secondary/40 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer text-sm font-bold shadow-lg"
+              >
+                <option value={GoalType.WEIGHT_LOSS}>📉 Похудение</option>
+                <option value={GoalType.MUSCLE_GAIN}>💪 Набор массы</option>
+                <option value={GoalType.STRENGTH}>⚡ Сила</option>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-hover:text-primary transition-colors">
+                <ChevronDown className="w-4 h-4" />
+              </div>
             </div>
           </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 text-center block">Цель ({metric.unit})</label>
+            <div className="relative">
+              <input 
+                name="targetValue" 
+                type="number" 
+                step={metric.id === 'workingWeight' ? '0.5' : '1'}
+                inputMode="decimal"
+                defaultValue={initialData?.targetValue}
+                required
+                placeholder={metric.placeholder}
+                className={`w-full bg-secondary/40 border ${errors.targetValue ? 'border-red-500/50' : 'border-white/10'} rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all text-base font-bold shadow-lg text-center`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground/30 uppercase">{metric.unit}</span>
+            </div>
+            {errors.targetValue && <p className="text-[10px] text-red-400 font-medium px-2">{errors.targetValue}</p>}
+          </div>
         </div>
+      </div>
+
+      <div className="space-y-4 pt-4 border-t border-white/5">
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Цель ({metric.unit})</label>
+          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Когда планируешь достичь?</label>
           <input 
-            name="targetValue" 
-            type="number" 
-            step={metric.id === 'workingWeight' ? '0.5' : '1'}
-            inputMode="decimal"
-            defaultValue={initialData?.targetValue}
+            name="deadline" 
+            type="date"
+            defaultValue={initialData?.deadline?.split('T')[0]}
             required
-            placeholder={metric.placeholder}
-            className={`w-full bg-secondary/80 border ${errors.targetValue ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-bold shadow-lg backdrop-blur-sm`}
+            className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all text-base font-medium"
           />
-          {errors.targetValue && <p className="text-[10px] text-red-400 font-medium px-1">{errors.targetValue}</p>}
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Срок достижения</label>
-        <input 
-          name="deadline" 
-          type="date"
-          defaultValue={initialData?.deadline?.split('T')[0]}
-          required
-          className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-lg backdrop-blur-sm"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Мотивация (зачем вам это?)</label>
-        <textarea 
-          name="motivation" 
-          defaultValue={initialData?.motivation}
-          placeholder="Напр: Хочу вернуться в форму к отпуску..."
-          rows={3}
-          className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all resize-none text-sm font-medium shadow-lg backdrop-blur-sm"
-        />
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Твоя мотивация</label>
+          <textarea 
+            name="motivation" 
+            defaultValue={initialData?.motivation}
+            placeholder="Зачем тебе это? (Напр: Хочу быть здоровым, влезть в старые джинсы...)"
+            rows={3}
+            className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all resize-none text-base font-medium placeholder:text-muted-foreground/20 leading-relaxed"
+          />
+        </div>
       </div>
 
       <button 
