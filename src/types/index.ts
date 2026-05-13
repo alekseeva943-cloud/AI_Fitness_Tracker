@@ -79,6 +79,7 @@ export interface WeightEntry {
   value: number;
   unit: string;
   notes?: string;
+  metrics?: Record<string, number>; // Additional metrics like bodyFat, muscleMass
 }
 
 export interface AIRecommendation {

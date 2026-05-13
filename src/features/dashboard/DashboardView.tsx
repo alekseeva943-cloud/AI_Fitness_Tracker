@@ -243,14 +243,28 @@ export const DashboardView: React.FC = () => {
                         {activeGoal.title || RU.DASHBOARD.WEIGHT_TREND}
                         <ChevronRight className="w-4 h-4 opacity-0 group-hover/title:opacity-100 transition-all -ml-1" />
                       </h2>
-                      <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest text-primary/40 mt-2">
-                        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                           <span className="opacity-50">СТАРТ:</span>
-                           <span className="text-primary">{formatWeight(activeGoal.startValue || weightHistory[weightHistory.length - 1]?.value || 0)}</span>
+                      <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest text-primary/40 mt-3 pt-3 border-t border-white/5">
+                        <div className="flex flex-col gap-0.5">
+                           <span className="opacity-40 text-[8px]">Старт</span>
+                           <span className="text-foreground text-sm font-bold">
+                              {(() => {
+                                 const firstMeasurement = weightHistory.find(h => h.value > 0);
+                                 return activeGoal.startValue || firstMeasurement?.value || 0;
+                              })()} {activeGoal.unit}
+                           </span>
                         </div>
-                        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                           <span className="opacity-50">ЦЕЛЬ:</span>
-                           <span className="text-primary">{formatWeight(activeGoal.targetValue)}</span>
+                        <div className="flex flex-col gap-0.5">
+                           <span className="text-primary text-[8px]">Текущий</span>
+                           <span className="text-primary text-sm font-bold">
+                              {(() => {
+                                const latest = [...weightHistory].reverse().find(h => h.value > 0);
+                                return latest?.value || activeGoal.currentValue || activeGoal.startValue || 0;
+                              })()} {activeGoal.unit}
+                           </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                           <span className="opacity-40 text-[8px]">Цель</span>
+                           <span className="text-foreground text-sm font-bold">{activeGoal.targetValue} {activeGoal.unit}</span>
                         </div>
                       </div>
                       {activeGoal.baselineMeasurements && Object.keys(activeGoal.baselineMeasurements).length > 0 && (
@@ -313,20 +327,9 @@ export const DashboardView: React.FC = () => {
                         const isImproving = isWeightLoss 
                           ? summary.weight.weeklyChange < 0 
                           : summary.weight.weeklyChange > 0;
-                        
-                        const weeklyChange = summary.weight.weeklyChange;
-                        const tempoText = weeklyChange === 0 ? "Стабильно" : 
-                                         `${weeklyChange > 0 ? '+' : ''}${weeklyChange.toFixed(1)} кг/нед`;
 
                         return (
                           <div className="flex items-center gap-2">
-                            <div className="hidden lg:flex flex-col items-end mr-2">
-                                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Темп</span>
-                                <span className={cn(
-                                    "text-xs font-black",
-                                    isImproving ? "text-green-400" : "text-red-400"
-                                )}>{tempoText}</span>
-                            </div>
                             <button 
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -336,7 +339,7 @@ export const DashboardView: React.FC = () => {
                                     openInsight(type);
                                 }}
                                 className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 border rounded-full hidden md:flex hover:scale-105 active:scale-95 transition-all cursor-help shadow-lg",
+                                "flex items-center gap-1.5 px-3 py-1.5 border rounded-full hover:scale-105 active:scale-95 transition-all cursor-help shadow-lg",
                                 summary.weight.isPlateau 
                                   ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400 shadow-yellow-500/5" 
                                   : isImproving 
@@ -365,7 +368,6 @@ export const DashboardView: React.FC = () => {
                       metricId={chartMetric}
                       forecastedDate={activeGoal && chartMetric === activeGoal.metricId ? summary?.goal.estimatedCompletionDate : null}
                       unit={METRICS[chartMetric]?.unit}
-                      color={chartMetric === 'weight' ? THEME.colors.primary : chartMetric === 'caloriesBurned' ? THEME.colors.accent : THEME.colors.duration}
                       onPointClick={(type, id, original) => {
                         if (type === 'workout') {
                           openWorkoutDetail(original);

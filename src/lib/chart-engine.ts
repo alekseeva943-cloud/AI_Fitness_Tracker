@@ -60,15 +60,26 @@ export const buildChartTimeline = (
   // 1. Collect all raw measurement points for this metric
   const dailyMeasurements = new Map<string, { avg: number, entries: WeightEntry[] }>();
   
-  if (metricId === 'weight') {
-    measurements.forEach(m => {
-      if (!isValidDate(m.date)) return;
-      const dayKey = new Date(m.date).toISOString().split('T')[0];
-      const existing = dailyMeasurements.get(dayKey) || { avg: 0, entries: [] };
-      existing.entries.push(m);
+  measurements.forEach(m => {
+    if (!isValidDate(m.date)) return;
+    const dayKey = new Date(m.date).toISOString().split('T')[0];
+    const existing = dailyMeasurements.get(dayKey) || { avg: 0, entries: [] };
+    
+    // If it's weight, use .value, otherwise it might be in additional metrics
+    let val = m.value;
+    if (metricId !== 'weight' && m.metrics) {
+      val = m.metrics[metricId] || 0;
+    }
+    
+    if (val > 0) {
+      existing.entries.push({ ...m, value: val });
       dailyMeasurements.set(dayKey, existing);
-    });
-  }
+    }
+  });
+
+  dailyMeasurements.forEach((val) => {
+    val.avg = val.entries.reduce((s, v) => s + v.value, 0) / val.entries.length;
+  });
 
   // 2. Identify relevant workouts for this metric
   const dailyWorkouts = new Map<string, WorkoutEntry[]>();
@@ -83,20 +94,13 @@ export const buildChartTimeline = (
     list.push(w);
     dailyWorkouts.set(dayKey, list);
 
-    // If it's a workout-based metric (not weight)
-    if (metricId !== 'weight') {
-      const val = getMetricValueFromWorkout(w, metricId);
-      if (val > 0) {
-        const vals = workoutPoints.get(dayKey) || [];
-        vals.push(val);
-        workoutPoints.set(dayKey, vals);
-      }
+    // If it's a workout-based metric
+    const val = getMetricValueFromWorkout(w, metricId);
+    if (val > 0) {
+      const vals = workoutPoints.get(dayKey) || [];
+      vals.push(val);
+      workoutPoints.set(dayKey, vals);
     }
-  });
-
-  // Calculate averages for measurements
-  dailyMeasurements.forEach((val) => {
-    val.avg = val.entries.reduce((s, v) => s + v.value, 0) / val.entries.length;
   });
 
   // 3. Build a combined set of dates
@@ -115,7 +119,7 @@ export const buildChartTimeline = (
       const wPoints = workoutPoints.get(dateKey);
       
       let currentVal: number | null = null;
-      if (metricId === 'weight' && measurement) {
+      if (measurement) {
         currentVal = measurement.avg;
       } else if (wPoints) {
         currentVal = wPoints.reduce((s, v) => s + v, 0) / wPoints.length;
@@ -157,21 +161,26 @@ export const buildChartTimeline = (
         measurementEntries: [],
         isForecast: false
       });
-    } else if (startIso < timeline[0].dateKey) {
-      timeline.unshift({
-        dateKey: startIso,
-        displayDate: formatDate(goal.startDate),
-        current: hasValidStartValue ? goal.startValue : timeline[0].current,
-        forecast: null,
-        goal: goal.targetValue,
-        ideal: null,
-        unit,
-        workout: dailyWorkouts.has(startIso),
-        isReal: hasValidStartValue,
-        workoutsAtDate: dailyWorkouts.get(startIso) || [],
-        measurementEntries: [],
-        isForecast: false
-      });
+    } else if (!timeline.some(p => p.dateKey === startIso)) {
+        const point = {
+          dateKey: startIso,
+          displayDate: formatDate(goal.startDate),
+          current: hasValidStartValue ? goal.startValue : timeline[0].current,
+          forecast: null,
+          goal: goal.targetValue,
+          ideal: null,
+          unit,
+          workout: dailyWorkouts.has(startIso),
+          isReal: hasValidStartValue,
+          workoutsAtDate: dailyWorkouts.get(startIso) || [],
+          measurementEntries: [],
+          isForecast: false
+        };
+        if (startIso < timeline[0].dateKey) timeline.unshift(point);
+        else {
+          timeline.push(point);
+          timeline.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+        }
     }
   }
 
@@ -266,8 +275,9 @@ export const buildChartTimeline = (
     const startVal = goal.startValue || timeline[0].current || 0;
     const targetVal = goal.targetValue;
     
-    // Find absolute end date in timeline
-    const endDate = new Date(timeline[timeline.length - 1].dateKey).getTime();
+    // End date is either forecast date or goal deadline
+    const finalDateStr = forecastedDate || goal.deadline;
+    const endDate = isValidDate(finalDateStr) ? new Date(finalDateStr).getTime() : new Date(timeline[timeline.length - 1].dateKey).getTime();
     
     if (endDate > startDate) {
       timeline.forEach(p => {
