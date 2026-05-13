@@ -207,12 +207,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
           <div className="pt-2">
             <div className="space-y-2 mb-6">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Дата тренировки</label>
-              <input 
-                name="date" 
-                type="date" 
-                defaultValue={initialData?.date ? initialData.date.slice(0, 10) : new Date().toISOString().slice(0, 10)} 
-                className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
-              />
+              <div className="relative">
+                <input 
+                  name="date" 
+                  type="date" 
+                  defaultValue={initialData?.date ? initialData.date.slice(0, 10) : new Date().toISOString().slice(0, 10)} 
+                  className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium appearance-none" 
+                />
+                <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
+              </div>
             </div>
 
             <button 
@@ -417,12 +420,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
 
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 text-center block">Дата замера</label>
-            <input 
-              name="date" 
-              type="date" 
-              defaultValue={initialData?.date ? initialData.date.slice(0, 10) : new Date().toISOString().slice(0, 10)} 
-              className="w-full bg-secondary/40 border border-white/5 rounded-3xl px-6 py-4 outline-none focus:border-primary/50 transition-all text-base font-medium text-center" 
-            />
+            <div className="relative">
+              <input 
+                name="date" 
+                type="date" 
+                defaultValue={initialData?.date ? initialData.date.slice(0, 10) : new Date().toISOString().slice(0, 10)} 
+                className="w-full bg-secondary/40 border border-white/5 rounded-3xl px-6 py-4 outline-none focus:border-primary/50 transition-all text-base font-medium appearance-none" 
+              />
+              <Calendar className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
+            </div>
           </div>
         </div>
       )}

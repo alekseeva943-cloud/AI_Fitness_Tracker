@@ -6,6 +6,7 @@ import { GradientButton } from "../../components/ui/GradientButton";
 import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles } from "lucide-react";
 import { useFitnessStore, useGoals, useActiveGoalId, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { METRICS } from "../../constants/metrics";
+import { THEME } from "../../constants/theme";
 import { useNavigate } from "react-router-dom";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
 import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
@@ -324,7 +325,7 @@ export const DashboardView: React.FC = () => {
                           forecastedDate={chartMetric === 'weight' ? summary?.goal.estimatedCompletionDate : null}
                           workouts={workouts}
                           unit={METRICS[chartMetric]?.unit}
-                          color={chartMetric === 'weight' ? '#DFFF00' : chartMetric === 'caloriesBurned' ? '#fb923c' : '#60a5fa'}
+                          color={chartMetric === 'weight' ? THEME.colors.primary : chartMetric === 'caloriesBurned' ? THEME.colors.accent : THEME.colors.duration}
                         />
                       ) : (
                         <div className="h-full flex flex-col items-center justify-center opacity-40 space-y-4">

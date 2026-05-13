@@ -31,24 +31,26 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   const [showPresets, setShowPresets] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [measurementBaselines, setMeasurementBaselines] = useState<Record<string, number>>(initialData?.baselineMeasurements || {});
+  const [showAllBodyMetrics, setShowAllBodyMetrics] = useState(false);
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(initialData?.metricId || (selectedType === GoalType.STRENGTH ? 'workingWeight' : selectedType === GoalType.ENDURANCE ? 'distance' : 'weight'));
 
   const metric = METRICS[selectedMetricId] || METRICS.weight;
 
   const bodyMetrics = Object.values(METRICS).filter(m => m.category === 'BODY' && m.id !== 'weight');
+  const visibleBodyMetrics = showAllBodyMetrics ? bodyMetrics : bodyMetrics.slice(0, 4);
 
   const handleMeasurementChange = (id: string, value: string) => {
     setMeasurementBaselines(prev => ({
       ...prev,
-      [id]: Number(value)
+      [id]: value === '' ? 0 : Number(value)
     }));
   };
 
   const getBaselineValue = () => {
     if (selectedMetricId === 'weight') return weightHistory[0]?.value || profile?.startingWeight || 0;
-    // For other metrics, we can look at the average of recent workouts
-    return 0; // Default or complex lookup
+    // For other metrics, we can look at the latest entries or profile
+    return 0;
   };
 
   const categoryOptions = [
@@ -149,7 +151,33 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
               )}
             />
           </div>
-          {/* ... (Presets section remains contextually same) */}
+          {/* ... (Presets section omitted for brevity but should be kept in real implementation) */}
+          <AnimatePresence>
+            {showPresets && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 right-0 z-50 bg-popover border border-white/10 rounded-3xl mt-2 p-2 shadow-2xl backdrop-blur-3xl overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-1"
+              >
+                {GOAL_PRESETS.map((preset) => (
+                  <button
+                    key={preset.title}
+                    type="button"
+                    onClick={() => {
+                        setTitle(preset.title);
+                        handleTypeChange(preset.type);
+                        setShowPresets(false);
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-2xl transition-colors text-left"
+                  >
+                    <span className="text-xl">{preset.icon}</span>
+                    <span className="text-sm font-medium">{preset.title}</span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Direction & Metric Selection */}
@@ -185,7 +213,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
               <input 
                 name="targetValue" 
                 type="number" 
-                step={metric.unit === 'кг' ? '0.5' : '1'}
+                step={metric.unit === 'кг' ? '0.5' : (metric.unit === 'см' ? '0.1' : '1')}
                 inputMode="decimal"
                 defaultValue={initialData?.targetValue}
                 required
@@ -205,26 +233,36 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
             <Ruler className="w-4 h-4 text-primary" />
             <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-foreground">Замеры на старте</h3>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">Укажите текущие параметры для более точного будущего анализа</p>
+          <p className="text-xs text-muted-foreground mb-4">Укажите текущие параметры для создания точки отсчета и AI-анализа</p>
           
           <div className="grid grid-cols-2 gap-4">
-            {bodyMetrics.map(bm => (
+            {visibleBodyMetrics.map(bm => (
               <div key={bm.id} className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">{bm.label}</label>
-                <div className="relative">
+                <div className="relative group">
                   <input 
                     type="number"
                     step="0.1"
                     value={measurementBaselines[bm.id] || ''}
                     onChange={(e) => handleMeasurementChange(bm.id, e.target.value)}
                     placeholder={bm.placeholder}
-                    className="w-full bg-black/20 border border-white/5 rounded-2xl px-4 py-3 outline-none focus:border-primary/30 transition-all text-sm font-bold pr-10"
+                    className="w-full bg-black/20 border border-white/5 rounded-2xl px-4 py-3 outline-none focus:border-primary/30 transition-all text-sm font-bold pr-10 hover:border-white/10"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground">{bm.unit}</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground transition-colors group-focus-within:text-primary">{bm.unit}</span>
                 </div>
               </div>
             ))}
           </div>
+
+          {!showAllBodyMetrics && bodyMetrics.length > 4 && (
+            <button 
+              type="button"
+              onClick={() => setShowAllBodyMetrics(true)}
+              className="w-full py-3 mt-2 text-[9px] font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors border border-dashed border-primary/20 rounded-xl"
+            >
+              + Добавить еще метрики (плечи, бицепс, талия...)
+            </button>
+          )}
         </div>
 
         {/* Info Box about Baseline */}
@@ -250,13 +288,16 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
               <Calendar className="w-3.5 h-3.5" />
               Желаемая дата
             </label>
-            <input 
-              name="deadline" 
-              type="date"
-              defaultValue={initialData?.deadline?.split('T')[0]}
-              required
-              className="w-full bg-secondary/40 border border-white/10 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all text-lg font-black text-center h-[68px]"
-            />
+            <div className="relative">
+              <input 
+                name="deadline" 
+                type="date"
+                defaultValue={initialData?.deadline?.split('T')[0]}
+                required
+                className="w-full bg-secondary/40 border border-white/10 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all text-lg font-black h-[68px] appearance-none"
+              />
+              <Calendar className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-primary pointer-events-none" />
+            </div>
           </div>
 
           <div className="space-y-3">

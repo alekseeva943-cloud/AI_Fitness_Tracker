@@ -52,29 +52,45 @@ input[type=number] {
 
 @layer base {
   :root {
-    --bg: #fafafa;
-    --fg: #09090b;
+    --bg: #f0f2f5; /* Softer, less "white" background for better contrast with primary yellow */
+    --fg: #0f172a;
     --card-bg: #ffffff;
-    --secondary-bg: #f4f4f5;
-    --muted-bg: #e4e4e7;
-    --border-color: #e4e4e7;
+    --secondary-bg: #e4e7eb;
+    --muted-bg: #d1d5db;
+    --border-color: #d1d5db;
   }
 
   .dark {
-    --bg: #09090b;
-    --fg: #fafafa;
-    --card-bg: #09090b;
-    --secondary-bg: #27272a;
-    --muted-bg: #27272a;
-    --border-color: #27272a;
+    --bg: #020617; /* Deeper midnight blue/black for better neon contrast */
+    --fg: #f8fafc;
+    --card-bg: #0f172a;
+    --secondary-bg: #1e293b;
+    --muted-bg: #1e293b;
+    --border-color: #334155;
   }
 }
 
+/* Calendar icon visibility fix */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.5); /* Make it visible in light mode */
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* Make it white in dark mode */
+}
+
 .glass {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.8); /* More solid white background in light mode */
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: var(--shadow-premium);
 }
 

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { AreaChart, Area, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { WeightEntry, Goal } from '../../../types';
 import { formatDate } from '../../../lib/utils';
+import { THEME } from '../../../constants/theme';
 import { motion } from 'motion/react';
 
 interface DataPoint {
@@ -66,7 +67,7 @@ const isValidDate = (d: any) => {
   return date instanceof Date && !isNaN(date.getTime());
 };
 
-export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecastedDate, unit: propUnit, color = "#DFFF00", workouts = [] }) => {
+export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecastedDate, unit: propUnit, color = THEME.colors.primary, workouts = [] }) => {
   const chartData = useMemo(() => {
     if (!data.length && !goal) return [];
 
@@ -101,7 +102,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           forecast: null as number | null,
           goal: goal?.targetValue,
           unit,
-          workout: workoutMap.has(dateKey)
+          workout: workoutMap.has(dateKey),
+          isForecast: false
         };
       })
       .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
@@ -115,7 +117,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
         forecast: null as number | null,
         goal: goal.targetValue,
         unit,
-        workout: workoutMap.has(startIso)
+        workout: workoutMap.has(startIso),
+        isForecast: false
       });
     } else if (goal && processed.length > 0 && isValidDate(goal.startDate)) {
       const startIso = new Date(goal.startDate).toISOString().split('T')[0];
@@ -127,7 +130,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           forecast: null as number | null,
           goal: goal.targetValue,
           unit,
-          workout: workoutMap.has(startIso)
+          workout: workoutMap.has(startIso),
+          isForecast: false
         });
       }
     }
@@ -142,6 +146,23 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
       const forecastIso = fDate.toISOString().split('T')[0];
       
       if (forecastIso >= lastRealPoint.dateKey) {
+          // Add intermediate forecast point if the gap is large (> 30 days)
+          const daysGap = Math.abs(new Date(forecastIso).getTime() - new Date(lastRealPoint.dateKey).getTime()) / (1000 * 60 * 60 * 24);
+          
+          if (daysGap > 30) {
+            const midDate = new Date(new Date(lastRealPoint.dateKey).getTime() + (new Date(forecastIso).getTime() - new Date(lastRealPoint.dateKey).getTime()) / 2);
+            processed.push({
+              dateKey: midDate.toISOString().split('T')[0],
+              displayDate: formatDate(midDate),
+              current: null as any,
+              forecast: (lastRealPoint.current + goal.targetValue) / 2,
+              goal: goal.targetValue,
+              unit,
+              workout: false,
+              isForecast: true
+            });
+          }
+
           lastRealPoint.forecast = lastRealPoint.current;
   
           processed.push({
@@ -151,7 +172,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             forecast: goal.targetValue,
             goal: goal.targetValue,
             unit,
-            workout: false
+            workout: false,
+            isForecast: true
           });
         }
       }
@@ -164,10 +186,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     const values: number[] = chartData.map(d => d.current).filter(v => v !== null && !isNaN(v));
     chartData.forEach(d => { if (d.forecast !== null && !isNaN(d.forecast)) values.push(d.forecast); });
     if (goal && !isNaN(goal.targetValue)) values.push(goal.targetValue);
+    if (goal && !isNaN(goal.startValue)) values.push(goal.startValue);
     
     if (values.length === 0) return 0;
     const min = Math.min(...values);
-    return Math.max(0, min - (min * 0.05));
+    return Math.max(0, min - (min * 0.02));
   }, [chartData, goal]);
 
   const maxVal = useMemo(() => {
@@ -175,44 +198,53 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     const values: number[] = chartData.map(d => d.current).filter(v => v !== null && !isNaN(v));
     chartData.forEach(d => { if (d.forecast !== null && !isNaN(d.forecast)) values.push(d.forecast); });
     if (goal && !isNaN(goal.targetValue)) values.push(goal.targetValue);
+    if (goal && !isNaN(goal.startValue)) values.push(goal.startValue);
     
     if (values.length === 0) return 100;
     const max = Math.max(...values);
-    return max + (max * 0.05);
+    return max + (max * 0.02);
   }, [chartData, goal]);
 
   if (!data.length && !goal) return (
-    <div className="w-full h-full min-h-[200px] flex items-center justify-center text-muted-foreground/40 italic text-xs">
-       Нет данных
+    <div className="w-full h-full min-h-[260px] flex items-center justify-center text-muted-foreground/40 italic text-xs">
+       Нет данных для отображения графика
     </div>
   );
 
+  const startPoint = chartData[0];
+  const lastPoint = chartData[chartData.length - 1];
+
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full h-full min-h-[200px] relative"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="w-full h-full min-h-[260px] relative"
     >
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+        <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
           <defs>
             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.4}/>
+              <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
               <stop offset="95%" stopColor={color} stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.1}/>
-              <stop offset="95%" stopColor={color} stopOpacity={0}/>
+              <stop offset="5%" stopColor={color} stopOpacity={0.05}/>
+              <stop offset="95%" stopColor={color} stopOpacity={0.01}/>
             </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff03" vertical={false} />
           <XAxis 
             dataKey="displayDate" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fill: '#71717a', fontSize: 10, fontWeight: 600 }}
+            tick={{ fill: '#71717a', fontSize: 9, fontWeight: 700 }}
             dy={15}
+            minTickGap={30}
           />
           <YAxis 
             hide 
@@ -220,41 +252,24 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           />
           <Tooltip 
             content={<CustomTooltip />}
-            cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+            cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.3 }}
           />
 
           {goal && (
             <ReferenceLine 
               y={goal.targetValue} 
               stroke={color} 
-              strokeDasharray="8 8" 
-              strokeOpacity={0.2}
+              strokeDasharray="10 5" 
+              strokeOpacity={0.15}
               label={{ 
-                position: 'insideRight', 
-                value: `ЦЕЛЬ: ${goal.targetValue} ${propUnit || goal.unit}`, 
+                position: 'insideTopRight', 
+                value: `К ЦЕЛИ: ${goal.targetValue}`, 
                 fill: color, 
-                fontSize: 10, 
-                fontWeight: 'bold',
-                opacity: 0.5,
-                dy: -10
-              }} 
-            />
-          )}
-
-          {goal && (
-            <ReferenceLine 
-              y={goal.startValue} 
-              stroke="#71717a" 
-              strokeDasharray="4 4" 
-              strokeOpacity={0.3}
-              label={{ 
-                position: 'insideLeft', 
-                value: `СТАРТ: ${goal.startValue} ${propUnit || goal.unit}`, 
-                fill: '#71717a', 
                 fontSize: 9, 
-                fontWeight: 'bold',
-                opacity: 0.5,
-                dy: 10
+                fontWeight: 800,
+                opacity: 0.4,
+                tracking: '0.1em',
+                dy: -10
               }} 
             />
           )}
@@ -264,23 +279,37 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             type="monotone" 
             dataKey="current" 
             stroke={color} 
-            strokeWidth={4}
+            strokeWidth={3}
             fillOpacity={1} 
             fill="url(#colorValue)" 
-            animationDuration={1500}
+            animationDuration={2000}
+            style={{ filter: 'url(#glow)' }}
             dot={(props: any) => {
-              const { cx, cy, payload } = props;
+              const { cx, cy, payload, index } = props;
+              const isStart = index === 0;
+              
               if (payload.workout) {
                 return (
                   <g key={`dot-${payload.dateKey}`}>
-                    <circle cx={cx} cy={cy} r={6} fill={color} stroke="#000" strokeWidth={2} />
-                    <circle cx={cx} cy={cy} r={8} fill={color} fillOpacity={0.2} className="animate-pulse" />
+                    <circle cx={cx} cy={cy} r={5} fill={color} stroke="#000" strokeWidth={1.5} />
+                    <circle cx={cx} cy={cy} r={10} fill={color} fillOpacity={0.1} className="animate-pulse" />
                   </g>
                 );
               }
-              return <circle key={`dot-${payload.dateKey}`} cx={cx} cy={cy} r={3} fill={color} stroke="#000" strokeWidth={1} />;
+
+              if (isStart) {
+                return (
+                  <g key={`start-dot`}>
+                    <circle cx={cx} cy={cy} r={6} fill="#fff" stroke={color} strokeWidth={2} />
+                    <circle cx={cx} cy={cy} r={12} fill={color} fillOpacity={0.15} className="animate-pulse" />
+                    <text x={cx} y={cy - 15} textAnchor="middle" fill="#71717a" fontSize="8" fontWeight="bold">СТАРТ</text>
+                  </g>
+                );
+              }
+              
+              return null;
             }}
-            activeDot={{ r: 8, fill: color, stroke: '#000', strokeWidth: 3 }}
+            activeDot={{ r: 6, fill: color, stroke: '#000', strokeWidth: 2 }}
             connectNulls={true}
           />
 
@@ -290,11 +319,26 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             dataKey="forecast" 
             stroke={color} 
             strokeWidth={2}
-            strokeDasharray="6 6"
+            strokeDasharray="5 5"
+            strokeOpacity={0.6}
             fillOpacity={1} 
             fill="url(#colorForecast)" 
-            animationDuration={2500}
+            animationDuration={3000}
             connectNulls={true}
+            dot={(props: any) => {
+              const { cx, cy, payload, index } = props;
+              const isLast = index === chartData.length - 1;
+              if (isLast && payload.isForecast) {
+                return (
+                  <g key="forecast-end">
+                    <circle cx={cx} cy={cy} r={5} fill={color} stroke="#000" strokeWidth={1} />
+                    <text x={cx} y={cy - 15} textAnchor="middle" fill={color} fontSize="8" fontWeight="800">ПРОГНОЗ</text>
+                    <path d={`M${cx},${cy} L${cx},${cy+40}`} stroke={color} strokeWidth={1} strokeDasharray="2 2" strokeOpacity={0.5} />
+                  </g>
+                );
+              }
+              return null;
+            }}
           />
         </AreaChart>
       </ResponsiveContainer>
