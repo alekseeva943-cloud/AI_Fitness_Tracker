@@ -4,6 +4,7 @@ import { GlassCard } from "./GlassCard";
 
 interface StatCardProps {
   label: string;
+  subLabel?: string;
   value: string | number;
   unit?: string;
   trend?: {
@@ -17,6 +18,7 @@ interface StatCardProps {
 
 export const StatCard: React.FC<StatCardProps> = ({
   label,
+  subLabel,
   value,
   unit,
   trend,
@@ -35,7 +37,10 @@ export const StatCard: React.FC<StatCardProps> = ({
       <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-500" />
       
       <div className="flex justify-between items-start text-muted-foreground/40 mb-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.25em] group-hover:text-muted-foreground transition-colors">{label}</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] group-hover:text-muted-foreground transition-colors">{label}</span>
+          {subLabel && <span className="text-[9px] font-medium text-muted-foreground/60 line-clamp-1">{subLabel}</span>}
+        </div>
         {icon && (
           <div className="text-muted-foreground/40 group-hover:text-primary transition-all duration-500 group-hover:scale-110">
             {icon}

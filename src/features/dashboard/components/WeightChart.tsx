@@ -76,6 +76,29 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
       })
       .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
+    if (processed.length === 0 && goal) {
+      // If no data, show start point if available
+      processed.push({
+        dateKey: goal.startDate.split('T')[0],
+        displayDate: formatDate(goal.startDate),
+        current: goal.startValue,
+        forecast: null as number | null,
+        goal: goal.targetValue
+      });
+    } else if (goal && processed.length > 0) {
+      // Ensure start point is included if it's earlier than first measurement
+      const startIso = goal.startDate.split('T')[0];
+      if (startIso < processed[0].dateKey) {
+        processed.unshift({
+          dateKey: startIso,
+          displayDate: formatDate(goal.startDate),
+          current: goal.startValue,
+          forecast: null as number | null,
+          goal: goal.targetValue
+        });
+      }
+    }
+
     if (processed.length === 0) return [];
 
     const lastRealPoint = processed[processed.length - 1];
@@ -194,6 +217,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
             fillOpacity={1} 
             fill="url(#colorValue)" 
             animationDuration={1500}
+            dot={{ r: 3, fill: '#DFFF00', stroke: '#000', strokeWidth: 1, fillOpacity: 1 }}
             activeDot={{ r: 8, fill: '#DFFF00', stroke: '#000', strokeWidth: 3 }}
             connectNulls={true}
           />

@@ -1,27 +1,29 @@
 import React from "react";
-import { GlassCard } from "../../../components/ui/GlassCard";
 import { StatCard } from "../../../components/ui/StatCard";
 import { RU } from "../../../constants";
 import { Activity, Target, TrendingUp, Clock } from "lucide-react";
 import { AnalyticsSummary } from "../../analytics/types";
 import { useNavigate } from "react-router-dom";
-import { formatPercent, formatWeight } from "../../../lib/utils";
+import { formatPercent, formatWeight, formatDate } from "../../../lib/utils";
+import { Goal } from "../../../types";
 
 import { METRICS } from "../../../constants/metrics";
 
 interface DashboardGridProps {
   summary: AnalyticsSummary | null;
+  activeGoal?: Goal | null;
 }
 
-export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
+export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoal }) => {
   const navigate = useNavigate();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatCard 
-        label={RU.DASHBOARD.ACTIVE_GOAL}
+        label="Прогресс цели"
+        subLabel={activeGoal?.title || "Выберите цель"}
         value={formatPercent(summary?.goal.completionPercentage ?? 0)}
-        unit=""
+        unit="%"
         icon={<Target className="w-4 h-4" />}
         onClick={() => navigate('/goals')}
         trend={summary ? { 
@@ -52,7 +54,8 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
         onClick={() => navigate('/workouts')}
       />
       <StatCard 
-        label="Прогноз веса"
+        label="Вес (прогноз 30 дн)"
+        subLabel={summary?.goal.estimatedCompletionDate ? `Цель к ${formatDate(summary.goal.estimatedCompletionDate)}` : "Ожидаемый вес"}
         value={formatWeight(summary?.weight.forecastedWeight ?? 0).replace(' кг', '')}
         unit={METRICS.weight.unit}
         icon={<TrendingUp className="w-4 h-4" />}
