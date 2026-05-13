@@ -1,11 +1,18 @@
 import { WeightEntry, Goal } from "../../../types";
 import { WeightTrend } from "../types";
 import { differenceInDays, subDays, isAfter } from "date-fns";
+import { VALIDATION_LIMITS } from "../../../lib/validation";
 
 export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null): WeightTrend | null => {
-  if (history.length === 0) return null;
+  // Sanity filter: keep only realistic values
+  const sanitized = history.filter(e => 
+    e.value >= VALIDATION_LIMITS.weight.value.min && 
+    e.value <= VALIDATION_LIMITS.weight.value.max
+  );
 
-  const sorted = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  if (sanitized.length === 0) return null;
+
+  const sorted = [...sanitized].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const current = sorted[0].value;
   const starting = sorted[sorted.length - 1].value;
 

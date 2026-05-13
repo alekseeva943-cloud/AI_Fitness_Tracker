@@ -1,6 +1,7 @@
 import { Goal, GoalType } from "../../../types";
 import { WeightTrend, GoalProgress } from "../types";
 import { addDays, differenceInDays } from "date-fns";
+import { logger } from "../../../lib/logger";
 
 export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | null): GoalProgress | null => {
   if (!goal) return null;

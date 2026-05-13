@@ -1,9 +1,17 @@
 import { WorkoutEntry } from "../../../types";
 import { WorkoutStats } from "../types";
 import { differenceInWeeks, differenceInDays } from "date-fns";
+import { VALIDATION_LIMITS } from "../../../lib/validation";
 
 export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats => {
-  if (workouts.length === 0) {
+  // Sanity filter
+  const sanitized = workouts.filter(w => 
+    w.duration >= VALIDATION_LIMITS.workout.duration.min && 
+    w.duration <= VALIDATION_LIMITS.workout.duration.max &&
+    (!w.caloriesBurned || (w.caloriesBurned >= VALIDATION_LIMITS.workout.calories.min && w.caloriesBurned <= VALIDATION_LIMITS.workout.calories.max))
+  );
+
+  if (sanitized.length === 0) {
     return {
       totalWorkouts: 0,
       avgWorkoutsPerWeek: 0,
@@ -14,9 +22,9 @@ export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats =>
     };
   }
 
-  const sorted = [...workouts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const totalWorkouts = workouts.length;
-  const totalDuration = workouts.reduce((sum, w) => sum + w.duration, 0);
+  const sorted = [...sanitized].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const totalWorkouts = sanitized.length;
+  const totalDuration = sanitized.reduce((sum, w) => sum + w.duration, 0);
   
   const spanDays = differenceInDays(new Date(), new Date(sorted[sorted.length - 1].date)) || 1;
   const spanWeeks = Math.max(1, spanDays / 7);
