@@ -15,6 +15,7 @@ import { GoalForm } from "../goals/components/GoalForm";
 import { EntryForm } from "../entries/components/EntryForm";
 import { AIRecommendationsSection } from "../ai/components/AIRecommendationsSection";
 import { MetricChart } from "./components/MetricChart";
+import { WorkoutDetailModal } from "../entries/components/WorkoutDetailModal";
 import { DemoModeBanner } from "../../components/DemoModeBanner";
 import { BaselineParameters } from "../profile/components/BaselineParameters";
 import { ModalFooter } from "../../components/ui/ModalFooter";
@@ -357,57 +358,23 @@ export const DashboardView: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex-1 mt-4 h-[350px]">
-                    {(() => {
-                      let chartData: { date: string, value: number }[] = [];
-                      if (chartMetric === 'weight') {
-                        chartData = weightHistory.map(w => ({ date: w.date, value: w.value }));
-                      } else {
-                        chartData = workouts
-                          .filter(w => {
-                            if (chartMetric === 'caloriesBurned' || chartMetric === 'duration') return w[chartMetric as keyof typeof w];
-                            // For specific metrics like "workingWeight", look inside exercises if strength
-                            if (w.category === 'STRENGTH' && w.exercises) {
-                                return w.exercises.some((ex: any) => ex.weight && ex.name?.toLowerCase().includes(METRICS[chartMetric]?.label?.toLowerCase() || ''));
-                            }
-                            return w[chartMetric as keyof typeof w];
-                          })
-                          .map(w => {
-                             let val = Number(w[chartMetric as keyof typeof w] || 0);
-                             // If it's a specific exercise weight
-                             if (val === 0 && w.category === 'STRENGTH' && w.exercises) {
-                               const ex = w.exercises.find((e: any) => e.name?.toLowerCase().includes(METRICS[chartMetric]?.label?.toLowerCase() || ''));
-                               if (ex) val = ex.weight;
-                             }
-                             return { date: w.date, value: val };
-                          });
-                      }
-
-                      const isGoalMetric = activeGoal && chartMetric === activeGoal.metricId;
-
-                      return chartData.length > 0 || (isGoalMetric) ? (
-                        <MetricChart 
-                          data={chartData} 
-                          goal={isGoalMetric ? activeGoal : null} 
-                          forecastedDate={isGoalMetric ? summary?.goal.estimatedCompletionDate : null}
-                          workouts={workouts}
-                          unit={METRICS[chartMetric]?.unit}
-                          color={chartMetric === 'weight' ? THEME.colors.primary : chartMetric === 'caloriesBurned' ? THEME.colors.accent : THEME.colors.duration}
-                          onPointClick={(type, id, original) => {
-                            if (type === 'workout') {
-                              openWorkoutDetail(original);
-                            } else {
-                              setSelectedWeightEntry(original);
-                              setWeightDetailModalOpen(true);
-                            }
-                          }}
-                        />
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center opacity-40 space-y-4">
-                          <Activity className="w-12 h-12 text-muted-foreground" />
-                          <p className="text-muted-foreground text-sm uppercase font-bold tracking-widest italic">Нет данных для этого показателя</p>
-                        </div>
-                      );
-                    })()}
+                    <MetricChart 
+                      data={weightHistory} 
+                      workouts={workouts}
+                      goal={activeGoal && chartMetric === activeGoal.metricId ? activeGoal : null} 
+                      metricId={chartMetric}
+                      forecastedDate={activeGoal && chartMetric === activeGoal.metricId ? summary?.goal.estimatedCompletionDate : null}
+                      unit={METRICS[chartMetric]?.unit}
+                      color={chartMetric === 'weight' ? THEME.colors.primary : chartMetric === 'caloriesBurned' ? THEME.colors.accent : THEME.colors.duration}
+                      onPointClick={(type, id, original) => {
+                        if (type === 'workout') {
+                          openWorkoutDetail(original);
+                        } else {
+                          setSelectedWeightEntry(original);
+                          setWeightDetailModalOpen(true);
+                        }
+                      }}
+                    />
                   </div>
                 </GlassCard>
 
@@ -978,144 +945,17 @@ export const DashboardView: React.FC = () => {
         )}
       </Modal>
 
-      <Modal isOpen={isDetailModalOpen} onClose={() => setDetailModalOpen(false)} title="Детали активности">
-        {selectedWorkout && (
-          <div className="space-y-6 text-foreground min-h-[450px] flex flex-col">
-            <div className="flex items-center gap-4 p-5 bg-secondary/30 rounded-3xl border border-white/5">
-              <div className={cn(
-                "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg",
-                selectedWorkout.category === 'STRENGTH' ? "bg-orange-500/20 text-orange-400" :
-                selectedWorkout.category === 'CARDIO' ? "bg-blue-500/20 text-blue-400" :
-                "bg-primary/20 text-primary"
-              )}>
-                {selectedWorkout.category === 'STRENGTH' ? <Zap className="w-8 h-8" /> :
-                 selectedWorkout.category === 'CARDIO' ? <Activity className="w-8 h-8" /> :
-                 <Dumbbell className="w-8 h-8" />}
-              </div>
-              <div>
-                <h4 className="text-2xl font-bold">{selectedWorkout.type}</h4>
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <Calendar className="w-4 h-4" />
-                  {formatDate(selectedWorkout.date)}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-secondary/50 p-4 rounded-2xl space-y-1 border border-white/5">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  Длительность
-                </div>
-                <p className="text-xl font-bold">{selectedWorkout.duration} мин</p>
-              </div>
-              <div className="bg-secondary/50 p-4 rounded-2xl space-y-1 border border-white/5">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  <Flame className="w-3 h-3" />
-                  Калории
-                </div>
-                <p className="text-xl font-bold">{selectedWorkout.caloriesBurned || 0} ккал</p>
-              </div>
-            </div>
-
-            {selectedWorkout.category === 'STRENGTH' && selectedWorkout.exercises && selectedWorkout.exercises.length > 0 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                <div className="flex items-center justify-between px-1">
-                  <h5 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Упражнения</h5>
-                  {selectedWorkout.totalWeight && (
-                    <span className="text-[10px] font-black text-primary uppercase">Всего: {selectedWorkout.totalWeight} кг</span>
-                  )}
-                </div>
-                <div className="grid gap-3">
-                  {selectedWorkout.exercises.map((ex: any, idx: number) => (
-                    <div key={ex.id} className="bg-secondary/20 p-4 rounded-2xl border border-white/5 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-bold">{ex.name || `Упражнение ${idx + 1}`}</span>
-                        <span className="text-xs font-black text-primary/60">{ex.totalWeight} кг</span>
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex flex-col">
-                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Сеты</span>
-                          <span className="text-xs font-bold">{ex.sets}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Повт.</span>
-                          <span className="text-xs font-bold">{ex.reps}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Вес</span>
-                          <span className="text-xs font-bold text-primary">{ex.weight} кг</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedWorkout.category === 'STRENGTH' && (!selectedWorkout.exercises || selectedWorkout.exercises.length === 0) && (
-              <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2">
-                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Сеты</p>
-                  <p className="text-lg font-bold">{selectedWorkout.sets || '-'}</p>
-                </div>
-                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Повт.</p>
-                  <p className="text-lg font-bold">{selectedWorkout.reps || '-'}</p>
-                </div>
-                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Вес</p>
-                  <p className="text-lg font-bold text-primary">{selectedWorkout.workingWeight || '-'}</p>
-                </div>
-                {selectedWorkout.totalWeight && (
-                  <div className="col-span-3 bg-primary/10 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
-                    <p className="text-xs uppercase font-bold text-primary tracking-widest">Тренировочный объем</p>
-                    <p className="text-xl font-bold text-primary">{selectedWorkout.totalWeight} кг</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {(selectedWorkout.category === 'CARDIO' || selectedWorkout.category === 'ENDURANCE') && (
-              <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2">
-                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                   <Ruler className="w-4 h-4 mb-2 text-blue-400" />
-                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Дистанция</p>
-                   <p className="text-lg font-bold">{selectedWorkout.distance ? `${selectedWorkout.distance} км` : '-'}</p>
-                </div>
-                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                   <Activity className="w-4 h-4 mb-2 text-green-400" />
-                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Темп</p>
-                   <p className="text-lg font-bold">{selectedWorkout.pace || '-'}</p>
-                </div>
-              </div>
-            )}
-
-            {selectedWorkout.notes && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  <FileText className="w-3 h-3" />
-                  Заметки
-                </div>
-                <div className="bg-secondary/30 p-6 rounded-3xl text-sm italic leading-relaxed border border-white/5">
-                  {selectedWorkout.notes}
-                </div>
-              </div>
-            )}
-
-            <ModalFooter 
-               onBack={() => setDetailModalOpen(false)}
-               onEdit={() => {
-                  setDetailModalOpen(false);
-                  setEntryType('workout');
-                  setEditEntryModalOpen(true);
-               }}
-               onDelete={() => handleDeleteWorkout(selectedWorkout.id)}
-               onClose={() => setDetailModalOpen(false)}
-            />
-          </div>
-        )}
-      </Modal>
+      <WorkoutDetailModal 
+        isOpen={isDetailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        workout={selectedWorkout}
+        onEdit={(w) => {
+          setDetailModalOpen(false);
+          setEntryType('workout');
+          setEditEntryModalOpen(true);
+        }}
+        onDelete={(id) => handleDeleteWorkout(id)}
+      />
     </>
   );
 };

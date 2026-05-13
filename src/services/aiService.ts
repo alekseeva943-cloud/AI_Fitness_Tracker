@@ -1,3 +1,4 @@
+import { GoogleGenAI, Type } from "@google/genai";
 import { METRICS } from '../constants/metrics';
 import { FitnessState, AIAnalysis } from '../types';
 
@@ -33,31 +34,65 @@ export class AIService {
     } : null;
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          goal: goal ? { ...goal, metricLabel: currentMetric.label } : null,
-          analytics: analytics.goal,
-          semanticContext
-        }),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || 'Failed to get AI recommendations');
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("API ключ Gemini не найден. Пожалуйста, проверьте настройки проекта.");
       }
 
-      const result = await response.json();
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `
+        Ты – профессиональный фитнес-аналитик и коуч. Твоя задача – проанализировать прогресс пользователя относительно его КОНКРЕТНОЙ ЦЕЛИ.
+        
+        ЦЕЛЬ ПОЛЬЗОВАТЕЛЯ: ${goal ? `"${goal.title}" (Показатель: ${currentMetric.label}, Цель: ${goal.targetValue} ${goal.unit})` : 'Не установлена'}
+        
+        ДАННЫЕ ДЛЯ АНАЛИЗА:
+        - Аналитика: ${JSON.stringify(analytics.goal)}
+        - Семантика процесса: ${JSON.stringify(semanticContext)}
+        
+        ВЫХОДНОЙ ФОРМАТ: JSON
+        {
+          "summary": "Краткое описание прогресса",
+          "trend": "IMPROVING" | "STAGNATING" | "DECLINING",
+          "recommendations": [
+            { "type": "EXERCISE" | "DIET" | "REST" | "MOTIVATION", "text": "Текст рекомендации", "priority": "LOW" | "MEDIUM" | "HIGH" }
+          ]
+        }
+      `;
+
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              trend: { type: Type.STRING },
+              recommendations: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    type: { type: Type.STRING },
+                    text: { type: Type.STRING },
+                    priority: { type: Type.STRING }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const resultJson = JSON.parse(result.text || "{}");
       
       return {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
-        summary: result.summary,
-        trend: result.trend,
-        recommendations: result.recommendations
+        summary: resultJson.summary,
+        trend: resultJson.trend,
+        recommendations: resultJson.recommendations
       };
     } catch (error) {
       console.error("AI Analysis failed:", error);

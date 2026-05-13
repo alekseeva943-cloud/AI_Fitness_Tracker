@@ -11,6 +11,7 @@ import { GoalType, Goal } from '../../types';
 import { cn, formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
 import { MetricChart } from '../dashboard/components/MetricChart';
+import { WorkoutDetailModal } from '../entries/components/WorkoutDetailModal';
 import { ModalFooter } from '../../components/ui/ModalFooter';
 import { METRICS } from '../../constants/metrics';
 import { AIRecommendationsSection } from '../ai/components/AIRecommendationsSection';
@@ -33,6 +34,8 @@ export const GoalsView: React.FC = () => {
   const [isDetailOpen, setDetailOpen] = useState(false);
   const [isEditPanelOpen, setEditPanelOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
+  const [isWorkoutModalOpen, setWorkoutModalOpen] = useState(false);
   const [detailMetric, setDetailMetric] = useState<'calories' | 'weight' | 'duration'>('weight');
 
   useEffect(() => {
@@ -309,25 +312,6 @@ export const GoalsView: React.FC = () => {
             return w.category === selectedGoal.workoutTypeFilter;
           }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-          const metricDataPoints = workouts
-            .filter(w => (selectedGoal.workoutTypeFilter ? w.category === selectedGoal.workoutTypeFilter : true))
-            .map(w => {
-              let value = 0;
-              if (baselineMetricId === 'caloriesBurned') value = w.caloriesBurned || 0;
-              else if (baselineMetricId === 'duration') value = w.duration || 0;
-              else if (baselineMetricId === 'workingWeight') value = w.totalWeight || 0;
-              else if (baselineMetricId === 'distance') value = w.distance || 0;
-              else if (baselineMetricId === 'speed') value = w.speed || 0;
-              else if (baselineMetricId === 'heartRate') value = w.heartRate || 0;
-              
-              return { date: w.date, value };
-            })
-            .filter(d => d.value > 0);
-
-          const chartDataPoints = baselineMetricId === 'weight' ? 
-            weightHistory.map(w => ({ date: w.date, value: w.value })) : 
-            metricDataPoints;
-
           return (
             <div className="space-y-8 py-4">
               {/* Header Card */}
@@ -426,11 +410,18 @@ export const GoalsView: React.FC = () => {
                 
                 <div className="h-[250px] w-full bg-secondary/20 rounded-3xl p-4 border border-white/5">
                   <MetricChart 
-                    data={chartDataPoints} 
+                    data={weightHistory} 
+                    workouts={workouts}
                     goal={selectedGoal} 
+                    metricId={baselineMetricId}
                     forecastedDate={summary?.goal.estimatedCompletionDate} 
                     unit={METRICS[baselineMetricId]?.unit}
-                    workouts={workouts}
+                    onPointClick={(type, id, original) => {
+                      if (type === 'workout') {
+                        setSelectedWorkout(original);
+                        setWorkoutModalOpen(true);
+                      }
+                    }}
                   />
                 </div>
                 
@@ -499,7 +490,11 @@ export const GoalsView: React.FC = () => {
                   {filteredWorkouts.slice(0, 5).map(workout => (
                     <div 
                       key={workout.id} 
-                      className="flex justify-between items-center p-4 bg-secondary/30 rounded-2xl border border-white/5 group hover:bg-white/5 transition-all text-left"
+                      onClick={() => {
+                        setSelectedWorkout(workout);
+                        setWorkoutModalOpen(true);
+                      }}
+                      className="flex justify-between items-center p-4 bg-secondary/30 rounded-2xl border border-white/5 group hover:bg-white/5 transition-all text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
                          <div className={cn(
@@ -589,6 +584,12 @@ export const GoalsView: React.FC = () => {
           );
         })()}
       </Modal>
+
+      <WorkoutDetailModal 
+        isOpen={isWorkoutModalOpen}
+        onClose={() => setWorkoutModalOpen(false)}
+        workout={selectedWorkout}
+      />
     </div>
   );
 };
