@@ -1,67 +1,75 @@
-import OpenAI from 'openai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { FitnessState, AIAnalysis } from '../types';
-import { AI_CONFIG } from '../config/ai.config';
 
-/**
- * Service to handle AI interactions using OpenAI API.
- * Centralized configuration and error handling.
- */
 export class AIService {
   private static getClient() {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is missing. Please add it to your environment variables.');
+      throw new Error('GEMINI_API_KEY is missing.');
     }
-    return new OpenAI({
-      apiKey,
-      dangerouslyAllowBrowser: true // Frontend execution as requested
-    });
+    return new GoogleGenAI({ apiKey });
   }
 
   static async analyzeProgress(state: FitnessState, analytics: any): Promise<AIAnalysis> {
-    const openai = this.getClient();
+    const ai = this.getClient();
     
-    const userPrompt = `
-      Данные аналитики (сформированные движком):
-      - Тренд веса: ${JSON.stringify(analytics.weight)}
-      - Статистика тренировок: ${JSON.stringify(analytics.workouts)}
-      - Прогресс цели: ${JSON.stringify(analytics.goal)}
+    const prompt = `
+      Ты – профессиональный фитнес-коуч с 20-летним опытом. 
+      Твоя задача – проанализировать данные пользователя и дать глубокие, персонализированные инсайты.
+
+      ДАННЫЕ ПОЛЬЗОВАТЕЛЯ:
+      - История веса: ${JSON.stringify(analytics.weight)}
+      - Активность: ${JSON.stringify(analytics.workouts)}
+      - Цель: ${JSON.stringify(analytics.goal)}
+
+      ТРЕБОВАНИЯ К ОТВЕТУ:
+      1. Проанализируй скорость изменений.
+      2. Выяви возможные плато или периоды высокой эффективности.
+      3. Дай 3-4 конкретных совета по тренировкам, питанию или отдыху.
       
-      Интерпретируй эти данные как профессиональный фитнес-коуч.
-      Выдай ответ ТОЛЬКО в формате JSON на РУССКОМ языке:
-      {
-        "summary": "Глубокая интерпретация текущего состояния (как профессиональный коуч)",
-        "trend": "IMPROVING" | "STAGNATING" | "DECLINING",
-        "recommendations": [
-          {
-            "type": "EXERCISE" | "DIET" | "REST" | "MOTIVATION",
-            "text": "Конкретный совет на основе этих данных",
-            "priority": "LOW" | "MEDIUM" | "HIGH"
-          }
-        ]
-      }
+      ВЫХОДНОЙ ФОРМАТ: JSON
     `;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: AI_CONFIG.MODEL,
-        messages: [
-          { role: 'system', content: AI_CONFIG.SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt }
-        ],
-        response_format: { type: 'json_object' }
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              trend: { type: Type.STRING, enum: ["IMPROVING", "STAGNATING", "DECLINING"] },
+              recommendations: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    type: { type: Type.STRING, enum: ["EXERCISE", "DIET", "REST", "MOTIVATION"] },
+                    text: { type: Type.STRING },
+                    priority: { type: Type.STRING, enum: ["LOW", "MEDIUM", "HIGH"] }
+                  },
+                  required: ["type", "text", "priority"]
+                }
+              }
+            },
+            required: ["summary", "trend", "recommendations"]
+          }
+        }
       });
 
-      const content = response.choices[0].message.content;
-      const result = JSON.parse(content || '{}');
+      const result = JSON.parse(response.text || '{}');
       
       return {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
-        ...result
+        summary: result.summary,
+        trend: result.trend,
+        recommendations: result.recommendations
       };
     } catch (error) {
-      console.error("OpenAI Analysis failed:", error);
+      console.error("Gemini Analysis failed:", error);
       throw error;
     }
   }

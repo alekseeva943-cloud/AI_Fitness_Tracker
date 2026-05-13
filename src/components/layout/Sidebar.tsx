@@ -1,3 +1,4 @@
+import React from "react";
 import { NavLink } from "react-router-dom";
 import { useFitnessStore } from "../../store/useFitnessStore";
 import { NAVIGATION_CONFIG } from "../../config/navigation.config";

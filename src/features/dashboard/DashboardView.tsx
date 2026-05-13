@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { RU } from "../../constants";
-import { AppLayout } from "../../components/layout/AppLayout";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
@@ -40,6 +39,8 @@ export const DashboardView: React.FC = () => {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       currentValue: summary?.weight.currentWeight || 0,
+      startValue: summary?.weight.currentWeight || 0,
+      status: 'ACTIVE',
       unit: 'кг',
       startDate: new Date().toISOString(),
       ...data,
@@ -74,7 +75,7 @@ export const DashboardView: React.FC = () => {
   };
 
   return (
-    <AppLayout>
+    <>
       <div className="space-y-10">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
@@ -211,6 +212,6 @@ export const DashboardView: React.FC = () => {
       <Modal isOpen={isEntryModalOpen} onClose={() => setEntryModalOpen(false)} title={entryType === 'workout' ? 'Добавить тренировку' : 'Новый замер веса'}>
         <EntryForm type={entryType} onSubmit={handleEntrySubmit} />
       </Modal>
-    </AppLayout>
+    </>
   );
 };

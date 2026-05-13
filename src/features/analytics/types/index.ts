@@ -18,6 +18,7 @@ export interface WorkoutStats {
   totalWorkouts: number;
   avgWorkoutsPerWeek: number;
   avgDuration: number;
+  totalDuration: number;
   consistencyScore: number; // 0-100
   lastWorkoutDate: string | null;
 }

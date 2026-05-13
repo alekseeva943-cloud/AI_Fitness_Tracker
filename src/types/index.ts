@@ -24,10 +24,12 @@ export interface Goal {
   type: GoalType;
   targetValue: number;
   currentValue: number;
+  startValue: number;
   unit: string;
   startDate: string;
   deadline: string;
   createdAt: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 }
 
 export interface WorkoutEntry {

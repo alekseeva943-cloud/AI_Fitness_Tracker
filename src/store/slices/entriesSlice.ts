@@ -6,6 +6,8 @@ export interface EntriesSlice {
   weightHistory: WeightEntry[];
   addWorkout: (workout: WorkoutEntry) => void;
   addWeightEntry: (entry: WeightEntry) => void;
+  removeWorkout: (id: string) => void;
+  removeWeightEntry: (id: string) => void;
 }
 
 export const createEntriesSlice: StateCreator<
@@ -23,5 +25,11 @@ export const createEntriesSlice: StateCreator<
     weightHistory: [entry, ...state.weightHistory].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     )
+  })),
+  removeWorkout: (id) => set((state: any) => ({
+    workouts: state.workouts.filter((w: any) => w.id !== id)
+  })),
+  removeWeightEntry: (id) => set((state: any) => ({
+    weightHistory: state.weightHistory.filter((w: any) => w.id !== id)
   })),
 });

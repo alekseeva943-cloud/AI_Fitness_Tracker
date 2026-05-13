@@ -6,7 +6,12 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { DashboardView } from './features/dashboard/DashboardView';
+import { GoalsView } from './features/goals/GoalsView';
+import { WorkoutsView } from './features/entries/WorkoutsView';
+import { AnalyticsView } from './features/analytics/AnalyticsView';
+import { AIInsightsView } from './features/ai/AIInsightsView';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AppLayout } from './components/layout/AppLayout';
 import { logger } from './lib/logger';
 
 // Lightweight Route Logger
@@ -37,14 +42,16 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <RouteObserver />
-        <Routes>
-          <Route path="/" element={<DashboardView />} />
-          <Route path="/goals" element={<PlaceholderView title="Мои цели" />} />
-          <Route path="/analytics" element={<PlaceholderView title="Аналитика" />} />
-          <Route path="/workouts" element={<PlaceholderView title="Тренировки" />} />
-          <Route path="/ai-chat" element={<PlaceholderView title="ИИ Помощник" />} />
-          <Route path="*" element={<DashboardView />} />
-        </Routes>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<DashboardView />} />
+            <Route path="/goals" element={<GoalsView />} />
+            <Route path="/analytics" element={<AnalyticsView />} />
+            <Route path="/workouts" element={<WorkoutsView />} />
+            <Route path="/ai-chat" element={<AIInsightsView />} />
+            <Route path="*" element={<DashboardView />} />
+          </Routes>
+        </AppLayout>
       </BrowserRouter>
     </ErrorBoundary>
   );

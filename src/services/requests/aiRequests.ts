@@ -1,7 +1,7 @@
 import { AIService } from "../aiService";
 import { useFitnessStore } from "../../store/useFitnessStore";
 import { AIError, ERROR_MESSAGES } from "../errors/AppError";
-import { FitnessAnalysisSummary } from "../../features/analytics/types/analytics";
+import { AnalyticsSummary } from "../../features/analytics/types";
 import { logger } from "../../lib/logger";
 
 /**
@@ -9,7 +9,7 @@ import { logger } from "../../lib/logger";
  * Handles loading states, errors, and store synchronization.
  */
 export const AIRequestManager = {
-  async performDeepAnalysis(summary: FitnessAnalysisSummary) {
+  async performDeepAnalysis(summary: AnalyticsSummary) {
     const store = useFitnessStore.getState();
     logger.ai('Starting Deep Analysis request', { summary });
     

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChart, Area, XValues, YValues, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { AreaChart, Area, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { WeightEntry } from '../../../types';
 import { formatDate } from '../../../lib/utils';
 

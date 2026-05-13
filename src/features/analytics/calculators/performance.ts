@@ -8,6 +8,7 @@ export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats =>
       totalWorkouts: 0,
       avgWorkoutsPerWeek: 0,
       avgDuration: 0,
+      totalDuration: 0,
       consistencyScore: 0,
       lastWorkoutDate: null
     };
@@ -30,6 +31,7 @@ export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats =>
     totalWorkouts,
     avgWorkoutsPerWeek: Number(avgWorkoutsPerWeek.toFixed(1)),
     avgDuration: Math.round(totalDuration / totalWorkouts),
+    totalDuration,
     consistencyScore,
     lastWorkoutDate: sorted[0].date
   };
