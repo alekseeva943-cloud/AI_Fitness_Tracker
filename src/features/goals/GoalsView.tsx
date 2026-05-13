@@ -4,13 +4,16 @@ import { useFitnessStore, useGoals, useActiveGoalId } from '../../store/useFitne
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
+import { SidePanel } from '../../components/ui/SidePanel';
 import { GoalForm } from './components/GoalForm';
-import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles, Star, Dumbbell, Activity, Zap } from 'lucide-react';
+import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles, Star, Dumbbell, Activity, Zap, Info } from 'lucide-react';
 import { GoalType, Goal } from '../../types';
 import { cn, formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
-import { WeightChart } from '../dashboard/components/WeightChart';
+import { MetricChart } from '../dashboard/components/MetricChart';
 import { ModalFooter } from '../../components/ui/ModalFooter';
+import { METRICS } from '../../constants/metrics';
+import { AIRecommendationsSection } from '../ai/components/AIRecommendationsSection';
 
 export const GoalsView: React.FC = () => {
   const navigate = useNavigate();
@@ -28,8 +31,9 @@ export const GoalsView: React.FC = () => {
 
   const [isModalOpen, setModalOpen] = useState(false);
   const [isDetailOpen, setDetailOpen] = useState(false);
-  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [isEditPanelOpen, setEditPanelOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [selectedMetricId, setSelectedMetricId] = useState<string>('weight');
 
   useEffect(() => {
     const goalId = searchParams.get('id');
@@ -61,7 +65,7 @@ export const GoalsView: React.FC = () => {
   const handleUpdateGoal = (data: any) => {
     if (selectedGoal) {
       updateGoal(selectedGoal.id, data);
-      setEditModalOpen(false);
+      setEditPanelOpen(false);
       // Update selected goal for the detail view if it's open
       setSelectedGoal({ ...selectedGoal, ...data });
     }
@@ -259,235 +263,278 @@ export const GoalsView: React.FC = () => {
         )}
       </div>
 
-      <Modal 
+      <SidePanel 
         isOpen={isModalOpen} 
         onClose={() => setModalOpen(false)} 
-        title="Создание новой цели"
+        title="Новая цель"
       >
-        <GoalForm onSubmit={handleCreateGoal} />
-      </Modal>
+        <GoalForm onSubmit={handleCreateGoal} onCancel={() => setModalOpen(false)} />
+      </SidePanel>
 
-      <Modal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setEditModalOpen(false)} 
+      <SidePanel 
+        isOpen={isEditPanelOpen} 
+        onClose={() => setEditPanelOpen(false)} 
         title="Редактирование цели"
       >
         <GoalForm 
           initialData={selectedGoal} 
           onSubmit={handleUpdateGoal} 
-          onCancel={() => setEditModalOpen(false)} 
+          onCancel={() => setEditPanelOpen(false)} 
         />
-      </Modal>
+      </SidePanel>
 
       <Modal 
         isOpen={isDetailOpen} 
         onClose={() => setDetailOpen(false)} 
         title="Детали цели"
+        maxWidth="2xl"
       >
         {selectedGoal && (() => {
-          const currentWeight = summary?.weight?.currentWeight ?? selectedGoal.currentValue;
+          const summary = selectAnalyticsSummary(useFitnessStore.getState());
+          const baselineMetricId = selectedGoal.metricId || 'weight';
           const totalDiff = Math.abs(selectedGoal.targetValue - selectedGoal.startValue);
-          const currentProgress = totalDiff > 0 ? Math.min(100, (Math.abs(currentWeight - selectedGoal.startValue) / totalDiff) * 100) : 0;
-          
+          const currentDiff = Math.abs(selectedGoal.currentValue - selectedGoal.startValue);
+          const currentProgress = totalDiff > 0 ? Math.min(100, (currentDiff / totalDiff) * 100) : 0;
+
+          const categoryLabels: Record<string, string> = {
+            'STRENGTH': 'Силовая',
+            'CARDIO': 'Кардио',
+            'ENDURANCE': 'Выносливость',
+            'FLEXIBILITY': 'Йога и растяжка',
+            'OTHER': 'Другое'
+          };
+
+          const filteredWorkouts = workouts.filter(w => {
+            if (!selectedGoal.workoutTypeFilter) return true;
+            return w.category === selectedGoal.workoutTypeFilter;
+          }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+          const metricDataPoints = workouts
+            .filter(w => (selectedGoal.workoutTypeFilter ? w.category === selectedGoal.workoutTypeFilter : true))
+            .map(w => {
+              let value = 0;
+              if (baselineMetricId === 'caloriesBurned') value = w.caloriesBurned || 0;
+              else if (baselineMetricId === 'duration') value = w.duration || 0;
+              else if (baselineMetricId === 'workingWeight') value = w.totalWeight || 0;
+              else if (baselineMetricId === 'distance') value = w.distance || 0;
+              else if (baselineMetricId === 'speed') value = w.speed || 0;
+              else if (baselineMetricId === 'heartRate') value = w.heartRate || 0;
+              
+              return { date: w.date, value };
+            })
+            .filter(d => d.value > 0);
+
+          const chartDataPoints = baselineMetricId === 'weight' ? 
+            weightHistory.map(w => ({ date: w.date, value: w.value })) : 
+            metricDataPoints;
+
           return (
-          <div className="space-y-8 text-foreground min-h-[400px] flex flex-col">
-            <div className={cn(
-              "flex items-center gap-4 p-5 rounded-3xl border relative overflow-hidden group transition-all duration-500",
-              selectedGoal.id === activeGoalId ? "bg-primary/20 border-primary/40 shadow-[0_0_20px_rgba(223,255,0,0.1)]" : "bg-secondary/30 border-white/5"
-            )}>
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-                 <Target className="w-20 h-20 text-primary" />
-              </div>
+            <div className="space-y-8 py-4">
+              {/* Header Card */}
               <div className={cn(
-                "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg z-10 transition-all duration-500",
-                selectedGoal.id === activeGoalId ? "bg-primary text-black scale-110 shadow-[0_0_20px_rgba(223,255,0,0.3)]" : "bg-primary/20 text-primary"
+                "p-8 rounded-[2.5rem] border flex flex-col sm:flex-row items-center gap-6 group relative overflow-hidden transition-all duration-500",
+                selectedGoal.id === activeGoalId ? "bg-primary/20 border-primary/40 shadow-[0_0_20px_rgba(223,255,0,0.1)]" : "bg-secondary/30 border-white/5"
               )}>
-                <Target className="w-10 h-10" />
-              </div>
-              <div className="flex-1 z-10">
-                <div className="flex items-center gap-2 mb-0.5">
-                   <h3 className="text-2xl font-bold font-display">{selectedGoal.title || 'Моя цель'}</h3>
-                   {getStatusBadge(selectedGoal)}
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                   <Target className="w-20 h-20 text-primary" />
                 </div>
-                <p className="text-sm text-muted-foreground">{selectedGoal.type === 'WEIGHT_LOSS' ? 'Снижение веса' : 'Набор массы'}</p>
+                <div className={cn(
+                  "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg z-10 transition-all duration-500",
+                  selectedGoal.id === activeGoalId ? "bg-primary text-black scale-110 shadow-[0_0_20px_rgba(223,255,0,0.3)]" : "bg-primary/20 text-primary"
+                )}>
+                  <Target className="w-10 h-10" />
+                </div>
+                <div className="flex-1 z-10 text-center sm:text-left">
+                  <div className="flex flex-col sm:flex-row items-center gap-2 mb-0.5">
+                     <h3 className="text-2xl font-bold font-display">{selectedGoal.title || 'Моя цель'}</h3>
+                     {getStatusBadge(selectedGoal)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{METRICS[baselineMetricId]?.label || 'Параметр'}</p>
+                </div>
               </div>
-            </div>
 
-            {selectedGoal.id !== activeGoalId && (selectedGoal.status === 'ACTIVE' || selectedGoal.status === 'SECONDARY') && (
-              <GradientButton 
-                variant="outline" 
-                className="w-full h-12 flex items-center justify-center gap-2 border-primary/30 hover:border-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveGoal(selectedGoal.id);
-                }}
-              >
-                <Star className="w-4 h-4 text-primary" />
-                Сделать основной целью
-              </GradientButton>
-            )}
+              {selectedGoal.id !== activeGoalId && (selectedGoal.status === 'ACTIVE' || selectedGoal.status === 'SECONDARY') && (
+                <GradientButton 
+                  variant="outline" 
+                  className="w-full h-12 flex items-center justify-center gap-2 border-primary/30 hover:border-primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveGoal(selectedGoal.id);
+                  }}
+                >
+                  <Star className="w-4 h-4 text-primary" />
+                  Сделать основной целью
+                </GradientButton>
+              )}
 
-            {selectedGoal.motivation && (
+              {selectedGoal.motivation && (
+                <div className="space-y-4">
+                   <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                      <Sparkles className="w-3 h-3 text-primary" />
+                      Мотивация
+                   </h4>
+                   <div className="p-6 bg-secondary/30 rounded-3xl border border-white/5 italic text-lg leading-relaxed text-primary/90">
+                      "{selectedGoal.motivation}"
+                   </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Старт</p>
+                  <p className="text-xl font-bold">{selectedGoal.startValue} {selectedGoal.unit}</p>
+                </div>
+                <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Текущий</p>
+                  <p className="text-xl font-bold text-primary">{selectedGoal.currentValue} {selectedGoal.unit}</p>
+                </div>
+                <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Целевой</p>
+                  <p className="text-xl font-bold">{selectedGoal.targetValue} {selectedGoal.unit}</p>
+                </div>
+                <div className="p-5 rounded-3xl bg-primary/5 border border-primary/20 space-y-1">
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-primary">Разница</p>
+                  <p className="text-xl font-bold">{Math.abs(selectedGoal.targetValue - selectedGoal.currentValue)} {selectedGoal.unit}</p>
+                </div>
+              </div>
+
+              {/* Chart Section */}
               <div className="space-y-4">
-                 <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 text-primary" />
-                    Мотивация
-                 </h4>
-                 <div className="p-6 bg-secondary/30 rounded-3xl border border-white/5 italic text-lg leading-relaxed text-primary/90">
-                    "{selectedGoal.motivation}"
-                 </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Стартовый</p>
-                <p className="text-2xl font-bold">{formatWeight(selectedGoal.startValue)}</p>
-              </div>
-              <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Текущий</p>
-                <p className="text-2xl font-bold text-primary">{formatWeight(currentWeight)}</p>
-              </div>
-              <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Целевой</p>
-                <p className="text-2xl font-bold">{formatWeight(selectedGoal.targetValue)}</p>
-              </div>
-              <div className="p-5 rounded-3xl bg-primary/5 border border-primary/20 space-y-1">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-primary">Осталось</p>
-                <p className="text-2xl font-bold">{formatWeight(Math.abs(selectedGoal.targetValue - currentWeight))}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-               <div className="flex justify-between items-end">
-                  <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60">Визуальный прогресс</h4>
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1 text-left">
+                    <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60">Динамика прогресса</h4>
+                    <p className="text-sm text-muted-foreground">Показатель: {METRICS[baselineMetricId]?.label || 'Вес'}</p>
+                  </div>
                   <p className="text-2xl font-bold text-primary">{Math.round(currentProgress)}%</p>
-               </div>
-               <div className="h-[300px] w-full bg-secondary/20 rounded-3xl p-4 border border-white/5">
-                 <WeightChart 
-                   data={weightHistory} 
-                   goal={selectedGoal} 
-                   forecastedDate={summary?.goal.estimatedCompletionDate} 
-                 />
-               </div>
-               <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+                </div>
+                
+                <div className="h-[250px] w-full bg-secondary/20 rounded-3xl p-4 border border-white/5">
+                  <MetricChart 
+                    data={chartDataPoints} 
+                    goal={selectedGoal} 
+                    forecastedDate={summary?.goal.estimatedCompletionDate} 
+                    unit={METRICS[baselineMetricId]?.unit}
+                  />
+                </div>
+                
+                <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-primary shadow-[0_0_15px_rgba(223,255,0,0.5)] transition-all duration-1000"
                     style={{ width: `${currentProgress}%` }}
                   />
-               </div>
-               <p className="text-[10px] text-center text-muted-foreground uppercase font-bold tracking-widest">
-                 Путь от {selectedGoal.startValue} кг до {selectedGoal.targetValue} кг
-               </p>
-            </div>
-
-            {(() => {
-              const categoryLabels: Record<string, string> = {
-                'STRENGTH': 'Силовая',
-                'CARDIO': 'Кардио',
-                'ENDURANCE': 'Выносливость',
-                'FLEXIBILITY': 'Йога и растяжка',
-                'OTHER': 'Другое'
-              };
-
-              const filteredWorkouts = workouts.filter(w => {
-                if (!selectedGoal.workoutTypeFilter) return true; // Show all if no filter
-                return w.category === selectedGoal.workoutTypeFilter;
-              }).slice(0, 5);
-
-              return (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center px-1">
-                    <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                       <Dumbbell className="w-3 h-3 text-primary" />
-                       {selectedGoal.workoutTypeFilter ? `Тренировки: ${categoryLabels[selectedGoal.workoutTypeFilter]}` : 'Все тренировки'}
-                    </h4>
-                  </div>
-                  <div className="space-y-3">
-                    {filteredWorkouts.map(workout => (
-                      <div 
-                        key={workout.id} 
-                        className="flex justify-between items-center p-4 bg-secondary/30 rounded-2xl border border-white/5 group hover:bg-white/5 transition-all"
-                      >
-                        <div className="flex items-center gap-3">
-                           <div className={cn(
-                            "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-                            workout.category === 'STRENGTH' ? "bg-orange-500/10 text-orange-400" :
-                            workout.category === 'CARDIO' ? "bg-blue-500/10 text-blue-400" :
-                            "bg-primary/20 text-primary"
-                          )}>
-                            {workout.category === 'STRENGTH' ? <Zap className="w-5 h-5" /> :
-                             workout.category === 'CARDIO' ? <Activity className="w-5 h-5" /> :
-                             <Dumbbell className="w-5 h-5" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold">{workout.type}</p>
-                            <p className="text-[9px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-primary">{workout.caloriesBurned || 0}</p>
-                          <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-tighter">ККАЛ</p>
-                        </div>
-                      </div>
-                    ))}
-                    {filteredWorkouts.length === 0 && (
-                      <div className="py-8 text-center bg-secondary/10 rounded-2xl border border-dashed border-white/5 opacity-50">
-                        <Dumbbell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Нет тренировок в этой категории</p>
-                      </div>
-                    )}
-                  </div>
                 </div>
-              );
-            })()}
+                <p className="text-[10px] text-center text-muted-foreground uppercase font-bold tracking-widest leading-relaxed">
+                  Путь от {selectedGoal.startValue} {selectedGoal.unit} до {selectedGoal.targetValue} {selectedGoal.unit}
+                </p>
+              </div>
 
-            {summary?.goal.estimatedCompletionDate && selectedGoal.status === 'ACTIVE' && (
-               <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-3xl border border-primary/20 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-primary/60">Прогноз достижения</p>
-                    <p className="text-2xl font-bold">{formatDate(summary.goal.estimatedCompletionDate)}</p>
-                  </div>
-                  <TrendingUp className="w-10 h-10 text-primary/20" />
-               </div>
-            )}
+              {/* AI Recommendations Section */}
+              {selectedGoal.id === activeGoalId && (
+                <div className="space-y-4">
+                  <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-primary" />
+                    Рекомендации ИИ
+                  </h4>
+                  <AIRecommendationsSection />
+                </div>
+              )}
 
-            <ModalFooter 
-              onBack={() => setDetailOpen(false)}
-              onEdit={() => {
-                setDetailOpen(false);
-                setEditModalOpen(true);
-              }}
-              onDelete={selectedGoal.status === 'PAUSED' || selectedGoal.status === 'COMPLETED' || (selectedGoal.id !== activeGoalId) ? () => {
-                if (window.confirm('Вы уверены, что хотите окончательно удалить эту цель?')) {
-                  removeGoal(selectedGoal.id);
+              {/* Workouts Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center px-1">
+                  <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                     <Dumbbell className="w-3 h-3 text-primary" />
+                     {selectedGoal.workoutTypeFilter ? `Тренировки: ${categoryLabels[selectedGoal.workoutTypeFilter]}` : 'Все тренировки'}
+                  </h4>
+                  <span className="text-[10px] text-muted-foreground font-bold">{filteredWorkouts.length} сессий</span>
+                </div>
+                <div className="space-y-3">
+                  {filteredWorkouts.slice(0, 5).map(workout => (
+                    <div 
+                      key={workout.id} 
+                      className="flex justify-between items-center p-4 bg-secondary/30 rounded-2xl border border-white/5 group hover:bg-white/5 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                          workout.category === 'STRENGTH' ? "bg-orange-500/10 text-orange-400" :
+                          workout.category === 'CARDIO' ? "bg-blue-500/10 text-blue-400" :
+                          "bg-primary/20 text-primary"
+                        )}>
+                          {workout.category === 'STRENGTH' ? <Zap className="w-5 h-5" /> :
+                           workout.category === 'CARDIO' ? <Activity className="w-5 h-5" /> :
+                           <Dumbbell className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{workout.type}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[9px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
+                            {workout.duration && <span className="text-[8px] text-primary/60 font-bold">• {workout.duration} МИН</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-primary">{workout.caloriesBurned || 0}</p>
+                        <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-tighter">ККАЛ</p>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredWorkouts.length === 0 && (
+                    <div className="py-8 text-center bg-secondary/10 rounded-2xl border border-dashed border-white/5 opacity-50">
+                      <Dumbbell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                      <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Нет тренировок в этой категории</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {summary?.goal.estimatedCompletionDate && selectedGoal.status === 'ACTIVE' && (
+                <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-3xl border border-primary/20 flex justify-between items-center">
+                   <div className="space-y-1 text-left">
+                      <p className="text-[10px] uppercase font-bold tracking-widest text-primary/60">Прогноз достижения</p>
+                      <p className="text-2xl font-bold">{formatDate(summary.goal.estimatedCompletionDate)}</p>
+                   </div>
+                   <TrendingUp className="w-10 h-10 text-primary/20" />
+                </div>
+              )}
+
+              <ModalFooter 
+                onBack={() => setDetailOpen(false)}
+                onEdit={() => {
                   setDetailOpen(false);
-                }
-              } : undefined}
-              primaryAction={selectedGoal.status === 'COMPLETED' ? {
-                label: 'Возобновить',
-                icon: <Play className="w-4 h-4" />,
-                onClick: () => updateGoal(selectedGoal.id, { status: 'ACTIVE' })
-              } : {
-                label: selectedGoal.status === 'PAUSED' ? 'Возобновить' : 'На паузу',
-                icon: selectedGoal.status === 'PAUSED' ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />,
-                onClick: () => toggleGoalStatus(selectedGoal)
-              }}
-            />
-            {selectedGoal.status !== 'COMPLETED' && (
-              <button 
-                onClick={() => {
-                  updateGoal(selectedGoal.id, { status: 'COMPLETED' });
-                  setDetailOpen(false);
+                  setEditPanelOpen(true);
                 }}
-                className="w-full py-3 text-[10px] uppercase font-bold tracking-widest text-green-400 hover:text-green-300 transition-colors flex items-center justify-center gap-2 mt-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Отметить как достигнутую
-              </button>
-            )}
-          </div>
-          )})()}
+                onDelete={selectedGoal.status === 'PAUSED' || selectedGoal.status === 'COMPLETED' || (selectedGoal.id !== activeGoalId) ? () => {
+                  if (window.confirm('Вы уверены, что хотите окончательно удалить эту цель?')) {
+                    removeGoal(selectedGoal.id);
+                    setDetailOpen(false);
+                  }
+                } : undefined}
+                primaryAction={selectedGoal.status === 'COMPLETED' ? {
+                  label: 'Возобновить',
+                  icon: <Play className="w-4 h-4" />,
+                  onClick: () => updateGoal(selectedGoal.id, { status: 'ACTIVE' })
+                } : {
+                  label: selectedGoal.status === 'PAUSED' ? 'Возобновить' : 'На паузу',
+                  icon: selectedGoal.status === 'PAUSED' ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />,
+                  onClick: () => toggleGoalStatus(selectedGoal)
+                }}
+              />
+              {selectedGoal.status !== 'COMPLETED' && (
+                <button 
+                  onClick={() => {
+                    updateGoal(selectedGoal.id, { status: 'COMPLETED' });
+                    setDetailOpen(false);
+                  }}
+                  className="w-full py-3 text-[10px] uppercase font-bold tracking-widest text-green-400 hover:text-green-300 transition-colors flex items-center justify-center gap-2 mt-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Отметить как достигнутую
+                </button>
+              )}
+            </div>
+          );
+        })()}
       </Modal>
     </div>
   );

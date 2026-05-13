@@ -4,15 +4,22 @@ import { WeightEntry, Goal } from '../../../types';
 import { formatDate } from '../../../lib/utils';
 import { isAfter, parseISO } from 'date-fns';
 
-interface WeightChartProps {
-  data: WeightEntry[];
+interface DataPoint {
+  date: string;
+  value: number;
+}
+
+interface MetricChartProps {
+  data: DataPoint[];
   goal?: Goal | null;
   forecastedDate?: string | null;
+  unit?: string;
+  color?: string;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const unit = payload[0].payload.unit || 'кг';
+    const unit = payload[0].payload.unit || '';
     return (
       <div className="bg-zinc-900/90 border border-white/10 p-3 rounded-2xl shadow-2xl backdrop-blur-xl">
         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-2">{label}</p>
@@ -43,11 +50,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecastedDate }) => {
+export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecastedDate, unit: propUnit, color = "#DFFF00" }) => {
   const chartData = useMemo(() => {
     if (!data.length && !goal) return [];
 
-    const unit = goal?.unit || 'кг';
+    const unit = propUnit || goal?.unit || '';
 
     // Combine real data and forecast
     const realSorted = [...data]
@@ -127,7 +134,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
     }
 
     return processed;
-  }, [data, goal, forecastedDate]);
+  }, [data, goal, forecastedDate, propUnit]);
 
   const minVal = useMemo(() => {
     if (!chartData.length) return 0;
@@ -151,24 +158,24 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
     return max + (max * 0.05);
   }, [chartData, goal]);
 
-  if (!data.length) return (
-    <div className="w-full h-full min-h-[300px] flex items-center justify-center text-muted-foreground/40 italic">
-       Нет данных для графика
+  if (!data.length && !goal) return (
+    <div className="w-full h-full min-h-[200px] flex items-center justify-center text-muted-foreground/40 italic text-xs">
+       Нет данных
     </div>
   );
 
   return (
-    <div className="w-full h-full min-h-[300px] relative">
+    <div className="w-full h-full min-h-[200px] relative">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
           <defs>
             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#DFFF00" stopOpacity={0.4}/>
-              <stop offset="95%" stopColor="#DFFF00" stopOpacity={0}/>
+              <stop offset="5%" stopColor={color} stopOpacity={0.4}/>
+              <stop offset="95%" stopColor={color} stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#DFFF00" stopOpacity={0.1}/>
-              <stop offset="95%" stopColor="#DFFF00" stopOpacity={0}/>
+              <stop offset="5%" stopColor={color} stopOpacity={0.1}/>
+              <stop offset="95%" stopColor={color} stopOpacity={0}/>
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
@@ -185,19 +192,19 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
           />
           <Tooltip 
             content={<CustomTooltip />}
-            cursor={{ stroke: '#DFFF00', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+            cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
           />
 
           {goal && (
             <ReferenceLine 
               y={goal.targetValue} 
-              stroke="#DFFF00" 
+              stroke={color} 
               strokeDasharray="8 8" 
               strokeOpacity={0.2}
               label={{ 
                 position: 'insideRight', 
-                value: `ЦЕЛЬ: ${goal.targetValue} ${goal.unit}`, 
-                fill: '#DFFF00', 
+                value: `ЦЕЛЬ: ${goal.targetValue} ${propUnit || goal.unit}`, 
+                fill: color, 
                 fontSize: 10, 
                 fontWeight: 'bold',
                 opacity: 0.5,
@@ -210,13 +217,13 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
             name="current"
             type="monotone" 
             dataKey="current" 
-            stroke="#DFFF00" 
+            stroke={color} 
             strokeWidth={4}
             fillOpacity={1} 
             fill="url(#colorValue)" 
             animationDuration={1500}
-            dot={{ r: 3, fill: '#DFFF00', stroke: '#000', strokeWidth: 1, fillOpacity: 1 }}
-            activeDot={{ r: 8, fill: '#DFFF00', stroke: '#000', strokeWidth: 3 }}
+            dot={{ r: 3, fill: color, stroke: '#000', strokeWidth: 1, fillOpacity: 1 }}
+            activeDot={{ r: 8, fill: color, stroke: '#000', strokeWidth: 3 }}
             connectNulls={true}
           />
 
@@ -224,7 +231,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
             name="forecast"
             type="monotone" 
             dataKey="forecast" 
-            stroke="#DFFF00" 
+            stroke={color} 
             strokeWidth={2}
             strokeDasharray="6 6"
             fillOpacity={1} 
@@ -237,3 +244,4 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
     </div>
   );
 };
+

@@ -4,7 +4,7 @@ import { useFitnessStore, useWeightHistory, useWorkouts, useGoals } from '../../
 import { selectAnalyticsSummary } from './selectors/fitnessSelectors';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { StatCard } from '../../components/ui/StatCard';
-import { WeightChart } from '../dashboard/components/WeightChart';
+import { MetricChart } from '../dashboard/components/MetricChart';
 import { Modal } from '../../components/ui/Modal';
 import { TrendingUp, Activity, Target, Zap, Clock, Calendar, BarChart3, Info, ChevronRight, Scale, Flame, ArrowRight, Dumbbell, Sparkles, ChevronLeft, FileText } from 'lucide-react';
 import { RU } from '../../constants';
@@ -91,7 +91,7 @@ export const AnalyticsView: React.FC = () => {
             </div>
           </div>
           <div className="flex-1">
-            <WeightChart data={weightHistory} />
+            <MetricChart data={weightHistory} />
           </div>
         </GlassCard>
 

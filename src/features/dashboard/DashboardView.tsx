@@ -12,7 +12,7 @@ import { Modal } from "../../components/ui/Modal";
 import { GoalForm } from "../goals/components/GoalForm";
 import { EntryForm } from "../entries/components/EntryForm";
 import { AIRecommendationsSection } from "../ai/components/AIRecommendationsSection";
-import { WeightChart } from "./components/WeightChart";
+import { MetricChart } from "./components/MetricChart";
 import { DemoModeBanner } from "../../components/DemoModeBanner";
 import { BaselineParameters } from "../profile/components/BaselineParameters";
 import { ModalFooter } from "../../components/ui/ModalFooter";
@@ -242,7 +242,7 @@ export const DashboardView: React.FC = () => {
                   </div>
                   <div className="flex-1 mt-4">
                     {weightHistory.length > 0 ? (
-                      <WeightChart 
+                      <MetricChart 
                         data={weightHistory} 
                         goal={activeGoal} 
                         forecastedDate={summary?.goal.estimatedCompletionDate}
