@@ -242,10 +242,15 @@ export const DashboardView: React.FC = () => {
                         {activeGoal.title || RU.DASHBOARD.WEIGHT_TREND}
                         <ChevronRight className="w-4 h-4 opacity-0 group-hover/title:opacity-100 transition-all -ml-1" />
                       </h2>
-                      <div className="flex gap-2 text-xs font-bold uppercase tracking-widest text-primary/60 mt-1">
-                        <span>Старт: {formatWeight(activeGoal.startValue)}</span>
-                        <span>•</span>
-                        <span>Цель: {formatWeight(activeGoal.targetValue)}</span>
+                      <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest text-primary/40 mt-2">
+                        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                           <span className="opacity-50">СТАРТ:</span>
+                           <span className="text-primary">{formatWeight(activeGoal.startValue || weightHistory[weightHistory.length - 1]?.value || 0)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                           <span className="opacity-50">ЦЕЛЬ:</span>
+                           <span className="text-primary">{formatWeight(activeGoal.targetValue)}</span>
+                        </div>
                       </div>
                       {activeGoal.baselineMeasurements && Object.keys(activeGoal.baselineMeasurements).length > 0 && (
                         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">

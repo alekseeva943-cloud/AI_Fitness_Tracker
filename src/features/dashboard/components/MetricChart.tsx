@@ -108,7 +108,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
       workoutMap.set(dayKey, list);
     });
 
-    const sortedProcessed = Array.from(allDates)
+    let processed = Array.from(allDates)
       .map((dateKey) => {
         const measurement = dailyMap.get(dateKey);
         const avg = measurement ? measurement.entries.reduce((s, v) => s + (v.value || v.current || 0), 0) / measurement.entries.length : null;
@@ -128,7 +128,47 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
       })
       .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
-    const processed = [...sortedProcessed];
+    // Ensure we have a baseline if weightHistory is empty OR the goal start is earlier than first entry
+    if (goal && isValidDate(goal.startDate)) {
+      const startIso = new Date(goal.startDate).toISOString().split('T')[0];
+      const hasRealStart = goal.startValue > 0;
+      
+      if (processed.length === 0) {
+        processed.push({
+          dateKey: startIso,
+          displayDate: formatDate(goal.startDate),
+          current: hasRealStart ? goal.startValue : null,
+          forecast: null as number | null,
+          goal: goal.targetValue,
+          unit,
+          workout: workoutMap.has(startIso),
+          workoutsAtDate: workoutMap.get(startIso) || [],
+          measurementEntries: [],
+          isForecast: false
+        });
+      } else if (startIso < processed[0].dateKey) {
+        processed.unshift({
+          dateKey: startIso,
+          displayDate: formatDate(goal.startDate),
+          current: hasRealStart ? goal.startValue : processed[0].current,
+          forecast: null as number | null,
+          goal: goal.targetValue,
+          unit,
+          workout: workoutMap.has(startIso),
+          workoutsAtDate: workoutMap.get(startIso) || [],
+          measurementEntries: [],
+          isForecast: false
+        });
+      }
+    }
+
+    // Fill startValue from first real data if goal start value is null/zero
+    if (processed.length > 0 && processed[0].current === null) {
+       const firstReal = processed.find(p => p.current !== null && p.current > 0);
+       if (firstReal) {
+          processed[0].current = firstReal.current;
+       }
+    }
 
     // Linear interpolation for missing measurements
     for (let i = 0; i < processed.length; i++) {
@@ -156,7 +196,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           const t2 = new Date(next.dateKey).getTime();
           const t = new Date(processed[i].dateKey).getTime();
           const ratio = (t - t1) / (t2 - t1);
-          processed[i].current = prev.current + (next.current - prev.current) * ratio;
+          processed[i].current = Number((prev.current + (next.current - prev.current) * ratio).toFixed(1));
         } else if (prev) {
           processed[i].current = prev.current;
         } else if (next) {
@@ -165,38 +205,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
       }
     }
 
-    const hasTargetValue = goal && !isNaN(goal.targetValue);
-
-    if (processed.length === 0 && goal && isValidDate(goal.startDate)) {
-      const startIso = new Date(goal.startDate).toISOString().split('T')[0];
-      processed.push({
-        dateKey: startIso,
-        displayDate: formatDate(goal.startDate),
-        current: goal.startValue,
-        forecast: null as number | null,
-        goal: goal.targetValue,
-        unit,
-        workout: workoutMap.has(startIso),
-        workoutsAtDate: workoutMap.get(startIso) || [],
-        measurementEntries: [],
-        isForecast: false
-      });
-    } else if (goal && processed.length > 0 && isValidDate(goal.startDate)) {
-      const startIso = new Date(goal.startDate).toISOString().split('T')[0];
-      if (startIso < processed[0].dateKey) {
-        processed.unshift({
-          dateKey: startIso,
-          displayDate: formatDate(goal.startDate),
-          current: goal.startValue,
-          forecast: null as number | null,
-          goal: goal.targetValue,
-          unit,
-          workout: workoutMap.has(startIso),
-          workoutsAtDate: workoutMap.get(startIso) || [],
-          measurementEntries: [],
-          isForecast: false
-        });
-      }
+    // If still everything is null (can happen if goal startValue was also 0/null and no measurements)
+    // Fallback to goal target or some default to avoid crash
+    if (processed.every(p => p.current === null)) {
+       const fallback = goal?.targetValue || 70;
+       processed.forEach(p => { p.current = fallback; });
     }
 
     if (processed.length === 0) return [];
@@ -254,6 +267,9 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           });
         }
       }
+
+    console.log('[MetricChart] Rendering with data points:', processed.length, unit);
+    if (processed.length > 0) console.log('[MetricChart] First point:', processed[0], 'Last point:', processed[processed.length-1]);
 
     return processed;
   }, [data, goal, forecastedDate, propUnit, workouts]);
@@ -430,9 +446,12 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
               return (
                 <circle 
                   key={`dot-${index}`}
-                  cx={cx} cy={cy} r={4} 
-                  fill={color} 
-                  className="opacity-0 hover:opacity-100 cursor-pointer transition-opacity" 
+                  cx={cx} cy={cy} r={3} 
+                  fill={color}
+                  fillOpacity={0.4}
+                  stroke={color}
+                  strokeWidth={1}
+                  className="cursor-pointer hover:fill-white hover:fill-opacity-100 transition-all" 
                   onClick={handleClick}
                 />
               );
