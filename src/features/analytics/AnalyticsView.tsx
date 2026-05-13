@@ -91,7 +91,12 @@ export const AnalyticsView: React.FC = () => {
             </div>
           </div>
           <div className="flex-1">
-            <MetricChart data={weightHistory} />
+            <MetricChart 
+              data={weightHistory} 
+              workouts={workouts} 
+              goal={activeGoal} 
+              forecastedDate={summary.goal.estimatedCompletionDate} 
+            />
           </div>
         </GlassCard>
 

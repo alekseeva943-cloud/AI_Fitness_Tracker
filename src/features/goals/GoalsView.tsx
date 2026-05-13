@@ -394,15 +394,31 @@ export const GoalsView: React.FC = () => {
                 </div>
                 <div className="p-5 rounded-3xl bg-primary/5 border border-primary/20 space-y-1">
                   <p className="text-[10px] uppercase font-bold tracking-widest text-primary">Разница</p>
-                  <p className="text-xl font-bold">{Math.abs(selectedGoal.targetValue - selectedGoal.currentValue)} {selectedGoal.unit}</p>
+                  <p className="text-xl font-bold">{Math.abs(selectedGoal.targetValue - selectedGoal.currentValue).toFixed(1)} {selectedGoal.unit}</p>
                 </div>
               </div>
+
+              {summary?.goal.estimatedCompletionDate && selectedGoal.status === 'ACTIVE' && (
+                <GlassCard className="p-6 bg-gradient-to-br from-primary/10 to-transparent border-primary/20 flex justify-between items-center relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-2 opacity-5 translate-x-1/4 -translate-y-1/4">
+                      <TrendingUp className="w-24 h-24 text-primary" />
+                   </div>
+                   <div className="space-y-1 text-left relative z-10">
+                      <p className="text-[10px] uppercase font-bold tracking-widest text-primary/60">Прогноз достижения цели</p>
+                      <p className="text-3xl font-display font-bold text-primary">~ {formatDate(summary.goal.estimatedCompletionDate)}</p>
+                      <p className="text-xs text-muted-foreground">При сохранении текущей интенсивности тренировок</p>
+                   </div>
+                   <div className="hidden sm:flex w-16 h-16 rounded-full bg-primary/20 items-center justify-center border border-primary/30 relative z-10">
+                      <TrendingUp className="w-8 h-8 text-primary" />
+                   </div>
+                </GlassCard>
+              )}
 
               {/* Chart Section */}
               <div className="space-y-4">
                 <div className="flex justify-between items-end">
                   <div className="space-y-1 text-left">
-                    <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60">Динамика прогресса</h4>
+                    <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60">Визуальный прогресс</h4>
                     <p className="text-sm text-muted-foreground">Показатель: {METRICS[baselineMetricId]?.label || 'Вес'}</p>
                   </div>
                   <p className="text-2xl font-bold text-primary">{Math.round(currentProgress)}%</p>
@@ -414,6 +430,7 @@ export const GoalsView: React.FC = () => {
                     goal={selectedGoal} 
                     forecastedDate={summary?.goal.estimatedCompletionDate} 
                     unit={METRICS[baselineMetricId]?.unit}
+                    workouts={workouts}
                   />
                 </div>
                 
@@ -533,16 +550,6 @@ export const GoalsView: React.FC = () => {
                   )}
                 </div>
               </div>
-
-              {summary?.goal.estimatedCompletionDate && selectedGoal.status === 'ACTIVE' && (
-                <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-3xl border border-primary/20 flex justify-between items-center">
-                   <div className="space-y-1 text-left">
-                      <p className="text-[10px] uppercase font-bold tracking-widest text-primary/60">Прогноз достижения</p>
-                      <p className="text-2xl font-bold">{formatDate(summary.goal.estimatedCompletionDate)}</p>
-                   </div>
-                   <TrendingUp className="w-10 h-10 text-primary/20" />
-                </div>
-              )}
 
               <ModalFooter 
                 onBack={() => setDetailOpen(false)}

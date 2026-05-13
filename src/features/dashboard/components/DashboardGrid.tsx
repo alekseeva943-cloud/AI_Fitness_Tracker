@@ -58,13 +58,17 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         title="Средняя продолжительность одной тренировки"
       />
       <StatCard 
-        label="Вес (прогноз 30 дн)"
-        subLabel={summary?.goal.estimatedCompletionDate ? `Цель к ${formatDate(summary.goal.estimatedCompletionDate)}` : "Ожидаемый вес"}
-        value={formatWeight(summary?.weight.forecastedWeight ?? 0).replace(' кг', '')}
-        unit={METRICS.weight.unit}
+        label="Прогноз цели"
+        subLabel={summary?.goal.estimatedCompletionDate ? `К ${formatDate(summary.goal.estimatedCompletionDate)}` : "Ожидаемая дата"}
+        value={summary?.goal.estimatedCompletionDate ? formatDate(summary.goal.estimatedCompletionDate).split(' ')[0] : '-'}
+        unit={summary?.goal.estimatedCompletionDate ? formatDate(summary.goal.estimatedCompletionDate).split(' ').slice(1).join(' ') : ''}
         icon={<TrendingUp className="w-4 h-4" />}
-        onClick={() => navigate(activeGoal ? `/goals?id=${activeGoal.id}` : '/analytics')}
-        title="Прогноз вашего веса через 30 дней на основе текущей динамики"
+        onClick={() => navigate(activeGoal ? `/goals?id=${activeGoal.id}` : '/goals')}
+        title="Прогноз даты достижения вашей основной цели на основе текущей динамики"
+        trend={activeGoal ? { 
+          value: formatWeight(activeGoal.targetValue), 
+          isPositive: true 
+        } : undefined}
       />
     </div>
   );

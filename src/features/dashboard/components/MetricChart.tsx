@@ -15,17 +15,19 @@ interface MetricChartProps {
   forecastedDate?: string | null;
   unit?: string;
   color?: string;
+  workouts?: { date: string; intensity?: number }[];
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const unit = payload[0].payload.unit || '';
+    const workout = payload[0].payload.workout;
     return (
       <div className="bg-zinc-900/90 border border-white/10 p-3 rounded-2xl shadow-2xl backdrop-blur-xl">
         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-2">{label}</p>
         <div className="space-y-1.5">
           {payload.map((p: any, i: number) => {
-            if (p.value === null || p.value === undefined) return null;
+            if (p.value === null || p.value === undefined || p.name === 'workout') return null;
             
             const nameMap: Record<string, string> = {
               current: 'Факт: ',
@@ -43,6 +45,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               </div>
             );
           })}
+          {workout && (
+            <div className="pt-2 mt-2 border-t border-white/5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <p className="text-[10px] font-bold uppercase text-primary">Тренировка!</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -50,25 +60,35 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecastedDate, unit: propUnit, color = "#DFFF00" }) => {
+const isValidDate = (d: any) => {
+  if (!d) return false;
+  const date = new Date(d);
+  return date instanceof Date && !isNaN(date.getTime());
+};
+
+export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecastedDate, unit: propUnit, color = "#DFFF00", workouts = [] }) => {
   const chartData = useMemo(() => {
     if (!data.length && !goal) return [];
 
     const unit = propUnit || goal?.unit || '';
 
-    // Combine real data and forecast
-    const realSorted = [...data]
-      .filter(e => e.date && !isNaN(new Date(e.date).getTime()))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
     // Process real measurements (average per day)
     const dailyMap = new Map<string, number[]>();
-    realSorted.forEach(e => {
+    data.forEach(e => {
+      if (!isValidDate(e.date)) return;
       const d = new Date(e.date);
       const dayKey = d.toISOString().split('T')[0];
       const vals = dailyMap.get(dayKey) || [];
       vals.push(e.value);
       dailyMap.set(dayKey, vals);
+    });
+
+    // Workout Map
+    const workoutMap = new Map<string, boolean>();
+    workouts.forEach(w => {
+      if (!isValidDate(w.date)) return;
+      const dayKey = new Date(w.date).toISOString().split('T')[0];
+      workoutMap.set(dayKey, true);
     });
 
     const processed = Array.from(dailyMap.entries())
@@ -80,22 +100,25 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           current: Number(avg.toFixed(1)),
           forecast: null as number | null,
           goal: goal?.targetValue,
-          unit
+          unit,
+          workout: workoutMap.has(dateKey)
         };
       })
       .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
-    if (processed.length === 0 && goal) {
+    if (processed.length === 0 && goal && isValidDate(goal.startDate)) {
+      const startIso = new Date(goal.startDate).toISOString().split('T')[0];
       processed.push({
-        dateKey: goal.startDate.split('T')[0],
+        dateKey: startIso,
         displayDate: formatDate(goal.startDate),
         current: goal.startValue,
         forecast: null as number | null,
         goal: goal.targetValue,
-        unit
+        unit,
+        workout: workoutMap.has(startIso)
       });
-    } else if (goal && processed.length > 0) {
-      const startIso = goal.startDate.split('T')[0];
+    } else if (goal && processed.length > 0 && isValidDate(goal.startDate)) {
+      const startIso = new Date(goal.startDate).toISOString().split('T')[0];
       if (startIso < processed[0].dateKey) {
         processed.unshift({
           dateKey: startIso,
@@ -103,7 +126,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           current: goal.startValue,
           forecast: null as number | null,
           goal: goal.targetValue,
-          unit
+          unit,
+          workout: workoutMap.has(startIso)
         });
       }
     }
@@ -113,12 +137,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     const lastRealPoint = processed[processed.length - 1];
     if (!lastRealPoint) return processed;
     
-    if (forecastedDate && goal && goal.status === 'ACTIVE') {
+    if (forecastedDate && goal && goal.status === 'ACTIVE' && isValidDate(forecastedDate)) {
       const fDate = new Date(forecastedDate);
-      if (!isNaN(fDate.getTime())) {
-        const forecastIso = fDate.toISOString().split('T')[0];
-        
-        if (forecastIso >= lastRealPoint.dateKey) {
+      const forecastIso = fDate.toISOString().split('T')[0];
+      
+      if (forecastIso >= lastRealPoint.dateKey) {
           lastRealPoint.forecast = lastRealPoint.current;
   
           processed.push({
@@ -127,14 +150,14 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             current: null as any,
             forecast: goal.targetValue,
             goal: goal.targetValue,
-            unit
+            unit,
+            workout: false
           });
         }
       }
-    }
 
     return processed;
-  }, [data, goal, forecastedDate, propUnit]);
+  }, [data, goal, forecastedDate, propUnit, workouts]);
 
   const minVal = useMemo(() => {
     if (!chartData.length) return 0;
@@ -222,7 +245,18 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             fillOpacity={1} 
             fill="url(#colorValue)" 
             animationDuration={1500}
-            dot={{ r: 3, fill: color, stroke: '#000', strokeWidth: 1, fillOpacity: 1 }}
+            dot={(props: any) => {
+              const { cx, cy, payload } = props;
+              if (payload.workout) {
+                return (
+                  <g key={`dot-${payload.dateKey}`}>
+                    <circle cx={cx} cy={cy} r={6} fill={color} stroke="#000" strokeWidth={2} />
+                    <circle cx={cx} cy={cy} r={8} fill={color} fillOpacity={0.2} className="animate-pulse" />
+                  </g>
+                );
+              }
+              return <circle key={`dot-${payload.dateKey}`} cx={cx} cy={cy} r={3} fill={color} stroke="#000" strokeWidth={1} />;
+            }}
             activeDot={{ r: 8, fill: color, stroke: '#000', strokeWidth: 3 }}
             connectNulls={true}
           />

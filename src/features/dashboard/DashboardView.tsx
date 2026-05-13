@@ -246,6 +246,7 @@ export const DashboardView: React.FC = () => {
                         data={weightHistory} 
                         goal={activeGoal} 
                         forecastedDate={summary?.goal.estimatedCompletionDate}
+                        workouts={workouts}
                       />
                     ) : (
                       <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-4">
