@@ -13,6 +13,32 @@ export class AIService {
   static async analyzeProgress(state: FitnessState, analytics: any): Promise<AIAnalysis> {
     const ai = this.getClient();
     
+    const goal = state.goals[0];
+    const weightTrend = analytics.weight;
+
+    // Enhanced semantic context for smarter AI insights
+    const semanticContext = goal ? {
+      goalType: goal.type,
+      goalTitle: goal.title,
+      expectedDirection: goal.type === 'WEIGHT_LOSS' ? 'down' : (goal.type === 'MUSCLE_GAIN' ? 'up' : 'stable'),
+      actualDirection: weightTrend.velocity < 0 ? 'down' : (weightTrend.velocity > 0 ? 'up' : 'stable'),
+      isTrendMatchingGoal: analytics.goal.status !== 'WRONG_DIRECTION' && analytics.goal.status !== 'STAGNANT',
+      velocity: weightTrend.velocity,
+      workoutDiversity: state.workouts.reduce((acc: any, w) => {
+        const cat = w.category || 'OTHER';
+        acc[cat] = (acc[cat] || 0) + 1;
+        return acc;
+      }, {}),
+      recentIntensity: state.workouts.slice(0, 5).map(w => ({
+        type: w.type,
+        category: w.category,
+        duration: w.duration,
+        volume: w.volume,
+        distance: w.distance,
+        heartRate: w.heartRate
+      }))
+    } : null;
+
     const prompt = `
       Ты – профессиональный фитнес-коуч с 20-летним опытом. 
       Твоя задача – проанализировать данные пользователя и дать глубокие, персонализированные инсайты.
@@ -21,17 +47,21 @@ export class AIService {
       - Аналитика веса: ${JSON.stringify(analytics.weight)}
       - Статистика тренировок: ${JSON.stringify(analytics.workouts)}
       - Текущая цель: ${JSON.stringify(analytics.goal)}
+      - Семантический контекст: ${JSON.stringify(semanticContext)}
 
       КОНТЕКСТ ДЛЯ АНАЛИЗА:
       - weeklyChange: Изменение средней массы тела за ТЕКУЩУЮ неделю относительно ПРЕДЫДУЩЕЙ недели.
       - totalChange: Разница между САМЫМ ПЕРВЫМ замером и ТЕКУЩИМ.
       - velocity: Среднее изменение веса в день за весь период наблюдений.
       
-      ВАЖНО: Если weeklyChange около 0, но totalChange большой – это значит, что основной прогресс был в прошлом, а сейчас плато. 
-      Не поздравляй пользователя с успехами, которые случились давно, как если бы они были вчера.
+      ВАЖНО: 
+      1. Если weeklyChange около 0, но totalChange большой – сейчас плато. 
+      2. КРИТИЧЕСКИ ВАЖНО: Если isTrendMatchingGoal равно false, это значит, что пользователь ДВИЖЕТСЯ В ОБРАТНУЮ СТОРОНУ ОТ ЦЕЛИ (например, худеет при желании набрать массу). 
+         В этом случае НЕ поздравляй его, а укажи на ошибку в стратегии (питание или тренинг) и дай корректирующие советы.
+      3. Не поздравляй пользователя с успехами, которые случились давно, как если бы они были вчера.
 
       ТРЕБОВАНИЯ К ОТВЕТУ:
-      1. Проанализируй скорость изменений.
+      1. Проанализируй скорость изменений и соответствие цели.
       2. Выяви возможные плато или периоды высокой эффективности.
       3. Дай 3-4 конкретных совета по тренировкам, питанию или отдыху.
       

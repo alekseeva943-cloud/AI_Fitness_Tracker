@@ -5,7 +5,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { EntryForm } from '../entries/components/EntryForm';
-import { Plus, Dumbbell, Trash2, Clock, Calendar, ExternalLink, Filter, ChevronRight, Flame, FileText, Scale, ChevronLeft } from 'lucide-react';
+import { Plus, Dumbbell, Trash2, Clock, Calendar, ExternalLink, Filter, ChevronRight, Flame, FileText, Scale, ChevronLeft, Zap, Activity, Heart, Ruler } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import { cn } from '../../lib/utils';
 import { WorkoutEntry } from '../../types';
@@ -32,16 +32,13 @@ export const WorkoutsView: React.FC = () => {
     addWorkout({
       id: workoutId,
       ...data,
-      duration: Number(data.duration),
-      caloriesBurned: Number(data.caloriesBurned),
-      weight: data.weight ? Number(data.weight) : undefined,
     });
 
     if (data.weight) {
       addWeightEntry({
         id: crypto.randomUUID(),
         date: data.date || new Date().toISOString(),
-        value: Number(data.weight),
+        value: data.weight,
         unit: 'кг',
       });
     }
@@ -105,22 +102,43 @@ export const WorkoutsView: React.FC = () => {
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-                  {getWorkoutIcon(workout.type)}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold capitalize">{workout.type}</h3>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-primary" />
-                      {formatDate(workout.date)}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-primary" />
-                      {workout.duration} мин
-                    </span>
-                  </div>
-                </div>
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all group-hover:scale-105",
+                        workout.category === 'STRENGTH' ? "bg-orange-500/10 text-orange-400" :
+                        workout.category === 'CARDIO' ? "bg-blue-500/10 text-blue-400" :
+                        workout.category === 'ENDURANCE' ? "bg-green-500/10 text-green-400" :
+                        "bg-primary/10 text-primary"
+                      )}>
+                        {workout.category === 'STRENGTH' ? <Zap className="w-6 h-6" /> :
+                         workout.category === 'CARDIO' ? <Activity className="w-6 h-6" /> :
+                         <Dumbbell className="w-6 h-6" />}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold capitalize">{workout.type}</h3>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-primary/60" />
+                            {formatDate(workout.date)}
+                          </span>
+                          {workout.volume ? (
+                            <span className="flex items-center gap-1.5 text-primary/80 font-bold">
+                              <Zap className="w-3.5 h-3.5" />
+                              {Math.round(workout.volume)} кг
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-primary/60" />
+                              {workout.duration} мин
+                            </span>
+                          )}
+                          {workout.distance && (
+                            <span className="flex items-center gap-1.5 text-blue-400 font-bold">
+                              <Ruler className="w-3.5 h-3.5" />
+                              {workout.distance} км
+                            </span>
+                          )}
+                        </div>
+                      </div>
               </div>
 
               <div className="flex items-center justify-between md:justify-end gap-8 border-t md:border-t-0 pt-4 md:pt-0">
@@ -167,12 +185,19 @@ export const WorkoutsView: React.FC = () => {
       <Modal isOpen={isDetailModalOpen} onClose={() => setDetailModalOpen(false)} title="Детали активности">
         {selectedWorkout && (
           <div className="space-y-6 p-2 text-foreground">
-            <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
-                <Dumbbell className="w-8 h-8" />
+            <div className="flex items-center gap-4 p-5 bg-secondary/30 rounded-3xl border border-white/5">
+              <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg",
+                selectedWorkout.category === 'STRENGTH' ? "bg-orange-500/20 text-orange-400" :
+                selectedWorkout.category === 'CARDIO' ? "bg-blue-500/20 text-blue-400" :
+                "bg-primary/20 text-primary"
+              )}>
+                {selectedWorkout.category === 'STRENGTH' ? <Zap className="w-8 h-8" /> :
+                 selectedWorkout.category === 'CARDIO' ? <Activity className="w-8 h-8" /> :
+                 <Dumbbell className="w-8 h-8" />}
               </div>
               <div>
-                <h4 className="text-xl font-bold">{selectedWorkout.type}</h4>
+                <h4 className="text-2xl font-bold">{selectedWorkout.type}</h4>
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Calendar className="w-4 h-4" />
                   {formatDate(selectedWorkout.date)}
@@ -181,39 +206,86 @@ export const WorkoutsView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-secondary/50 p-4 rounded-xl space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="bg-secondary/50 p-4 rounded-2xl space-y-1 border border-white/5">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <Clock className="w-3 h-3" />
                   Длительность
                 </div>
-                <p className="text-lg font-medium">{selectedWorkout.duration} мин</p>
+                <p className="text-xl font-bold">{selectedWorkout.duration} мин</p>
               </div>
-              <div className="bg-secondary/50 p-4 rounded-xl space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="bg-secondary/50 p-4 rounded-2xl space-y-1 border border-white/5">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <Flame className="w-3 h-3" />
                   Калории
                 </div>
-                <p className="text-lg font-medium">{selectedWorkout.caloriesBurned} ккал</p>
+                <p className="text-xl font-bold">{selectedWorkout.caloriesBurned || 0} ккал</p>
               </div>
             </div>
 
-            {selectedWorkout.weight && (
-              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
-                  <Scale className="w-3 h-3" />
-                  Вес при замере
+            {selectedWorkout.category === 'STRENGTH' && (
+              <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2">
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Сеты</p>
+                  <p className="text-lg font-bold">{selectedWorkout.sets || '-'}</p>
                 </div>
-                <p className="text-lg font-medium">{selectedWorkout.weight} кг</p>
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Повт.</p>
+                  <p className="text-lg font-bold">{selectedWorkout.reps || '-'}</p>
+                </div>
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Вес</p>
+                  <p className="text-lg font-bold text-primary">{selectedWorkout.workingWeight || '-'}</p>
+                </div>
+                {selectedWorkout.volume && (
+                  <div className="col-span-3 bg-primary/10 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
+                    <p className="text-xs uppercase font-bold text-primary tracking-widest">Тренировочный объем</p>
+                    <p className="text-xl font-bold text-primary">{selectedWorkout.volume} кг</p>
+                  </div>
+                )}
               </div>
             )}
 
+            {(selectedWorkout.category === 'CARDIO' || selectedWorkout.category === 'ENDURANCE') && (
+              <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2">
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                   <Ruler className="w-4 h-4 mb-2 text-blue-400" />
+                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Дистанция</p>
+                   <p className="text-lg font-bold">{selectedWorkout.distance ? `${selectedWorkout.distance} км` : '-'}</p>
+                </div>
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                   <Activity className="w-4 h-4 mb-2 text-green-400" />
+                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Темп</p>
+                   <p className="text-lg font-bold">{selectedWorkout.pace || '-'}</p>
+                </div>
+                 {selectedWorkout.heartRate && (
+                  <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                    <Heart className="w-4 h-4 mb-2 text-red-500" />
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Пульс</p>
+                    <p className="text-lg font-bold text-red-400">{selectedWorkout.heartRate} BPM</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4">
+              {selectedWorkout.weight && (
+                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
+                    <Scale className="w-4 h-4" />
+                    Вес на момент тренировки
+                  </div>
+                  <p className="text-lg font-bold">{selectedWorkout.weight} кг</p>
+                </div>
+              )}
+            </div>
+
             {selectedWorkout.notes && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                   <FileText className="w-3 h-3" />
                   Заметки
                 </div>
-                <div className="bg-secondary/30 p-4 rounded-xl text-sm italic">
+                <div className="bg-secondary/30 p-6 rounded-3xl text-sm italic leading-relaxed border border-white/5">
                   {selectedWorkout.notes}
                 </div>
               </div>
@@ -226,10 +298,10 @@ export const WorkoutsView: React.FC = () => {
                   setDetailModalOpen(false);
                 }
               }}
-              className="w-full flex items-center justify-center gap-2 p-4 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 p-5 text-red-400 hover:bg-red-500/10 rounded-2xl transition-all text-xs uppercase font-bold tracking-widest"
             >
               <Trash2 className="w-4 h-4" />
-              Удалить запись
+              Удалить из журнала
             </button>
           </div>
         )}

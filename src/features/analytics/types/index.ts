@@ -22,13 +22,16 @@ export interface WorkoutStats {
   totalDuration: number;
   consistencyScore: number; // 0-100
   lastWorkoutDate: string | null;
+  totalVolume?: number;
+  totalDistance?: number;
+  avgHeartRate?: number;
 }
 
 export interface GoalProgress {
   completionPercentage: number;
   remainingValue: number;
   estimatedCompletionDate: string | null;
-  status: 'AHEAD_OF_SCHEDULE' | 'ON_TRACK' | 'BEHIND_SCHEDULE' | 'STAGNANT';
+  status: 'AHEAD_OF_SCHEDULE' | 'ON_TRACK' | 'BEHIND_SCHEDULE' | 'STAGNANT' | 'WRONG_DIRECTION';
 }
 
 export interface AnalyticsSummary {

@@ -32,10 +32,15 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
 
   if (trend && trend.velocity !== 0) {
     const remainingValue = Math.abs(target - current);
-    const velocity = Math.abs(trend.velocity); // absolute change per day
+    const velocity = trend.velocity;
     
-    if (velocity > 0) {
-      const daysToGoal = Math.ceil(remainingValue / velocity);
+    const isMovingTowardsGoal = 
+      (goal.type === GoalType.WEIGHT_LOSS && velocity < 0) || 
+      (goal.type === GoalType.MUSCLE_GAIN && velocity > 0);
+
+    if (isMovingTowardsGoal) {
+      const absVelocity = Math.abs(velocity);
+      const daysToGoal = Math.ceil(remainingValue / absVelocity);
       estimatedCompletionDate = addDays(new Date(), daysToGoal).toISOString();
       
       const deadline = new Date(goal.deadline);
@@ -46,6 +51,9 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
       } else if (differenceInDays(estimated, deadline) > 14) {
         status = 'BEHIND_SCHEDULE';
       }
+    } else {
+      status = 'WRONG_DIRECTION';
+      estimatedCompletionDate = null;
     }
   }
 

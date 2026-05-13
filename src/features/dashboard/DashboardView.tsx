@@ -3,7 +3,7 @@ import { RU } from "../../constants";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
-import { ChevronRight, Sparkles, TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft } from "lucide-react";
+import { ChevronRight, Sparkles, TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, Activity, Heart, Ruler, Zap } from "lucide-react";
 import { useFitnessStore, useGoals, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
 import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
@@ -65,9 +65,6 @@ export const DashboardView: React.FC = () => {
       addWorkout({
         id: workoutId,
         ...data,
-        duration: Number(data.duration),
-        caloriesBurned: Number(data.caloriesBurned),
-        weight: data.weight ? Number(data.weight) : undefined,
       });
 
       // If weight was also provided during workout
@@ -75,7 +72,7 @@ export const DashboardView: React.FC = () => {
         addWeightEntry({
           id: crypto.randomUUID(),
           date: data.date || new Date().toISOString(),
-          value: Number(data.weight),
+          value: data.weight,
           unit: 'кг',
         });
       }
@@ -84,7 +81,6 @@ export const DashboardView: React.FC = () => {
         id: crypto.randomUUID(),
         unit: 'кг',
         ...data,
-        value: Number(data.value),
       });
     }
     setEntryModalOpen(false);
@@ -121,7 +117,13 @@ export const DashboardView: React.FC = () => {
           <div className="flex-1">
             <h1 className="text-4xl font-display font-medium mb-2 tracking-tight">{RU.NAV.DASHBOARD}</h1>
             <p className="text-muted-foreground">
-              {summary ? `Ваш прогресс: ${summary.goal.status === 'AHEAD_OF_SCHEDULE' ? 'Опережаете график' : 'На верном пути'}` : 'Начните добавлять данные для анализа'}
+              {summary ? (
+                summary.goal.status === 'WRONG_DIRECTION' 
+                  ? 'Текущая динамика противоречит вашей цели' 
+                  : summary.goal.status === 'AHEAD_OF_SCHEDULE' 
+                    ? 'Вы опережаете поставленный график' 
+                    : 'Ваш прогресс соответствует намеченному плану'
+              ) : 'Начните добавлять данные для анализа'}
             </p>
           </div>
           <div className="flex flex-wrap gap-3 w-full md:w-auto">
@@ -172,14 +174,36 @@ export const DashboardView: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  {summary && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full">
-                      {getTrendIcon(summary.weight.isPlateau ? 'STAGNATING' : (summary.weight.weeklyChange < 0 ? 'IMPROVING' : 'DECLINING'))}
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                        {summary.weight.isPlateau ? 'Плато' : (summary.weight.weeklyChange < 0 ? 'Снижение' : 'Стабильно')}
-                      </span>
-                    </div>
-                  )}
+                  {summary && (() => {
+                    const isWeightLoss = activeGoal?.type === 'WEIGHT_LOSS';
+                    const isImproving = isWeightLoss 
+                      ? summary.weight.weeklyChange < 0 
+                      : summary.weight.weeklyChange > 0;
+                    
+                    const isDeclining = isWeightLoss
+                      ? summary.weight.weeklyChange > 0
+                      : summary.weight.weeklyChange < 0;
+
+                    return (
+                      <div className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 border rounded-full",
+                        summary.weight.isPlateau 
+                          ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" 
+                          : isImproving 
+                            ? "bg-green-500/10 border-green-500/20 text-green-400" 
+                            : "bg-red-500/10 border-red-500/20 text-red-400"
+                      )}>
+                        {summary.weight.isPlateau 
+                          ? <Minus className="w-4 h-4" /> 
+                          : isImproving 
+                            ? <TrendingUp className="w-4 h-4" /> 
+                            : <TrendingDown className="w-4 h-4" />}
+                        <span className="text-[10px] font-bold uppercase tracking-widest">
+                          {summary.weight.isPlateau ? 'Плато' : (isImproving ? (isWeightLoss ? 'Снижение' : 'Подъем') : 'Регресс')}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <button 
                     onClick={() => setWeightHistoryModalOpen(true)}
                     className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-primary transition-colors bg-secondary/50 px-3 py-1.5 rounded-full"
@@ -216,7 +240,7 @@ export const DashboardView: React.FC = () => {
                     {summary?.weight.weeklyChange !== undefined && (
                       <div className={cn(
                         "flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg",
-                        summary.weight.weeklyChange < 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                        summary.goal.status === 'WRONG_DIRECTION' ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"
                       )}>
                         {summary.weight.weeklyChange < 0 ? "−" : "+"}{Math.abs(summary.weight.weeklyChange).toFixed(1)}/нед
                       </div>
@@ -288,21 +312,28 @@ export const DashboardView: React.FC = () => {
                         </div>
                         <div className="w-full bg-secondary h-2.5 rounded-full overflow-hidden">
                           <div 
-                            className="bg-primary h-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(223,255,0,0.4)]" 
+                            className={cn(
+                              "h-full transition-all duration-1000 ease-out",
+                              summary.goal.status === 'WRONG_DIRECTION' 
+                                ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]" 
+                                : "bg-primary shadow-[0_0_15px_rgba(223,255,0,0.4)]"
+                            )}
                             style={{ width: `${summary.goal.completionPercentage}%` }}
                           />
                         </div>
                         <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest text-center">
-                          Осталось: {formatWeight(Math.abs(summary.goal.remainingValue))}
+                          Осталось: {formatWeight(summary.goal.remainingValue)}
                         </p>
                       </div>
                     ) : (
                       <div className="text-center py-4">
                         <p className="text-sm text-muted-foreground italic mb-6 leading-relaxed">
-                          Установите цель по весу для активации ИИ-прогноза завершения.
+                          {summary?.goal.status === 'WRONG_DIRECTION' 
+                            ? "Тренд противоречит цели. Прогноз невозможен до стабилизации направления."
+                            : "Установите цель по весу для активации ИИ-прогноза завершения."}
                         </p>
                         <GradientButton variant="outline" size="sm" onClick={() => setGoalModalOpen(true)} className="w-full">
-                          Установить цель
+                          {summary?.goal.status === 'WRONG_DIRECTION' ? 'Пересмотреть цель' : 'Установить цель'}
                         </GradientButton>
                       </div>
                     )}
@@ -330,12 +361,24 @@ export const DashboardView: React.FC = () => {
                     className="flex justify-between items-center p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer group active:scale-[0.98] border border-transparent hover:border-border/50"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Dumbbell className="w-5 h-5 text-primary" />
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                        workout.category === 'STRENGTH' ? "bg-orange-500/10 text-orange-400" :
+                        workout.category === 'CARDIO' ? "bg-blue-500/10 text-blue-400" :
+                        workout.category === 'ENDURANCE' ? "bg-green-500/10 text-green-400" :
+                        "bg-secondary/50 text-primary"
+                      )}>
+                        {workout.category === 'STRENGTH' ? <Zap className="w-5 h-5" /> :
+                         workout.category === 'CARDIO' ? <Activity className="w-5 h-5" /> :
+                         <Dumbbell className="w-5 h-5" />}
                       </div>
                       <div>
                         <p className="text-sm font-medium">{workout.type}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
+                          {workout.volume && <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 rounded text-primary font-bold">{Math.round(workout.volume)}кг</span>}
+                          {workout.distance && <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/10 rounded text-blue-400 font-bold">{workout.distance}км</span>}
+                        </div>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -360,16 +403,27 @@ export const DashboardView: React.FC = () => {
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                 {summary ? (
-                  summary.weight.isPlateau 
-                    ? "Замечено замедление прогресса. Попробуйте изменить тип нагрузки или пересмотреть калорийность рациона для преодоления плато."
-                    : summary.weight.weeklyChange < 0 
-                      ? "Отличная динамика! Вы теряете вес в здоровом темпе. Продолжайте текущий режим тренировок."
-                      : "Вес стабилен или немного вырос. Это может быть связано с ростом мышечной массы или задержкой воды после интенсивных тренировок."
+                  summary.goal.status === 'WRONG_DIRECTION'
+                    ? "Динамика противоречит цели. Обратите внимание на баланс питания и интенсивность тренировок."
+                    : summary.goal.status === 'AHEAD_OF_SCHEDULE' 
+                      ? "Опережаете график! Ваш прогресс идет быстрее, чем планировалось изначально."
+                      : summary.weight.isPlateau 
+                        ? "Замечено замедление прогресса. Попробуйте изменить тип нагрузки или пересмотреть калорийность рациона для преодоления плато."
+                        : summary.weight.weeklyChange < 0 
+                          ? (activeGoal?.type === 'WEIGHT_LOSS' ? "Отличная динамика! Вы теряете вес в здоровом темпе." : "Вес снижается, что противоречит цели набора массы.")
+                          : (activeGoal?.type === 'MUSCLE_GAIN' ? "Хороший рост! Вы уверенно прибавляете в весе." : "Вес немного вырос. Если ваша цель — похудение, проверьте дневник питания.")
                 ) : "Добавьте больше данных, чтобы ИИ смог составить рекомендации для вас."}
               </p>
-              <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary">
+              <div className={cn(
+                "flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest",
+                summary?.goal.status === 'WRONG_DIRECTION' ? "text-red-400" : "text-primary"
+              )}>
                 <Target className="w-3 h-3" />
-                {summary?.goal.status === 'AHEAD_OF_SCHEDULE' ? "Опережение графика" : "План соблюдается"}
+                {summary?.goal.status === 'WRONG_DIRECTION' 
+                  ? "Требуется корректировка" 
+                  : summary?.goal.status === 'AHEAD_OF_SCHEDULE' 
+                    ? "Опережение графика" 
+                    : "План соблюдается"}
               </div>
             </GlassCard>
           </div>
@@ -488,12 +542,20 @@ export const DashboardView: React.FC = () => {
                 Назад
               </button>
             </div>
-            <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
-                <Dumbbell className="w-8 h-8" />
+            
+            <div className="flex items-center gap-4 p-5 bg-secondary/30 rounded-3xl border border-white/5">
+              <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg",
+                selectedWorkout.category === 'STRENGTH' ? "bg-orange-500/20 text-orange-400" :
+                selectedWorkout.category === 'CARDIO' ? "bg-blue-500/20 text-blue-400" :
+                "bg-primary/20 text-primary"
+              )}>
+                {selectedWorkout.category === 'STRENGTH' ? <Zap className="w-8 h-8" /> :
+                 selectedWorkout.category === 'CARDIO' ? <Activity className="w-8 h-8" /> :
+                 <Dumbbell className="w-8 h-8" />}
               </div>
               <div>
-                <h4 className="text-xl font-bold">{selectedWorkout.type}</h4>
+                <h4 className="text-2xl font-bold">{selectedWorkout.type}</h4>
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Calendar className="w-4 h-4" />
                   {formatDate(selectedWorkout.date)}
@@ -502,39 +564,92 @@ export const DashboardView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-secondary/50 p-4 rounded-xl space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="bg-secondary/50 p-4 rounded-2xl space-y-1 border border-white/5">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <Clock className="w-3 h-3" />
                   Длительность
                 </div>
-                <p className="text-lg font-medium">{selectedWorkout.duration} мин</p>
+                <p className="text-xl font-bold">{selectedWorkout.duration} мин</p>
               </div>
-              <div className="bg-secondary/50 p-4 rounded-xl space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="bg-secondary/50 p-4 rounded-2xl space-y-1 border border-white/5">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <Flame className="w-3 h-3" />
                   Калории
                 </div>
-                <p className="text-lg font-medium">{selectedWorkout.caloriesBurned} ккал</p>
+                <p className="text-xl font-bold">{selectedWorkout.caloriesBurned || 0} ккал</p>
               </div>
             </div>
 
-            {selectedWorkout.weight && (
-              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
-                  <Scale className="w-3 h-3" />
-                  Вес при замере
+            {selectedWorkout.category === 'STRENGTH' && (
+              <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2">
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Сеты</p>
+                  <p className="text-lg font-bold">{selectedWorkout.sets || '-'}</p>
                 </div>
-                <p className="text-lg font-medium">{selectedWorkout.weight} кг</p>
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Повт.</p>
+                  <p className="text-lg font-bold">{selectedWorkout.reps || '-'}</p>
+                </div>
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Вес</p>
+                  <p className="text-lg font-bold text-primary">{selectedWorkout.workingWeight || '-'}</p>
+                </div>
+                {selectedWorkout.volume && (
+                  <div className="col-span-3 bg-primary/10 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
+                    <p className="text-xs uppercase font-bold text-primary tracking-widest">Тренировочный объем</p>
+                    <p className="text-xl font-bold text-primary">{selectedWorkout.volume} кг</p>
+                  </div>
+                )}
               </div>
             )}
 
+            {(selectedWorkout.category === 'CARDIO' || selectedWorkout.category === 'ENDURANCE') && (
+              <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2">
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                   <Ruler className="w-4 h-4 mb-2 text-blue-400" />
+                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Дистанция</p>
+                   <p className="text-lg font-bold">{selectedWorkout.distance ? `${selectedWorkout.distance} км` : '-'}</p>
+                </div>
+                <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                   <Activity className="w-4 h-4 mb-2 text-green-400" />
+                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Темп</p>
+                   <p className="text-lg font-bold">{selectedWorkout.pace || '-'}</p>
+                </div>
+                {selectedWorkout.speed && (
+                  <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Скорость</p>
+                    <p className="text-lg font-bold">{selectedWorkout.speed} к/ч</p>
+                  </div>
+                )}
+                 {selectedWorkout.heartRate && (
+                  <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
+                    <Heart className="w-4 h-4 mb-2 text-red-500" />
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Пульс</p>
+                    <p className="text-lg font-bold text-red-400">{selectedWorkout.heartRate} BPM</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4">
+              {selectedWorkout.weight && (
+                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
+                    <Scale className="w-4 h-4" />
+                    Вес на момент тренировки
+                  </div>
+                  <p className="text-lg font-bold">{selectedWorkout.weight} кг</p>
+                </div>
+              )}
+            </div>
+
             {selectedWorkout.notes && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                   <FileText className="w-3 h-3" />
                   Заметки
                 </div>
-                <div className="bg-secondary/30 p-4 rounded-xl text-sm italic">
+                <div className="bg-secondary/30 p-6 rounded-3xl text-sm italic leading-relaxed border border-white/5">
                   {selectedWorkout.notes}
                 </div>
               </div>
@@ -542,10 +657,10 @@ export const DashboardView: React.FC = () => {
 
             <button 
               onClick={() => handleDeleteWorkout(selectedWorkout.id)}
-              className="w-full flex items-center justify-center gap-2 p-4 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 p-5 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors text-xs uppercase font-bold tracking-widest"
             >
               <Trash2 className="w-4 h-4" />
-              Удалить запись
+              Удалить из журнала
             </button>
           </div>
         )}

@@ -30,16 +30,32 @@ export interface Goal {
   deadline: string;
   createdAt: string;
   status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  motivation?: string;
 }
 
 export interface WorkoutEntry {
   id: string;
   date: string;
   type: string; // e.g., 'Running', 'Strength', 'Yoga'
+  category?: 'STRENGTH' | 'CARDIO' | 'ENDURANCE' | 'FLEXIBILITY' | 'OTHER';
   duration: number; // in minutes
   caloriesBurned?: number;
   notes?: string;
   weight?: number; // optional weight check at workout time
+  
+  // Strength metrics
+  sets?: number;
+  reps?: number;
+  workingWeight?: number;
+  volume?: number;
+  
+  // Cardio & Endurance metrics
+  distance?: number; // km
+  pace?: string; // min/km
+  heartRate?: number;
+  speed?: number; // km/h
+  incline?: number;
+  cadence?: number;
 }
 
 export interface WeightEntry {

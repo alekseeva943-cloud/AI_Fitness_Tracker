@@ -92,6 +92,17 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
         />
       </div>
 
+      <div className="space-y-2">
+        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Мотивация (опционально)</label>
+        <textarea 
+          name="motivation" 
+          defaultValue={initialData?.motivation}
+          placeholder="Напр: Хочу вернуться в форму к отпуску..."
+          rows={3}
+          className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors resize-none"
+        />
+      </div>
+
       <button 
         type="submit" 
         disabled={Object.keys(errors).length > 0}

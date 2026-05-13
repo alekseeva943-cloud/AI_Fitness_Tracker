@@ -39,10 +39,18 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
         } : undefined}
       />
       <StatCard 
-        label={RU.ENTRIES.DURATION}
-        value={summary?.workouts.avgDuration ?? 0}
-        unit="мин"
-        icon={<Clock className="w-4 h-4" />}
+        label={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? "Общая дистанция" : summary?.workouts.totalVolume && summary.workouts.totalVolume > 0 ? "Общий объем" : RU.ENTRIES.DURATION}
+        value={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 
+          ? summary.workouts.totalDistance.toFixed(1) 
+          : summary?.workouts.totalVolume && summary.workouts.totalVolume > 0 
+            ? (summary.workouts.totalVolume / 1000).toFixed(1)
+            : summary?.workouts.avgDuration ?? 0}
+        unit={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 
+          ? "км" 
+          : summary?.workouts.totalVolume && summary.workouts.totalVolume > 0 
+            ? "т" 
+            : "мин"}
+        icon={summary?.workouts.totalDistance && summary.workouts.totalDistance > 0 ? <Activity className="w-4 h-4 text-blue-400" /> : <Clock className="w-4 h-4" />}
         onClick={() => navigate('/workouts')}
       />
       <StatCard 

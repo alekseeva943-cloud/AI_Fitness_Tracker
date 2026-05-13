@@ -31,13 +31,19 @@ export const useFitnessStore = create<FitnessStore>()(
       resetData: () => {
         logger.store('Resetting all data to empty state');
         set({
+          profile: null,
           goals: [],
           workouts: [],
           weightHistory: [],
           analyses: [],
           isDemoMode: false
         });
-        // set() triggers persist write automatically.
+        // Clear explicitly to be safe as well
+        try {
+          localStorage.removeItem('fitness-tracker-storage-v2');
+        } catch (e) {
+          logger.error('Failed to clear localStorage', e);
+        }
       },
 
       initialize: () => {

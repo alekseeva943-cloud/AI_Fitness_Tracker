@@ -2,7 +2,12 @@ export const VALIDATION_LIMITS = {
   workout: {
     duration: { min: 5, max: 300, label: 'длительность' },
     calories: { min: 0, max: 5000, label: 'калории' },
-    title: { minLength: 3, maxLength: 50, label: 'название' }
+    title: { minLength: 3, maxLength: 50, label: 'название' },
+    sets: { min: 1, max: 100, label: 'подходы' },
+    reps: { min: 1, max: 1000, label: 'повторения' },
+    workingWeight: { min: 0, max: 1000, label: 'рабочий вес' },
+    distance: { min: 0, max: 500, label: 'дистанция' },
+    heartRate: { min: 40, max: 220, label: 'пульс' }
   },
   weight: {
     value: { min: 30, max: 300, label: 'вес' }
