@@ -14,6 +14,7 @@ interface StatCardProps {
   icon?: React.ReactNode;
   className?: string;
   onClick?: () => void;
+  title?: string;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -24,11 +25,13 @@ export const StatCard: React.FC<StatCardProps> = ({
   trend,
   icon,
   className,
-  onClick
+  onClick,
+  title
 }) => {
   return (
     <GlassCard 
       onClick={onClick}
+      title={title}
       className={cn(
         "p-6 flex flex-col gap-1 group relative overflow-hidden",
         className

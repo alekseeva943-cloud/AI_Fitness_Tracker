@@ -11,7 +11,8 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Formats dates for the fitness app.
  */
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | undefined | null): string {
+  if (!date) return '—';
   const d = new Date(date);
   if (isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('ru-RU', {

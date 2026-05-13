@@ -205,6 +205,16 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
           </div>
 
           <div className="pt-2">
+            <div className="space-y-2 mb-6">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Дата тренировки</label>
+              <input 
+                name="date" 
+                type="date" 
+                defaultValue={initialData?.date ? initialData.date.slice(0, 10) : new Date().toISOString().slice(0, 10)} 
+                className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
+              />
+            </div>
+
             <button 
               type="button" 
               onClick={() => setShowAdvanced(!showAdvanced)}
@@ -347,16 +357,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
                         )}
                       </div>
                     ))}
-                    
-                    <div className="space-y-2 col-span-full pt-4 border-t border-white/5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Дата свершения</label>
-                      <input 
-                        name="date" 
-                        type="datetime-local" 
-                        defaultValue={initialData?.date ? initialData.date.slice(0, 16) : new Date().toISOString().slice(0, 16)} 
-                        className="w-full bg-background/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
-                      />
-                    </div>
                   </div>
                 )}
               </div>
@@ -390,11 +390,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 text-center block">Время фиксации</label>
+            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 text-center block">Дата замера</label>
             <input 
               name="date" 
-              type="datetime-local" 
-              defaultValue={initialData?.date ? initialData.date.slice(0, 16) : new Date().toISOString().slice(0, 16)} 
+              type="date" 
+              defaultValue={initialData?.date ? initialData.date.slice(0, 10) : new Date().toISOString().slice(0, 10)} 
               className="w-full bg-secondary/40 border border-white/5 rounded-3xl px-6 py-4 outline-none focus:border-primary/50 transition-all text-base font-medium text-center" 
             />
           </div>

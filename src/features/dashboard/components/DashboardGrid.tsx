@@ -33,12 +33,13 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         } : undefined}
       />
       <StatCard 
-        label="Средний темп"
+        label="Интенсивность"
+        subLabel={summary?.workouts.lastWorkoutDate ? `Последняя: ${formatDate(summary.workouts.lastWorkoutDate)}` : "Нет тренировок"}
         value={(summary?.workouts.avgWorkoutsPerWeek ?? 0).toFixed(1)}
         unit="тр/нед"
         icon={<Activity className="w-4 h-4" />}
         onClick={() => navigate('/workouts')}
-        title="Среднее количество тренировок в неделю за все время"
+        title="Среднее количество тренировок в неделю. Показывает регулярность и интенсивность вашего графика."
         trend={summary ? { 
           value: `${summary.workouts.consistencyScore}%`, 
           isPositive: summary.workouts.consistencyScore > 70 

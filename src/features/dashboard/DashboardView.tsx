@@ -424,8 +424,11 @@ export const DashboardView: React.FC = () => {
                           </div>
                           <div>
                             <p className="text-sm font-medium">{workout.type}</p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-widest">
+                                <Calendar className="w-3 h-3 text-primary/60" />
+                                {formatDate(workout.date)}
+                              </span>
                               {workout.totalWeight && <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 rounded text-primary font-bold">{Math.round(workout.totalWeight)}кг</span>}
                               {workout.distance && <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/10 rounded text-blue-400 font-bold">{workout.distance}км</span>}
                             </div>
