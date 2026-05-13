@@ -35,6 +35,7 @@ export const selectAnalyticsSummary = (state: FitnessState): AnalyticsSummary | 
         completionPercentage: 0,
         remainingValue: 0,
         estimatedCompletionDate: null,
+        isImproving: false,
         status: 'STAGNANT'
       }
     };

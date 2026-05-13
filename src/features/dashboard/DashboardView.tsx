@@ -334,9 +334,19 @@ export const DashboardView: React.FC = () => {
 
                         {summary?.goal.estimatedCompletionDate ? (
                           <div className="space-y-4">
-                            <div className="bg-secondary/50 rounded-2xl p-4 backdrop-blur-sm border border-white/5">
-                              <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest mb-1">Прогноз достижения</p>
-                              <p className="text-2xl font-bold text-primary">
+                            <div className={cn(
+                              "rounded-2xl p-4 backdrop-blur-sm border transition-colors",
+                              summary.goal.status === 'WRONG_DIRECTION' 
+                                ? "bg-red-500/5 border-red-500/20" 
+                                : "bg-secondary/50 border-white/5"
+                            )}>
+                              <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest mb-1">
+                                {summary.goal.status === 'WRONG_DIRECTION' ? 'Прогноз (восстановление)' : 'Прогноз достижения'}
+                              </p>
+                              <p className={cn(
+                                "text-2xl font-bold",
+                                summary.goal.status === 'WRONG_DIRECTION' ? "text-red-400" : "text-primary"
+                              )}>
                                 {formatDate(summary.goal.estimatedCompletionDate)}
                               </p>
                             </div>
@@ -351,16 +361,23 @@ export const DashboardView: React.FC = () => {
                                 style={{ width: `${summary.goal.completionPercentage}%` }}
                               />
                             </div>
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest text-center">
-                              Осталось: {formatWeight(summary.goal.remainingValue)}
-                            </p>
+                            <div className="flex justify-between items-center px-1">
+                              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                                Осталось: {formatWeight(summary.goal.remainingValue)}
+                              </p>
+                              {summary.goal.status === 'WRONG_DIRECTION' && (
+                                <span className="text-[10px] text-red-400/80 font-bold uppercase tracking-widest flex items-center gap-1">
+                                  <TrendingDown className="w-3 h-3" /> Текущий спад
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="text-center py-4">
                             <p className="text-sm text-muted-foreground italic mb-6 leading-relaxed">
                               {summary?.goal.status === 'WRONG_DIRECTION' 
-                                ? "Тренд противоречит цели. Прогноз невозможен до стабилизации направления."
-                                : "Добавьте больше данных для активации ИИ-прогноза завершения."}
+                                ? "Текущая динамика направлена в обратную сторону. Для прогноза необходимо стабилизировать прогресс."
+                                : "Добавьте больше данных (минимум 3-5 замеров) для активации аналитического прогноза."}
                             </p>
                             <GradientButton variant="outline" size="sm" onClick={() => setGoalModalOpen(true)} className="w-full">
                                Изменить цель

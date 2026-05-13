@@ -2,6 +2,7 @@ import { WorkoutEntry } from "../../../types";
 import { WorkoutStats } from "../types";
 import { differenceInWeeks, differenceInDays } from "date-fns";
 import { VALIDATION_LIMITS } from "../../../lib/validation";
+import { ANALYTICS_CONSTANTS } from "../../../constants/analytics";
 
 export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats => {
   // Sanity filter
@@ -38,8 +39,8 @@ export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats =>
 
   const avgWorkoutsPerWeek = totalWorkouts / spanWeeks;
 
-  // Consistency score: (workouts per week / target frequency (4)) * 100, capped at 100
-  const targetFrequency = 4;
+  // Consistency score: (workouts per week / target frequency) * 100, capped at 100
+  const targetFrequency = ANALYTICS_CONSTANTS.WORKOUT.TARGET_WEEKLY_FREQUENCY;
   const consistencyScore = Math.min(100, Math.round((avgWorkoutsPerWeek / targetFrequency) * 100));
 
   return {

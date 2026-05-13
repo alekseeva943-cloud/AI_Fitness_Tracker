@@ -11,7 +11,8 @@ export interface WeightTrend {
   weeklyChange: number; // Delta
   totalChange: number;
   isPlateau: boolean;
-  velocity: number; // change per day
+  velocity: number; // blended change per day
+  overallVelocity: number; // long-term average change per day
   forecastedWeight: number; // Predicted weight in 30 days
 }
 
@@ -31,6 +32,7 @@ export interface GoalProgress {
   completionPercentage: number;
   remainingValue: number;
   estimatedCompletionDate: string | null;
+  isImproving: boolean;
   status: 'AHEAD_OF_SCHEDULE' | 'ON_TRACK' | 'BEHIND_SCHEDULE' | 'STAGNANT' | 'WRONG_DIRECTION';
 }
 

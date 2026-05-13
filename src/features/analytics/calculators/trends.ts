@@ -2,13 +2,40 @@ import { WeightEntry, Goal } from "../../../types";
 import { WeightTrend } from "../types";
 import { differenceInDays, subDays, isAfter } from "date-fns";
 import { VALIDATION_LIMITS } from "../../../lib/validation";
+import { ANALYTICS_CONSTANTS } from "../../../constants/analytics";
 
 export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null): WeightTrend | null => {
-  // Sanity filter: keep only realistic values
-  const sanitized = history.filter(e => 
+  // 1. Initial Sanitization (Static Limits)
+  const initialSanitized = history.filter(e => 
     e.value >= VALIDATION_LIMITS.weight.value.min && 
     e.value <= VALIDATION_LIMITS.weight.value.max
   );
+
+  if (initialSanitized.length === 0) return null;
+
+  // 2. Sort chronology
+  const chronological = [...initialSanitized].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // 3. Dynamic Anomaly Detection (Outlier Rejection)
+  // We reject entries that represent an impossible jump (>15% of body weight in a short period)
+  const sanitized: WeightEntry[] = [];
+  chronological.forEach((entry, i) => {
+    if (i === 0) {
+      sanitized.push(entry);
+      return;
+    }
+    const prev = sanitized[sanitized.length - 1];
+    const diff = Math.abs(entry.value - prev.value);
+    const percentChange = diff / prev.value;
+    const daysSince = Math.max(1, differenceInDays(new Date(entry.date), new Date(prev.date)));
+    
+    // If weight jumped more than 5% in 1 day, it's likely an error, unless verified over multiple days
+    const isAnomaly = percentChange > ANALYTICS_CONSTANTS.WEIGHT.OUTLIER_THRESHOLD && daysSince < 3;
+    
+    if (!isAnomaly) {
+      sanitized.push(entry);
+    }
+  });
 
   if (sanitized.length === 0) return null;
 
@@ -16,6 +43,7 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
   const current = sorted[0].value;
   const starting = sorted[sorted.length - 1].value;
 
+  // 4. Moving Average (Smoothing)
   const now = new Date();
   const last7Days = sorted.filter(e => isAfter(new Date(e.date), subDays(now, 7)));
   const prev7Days = sorted.filter(e => 
@@ -33,35 +61,34 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
 
   const weeklyChange = avg7 - avgPrev7;
   
-  // Plateau detection: if change is less than 0.1kg in either direction over a week
-  const isPlateau = Math.abs(weeklyChange) < 0.1 && history.length > 5;
+  // Plateau detection
+  const isPlateau = Math.abs(weeklyChange) < ANALYTICS_CONSTANTS.WEIGHT.PLATEAU_THRESHOLD && sanitized.length > 5;
 
-  // Velocity: weighted average change per day
-  // We'll give more weight to recent changes but filter out outliers
-  const daysDiff = differenceInDays(new Date(sorted[0].date), new Date(sorted[sorted.length - 1].date)) || 1;
-  
-  // Basic overall velocity
+  // 5. Robust Velocity Calculation
+  const daysDiff = Math.max(1, differenceInDays(new Date(sorted[0].date), new Date(sorted[sorted.length - 1].date)));
   const overallVelocity = (current - starting) / daysDiff;
   
-  // Short term velocity (last 3 entries or last 14 days)
-  const shortTermEntries = sorted.slice(0, 5);
+  // Recent trend (last 14 days or last 5 entries)
+  const recentThreshold = subDays(new Date(sorted[0].date), 14);
+  const recentEntries = sorted.filter(e => isAfter(new Date(e.date), recentThreshold)).slice(0, 5);
+  
   let shortTermVelocity = overallVelocity;
-  if (shortTermEntries.length >= 2) {
-    const stDays = differenceInDays(new Date(shortTermEntries[0].date), new Date(shortTermEntries[shortTermEntries.length - 1].date)) || 1;
-    shortTermVelocity = (shortTermEntries[0].value - shortTermEntries[shortTermEntries.length - 1].value) / stDays;
+  if (recentEntries.length >= 2) {
+    const stDays = Math.max(1, differenceInDays(new Date(recentEntries[0].date), new Date(recentEntries[recentEntries.length - 1].date)));
+    shortTermVelocity = (recentEntries[0].value - recentEntries[recentEntries.length - 1].value) / stDays;
   }
 
-  // Smooth velocity: 70% long-term, 30% short-term
-  // This helps react to progress while staying stable
-  let velocity = (overallVelocity * 0.7) + (shortTermVelocity * 0.3);
+  // Blended Velocity: stays responsive to new data but anchored to overall progress
+  let velocity = (overallVelocity * ANALYTICS_CONSTANTS.WEIGHT.TOTAL_WEIGHT) + 
+                 (shortTermVelocity * ANALYTICS_CONSTANTS.WEIGHT.RECENT_WEIGHT);
 
-  // Sanity limit: max 0.3 kg/day (approx 2 kg/week)
-  const MAX_VELOCITY = 0.3; 
-  if (Math.abs(velocity) > MAX_VELOCITY) {
-    velocity = velocity > 0 ? MAX_VELOCITY : -MAX_VELOCITY;
+  // Sanity velocity limits
+  const maxV = ANALYTICS_CONSTANTS.WEIGHT.MAX_VELOCITY;
+  if (Math.abs(velocity) > maxV) {
+    velocity = velocity > 0 ? maxV : -maxV;
   }
 
-  // Forecast for 30 days
+  // Forecast for 30 days based on blended velocity
   const forecastedWeight = current + (velocity * 30);
 
   return {
@@ -73,6 +100,7 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
     totalChange: current - starting,
     isPlateau,
     velocity,
+    overallVelocity,
     forecastedWeight
   };
 };

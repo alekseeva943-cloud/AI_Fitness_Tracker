@@ -28,7 +28,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
         onClick={() => navigate('/goals')}
         trend={summary ? { 
           value: formatWeight(Math.abs(summary.weight.totalChange)), 
-          isPositive: summary.weight.totalChange < 0 
+          isPositive: summary.goal.isImproving 
         } : undefined}
       />
       <StatCard 
