@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Target, ChevronDown, ChevronUp, Sparkles, Scale, Dumbbell, Zap, Trophy, Heart } from 'lucide-react';
 import { Goal, GoalType } from '../../../types';
 import { RU } from '../../../constants';
@@ -24,7 +25,7 @@ interface GoalFormProps {
 export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCancel }) => {
   const [selectedType, setSelectedType] = useState<GoalType>(initialData?.type || GoalType.WEIGHT_LOSS);
   const [title, setTitle] = useState(initialData?.title || '');
-  const [showPresets, setShowPresets] = useState(!initialData?.title);
+  const [showPresets, setShowPresets] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const metric = Object.values(METRICS).find(m => m.compatibleGoalTypes?.includes(selectedType)) || METRICS.weight;
@@ -40,10 +41,12 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
       targetValue: Number(formData.get('targetValue')),
       deadline: formData.get('deadline') as string,
       motivation: formData.get('motivation') as string,
-      startDate: new Date().toISOString(),
+      startDate: initialData?.startDate || new Date().toISOString(),
       currentValue: initialData?.currentValue || 0,
       startValue: initialData?.startValue || 0,
-      status: 'ACTIVE' as const,
+      status: initialData?.status || 'ACTIVE',
+      createdAt: initialData?.createdAt || new Date().toISOString(),
+      id: initialData?.id
     };
 
     if (!isValidTitle(data.title)) {
@@ -77,49 +80,65 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
       className="space-y-8"
     >
       <div className="space-y-4">
-        <div className="space-y-3">
-          <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 px-1">Твоя амбициозная цель</label>
+        <div className="space-y-3 relative">
+          <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 px-1">Какая у вас цель?</label>
           
-          {showPresets && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 animate-in fade-in slide-in-from-top-2 duration-500">
-              {GOAL_PRESETS.map((preset) => (
-                <button
-                  key={preset.title}
-                  type="button"
-                  onClick={() => {
-                    setTitle(preset.title);
-                    setSelectedType(preset.type);
-                    setShowPresets(false);
-                  }}
-                  className="flex items-center gap-3 p-3 bg-secondary/30 border border-white/5 rounded-xl hover:bg-primary/10 hover:border-primary/20 transition-all text-left text-xs font-medium"
-                >
-                  <span className="text-lg">{preset.icon}</span>
-                  {preset.title}
-                </button>
-              ))}
-            </div>
-          )}
-
           <div className="relative group">
             <input 
               name="title" 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onFocus={() => setShowPresets(true)}
               required
-              placeholder="Напр: Сбросить 5 кг к лету"
+              placeholder="Введите цель или выберите из списка..."
               className={cn(
                 "w-full bg-secondary/40 border rounded-2xl px-5 py-4 outline-none focus:bg-secondary/60 transition-all text-base font-medium shadow-inner placeholder:text-muted-foreground/20",
                 errors.title ? 'border-red-500/50' : 'border-white/5 focus:border-primary/50'
               )}
             />
-            <button 
-              type="button"
-              onClick={() => setShowPresets(!showPresets)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase text-primary/40 hover:text-primary transition-colors"
-            >
-              Пресеты
-            </button>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+               {showPresets ? <ChevronUp className="w-4 h-4 text-primary/40" /> : <ChevronDown className="w-4 h-4 text-muted-foreground/20" />}
+            </div>
           </div>
+
+          <AnimatePresence>
+            {showPresets && (
+              <>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowPresets(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 4, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  className="absolute z-50 left-0 right-0 top-full bg-secondary/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden p-2 grid grid-cols-1 sm:grid-cols-2 gap-2"
+                >
+                  {GOAL_PRESETS.map((preset) => (
+                    <button
+                      key={preset.title}
+                      type="button"
+                      onClick={() => {
+                        setTitle(preset.title);
+                        setSelectedType(preset.type);
+                        setShowPresets(false);
+                      }}
+                      className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-primary/10 hover:border-primary/20 transition-all text-left text-xs font-medium group"
+                    >
+                      <span className="text-lg group-hover:scale-125 transition-transform">{preset.icon}</span>
+                      {preset.title}
+                    </button>
+                  ))}
+                  <div className="col-span-full p-2 border-t border-white/5 text-[9px] text-muted-foreground/40 text-center uppercase tracking-widest">
+                    Или продолжайте вводить свой вариант
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
           {errors.title && <p className="text-[10px] text-red-400 font-medium px-2">{errors.title}</p>}
         </div>
 

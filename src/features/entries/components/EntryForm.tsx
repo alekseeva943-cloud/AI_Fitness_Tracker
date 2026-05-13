@@ -9,12 +9,13 @@ import { cn } from "../../../lib/utils";
 interface EntryFormProps {
   type: 'workout' | 'weight';
   onSubmit: (data: any) => void;
+  initialData?: any;
 }
 
-export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
+export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialData }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [category, setCategory] = useState<string>('STRENGTH');
+  const [showAdvanced, setShowAdvanced] = useState(initialData ? true : false);
+  const [category, setCategory] = useState<string>(initialData?.category || 'STRENGTH');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +58,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
       return;
     }
 
-    const data: any = { ...rawData, category: category };
+    const data: any = { 
+      ...rawData, 
+      category: category,
+      id: initialData?.id
+    };
     if (type === 'workout') {
       Object.keys(METRICS).forEach(metricId => {
         if (data[metricId]) data[metricId] = Number(data[metricId]);
@@ -94,6 +99,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
               <input 
                 name="type" 
                 required 
+                defaultValue={initialData?.type}
                 placeholder="Что тренируем? (Напр: Жим лежа, Бег...)" 
                 className={cn(
                   "w-full bg-secondary/40 border rounded-2xl px-5 py-4 outline-none focus:bg-secondary/60 transition-all text-base font-medium shadow-inner placeholder:text-muted-foreground/20",
@@ -114,6 +120,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                   type="number" 
                   inputMode="numeric" 
                   required 
+                  defaultValue={initialData?.duration}
                   placeholder="45"
                   className={cn(
                     "w-full bg-secondary/40 border rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium",
@@ -130,6 +137,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                   name="caloriesBurned" 
                   type="number" 
                   inputMode="numeric" 
+                  defaultValue={initialData?.caloriesBurned}
                   placeholder="350"
                   className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium" 
                 />
@@ -145,6 +153,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                 name="weight" 
                 type="number" 
                 step="0.1"
+                defaultValue={initialData?.weight}
                 placeholder="75.0"
                 className="w-full bg-primary/5 border border-primary/20 rounded-2xl px-5 py-4 outline-none focus:border-primary/40 transition-all text-xl font-black text-primary shadow-[0_0_20px_rgba(223,255,0,0.05)]" 
               />
@@ -194,6 +203,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                         name={metric.id} 
                         type="number" 
                         step={metric.id === 'workingWeight' || metric.id === 'distance' ? '0.1' : '1'}
+                        defaultValue={initialData?.[metric.id]}
                         placeholder={metric.placeholder} 
                         className="w-full bg-background/40 border border-white/5 rounded-2xl px-4 py-4 text-base outline-none focus:border-primary/40 focus:bg-background/60 transition-all font-bold" 
                       />
@@ -210,7 +220,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                     <input 
                       name="date" 
                       type="datetime-local" 
-                      defaultValue={new Date().toISOString().slice(0, 16)} 
+                      defaultValue={initialData?.date ? initialData.date.slice(0, 16) : new Date().toISOString().slice(0, 16)} 
                       className="w-full bg-background/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
                     />
                   </div>
@@ -233,6 +243,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                 step="0.1" 
                 inputMode="decimal" 
                 required 
+                defaultValue={initialData?.value}
                 placeholder="75.5"
                 className={cn(
                   "w-full bg-primary/5 border rounded-3xl px-8 py-8 text-4xl font-black outline-none focus:border-primary/40 focus:bg-primary/10 transition-all text-primary shadow-[0_0_30px_rgba(223,255,0,0.05)] text-center",
@@ -249,7 +260,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
             <input 
               name="date" 
               type="datetime-local" 
-              defaultValue={new Date().toISOString().slice(0, 16)} 
+              defaultValue={initialData?.date ? initialData.date.slice(0, 16) : new Date().toISOString().slice(0, 16)} 
               className="w-full bg-secondary/40 border border-white/5 rounded-3xl px-6 py-4 outline-none focus:border-primary/50 transition-all text-base font-medium text-center" 
             />
           </div>
@@ -261,6 +272,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
         <textarea 
           name="notes" 
           rows={2} 
+          defaultValue={initialData?.notes}
           placeholder={type === 'weight' ? "Как ты себя чувствуешь?" : "Твои впечатления от тренировки..."}
           className="w-full bg-secondary/30 border border-white/5 rounded-3xl px-6 py-5 outline-none focus:border-primary/40 focus:bg-secondary/50 transition-all resize-none text-sm leading-relaxed" 
         />

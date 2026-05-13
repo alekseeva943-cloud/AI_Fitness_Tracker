@@ -5,19 +5,21 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { EntryForm } from '../entries/components/EntryForm';
-import { Plus, Dumbbell, Trash2, Clock, Calendar, ExternalLink, Filter, ChevronRight, Flame, FileText, Scale, ChevronLeft, Zap, Activity, Heart, Ruler } from 'lucide-react';
-import { formatDate } from '../../lib/utils';
-import { cn } from '../../lib/utils';
+import { Plus, Dumbbell, Trash2, Clock, Calendar, Zap, Activity, Heart, Ruler, ChevronRight, ChevronLeft, FileText, Scale, Flame } from 'lucide-react';
+import { formatDate, cn } from '../../lib/utils';
 import { WorkoutEntry } from '../../types';
+import { ModalFooter } from '../../components/ui/ModalFooter';
 
 export const WorkoutsView: React.FC = () => {
   const navigate = useNavigate();
   const workouts = useWorkouts();
   const addWorkout = useFitnessStore((state) => state.addWorkout);
+  const updateWorkout = useFitnessStore((state) => state.updateWorkout);
   const addWeightEntry = useFitnessStore((state) => state.addWeightEntry);
   const removeWorkout = useFitnessStore((state) => state.removeWorkout);
   
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutEntry | null>(null);
   const [filter, setFilter] = useState<string>('all');
@@ -45,13 +47,22 @@ export const WorkoutsView: React.FC = () => {
     setModalOpen(false);
   };
 
+  const handleUpdateWorkout = (data: any) => {
+    updateWorkout(data.id, data);
+    setSelectedWorkout(data);
+    setEditModalOpen(false);
+  };
+
   const openWorkoutDetail = (workout: WorkoutEntry) => {
     setSelectedWorkout(workout);
     setDetailModalOpen(true);
   };
 
-  const getWorkoutIcon = (type: string) => {
-    return <Dumbbell className="w-5 h-5" />;
+  const handleDeleteWorkout = (id: string) => {
+    if (confirm('Вы уверены, что хотите удалить эту тренировку?')) {
+      removeWorkout(id);
+      setDetailModalOpen(false);
+    }
   };
 
   return (
@@ -182,9 +193,21 @@ export const WorkoutsView: React.FC = () => {
         <EntryForm onSubmit={handleCreateWorkout} type="workout" />
       </Modal>
 
+      <Modal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setEditModalOpen(false)} 
+        title="Редактировать тренировку"
+      >
+        <EntryForm 
+           onSubmit={handleUpdateWorkout} 
+           type="workout" 
+           initialData={selectedWorkout}
+        />
+      </Modal>
+
       <Modal isOpen={isDetailModalOpen} onClose={() => setDetailModalOpen(false)} title="Детали активности">
         {selectedWorkout && (
-          <div className="space-y-6 p-2 text-foreground">
+          <div className="space-y-6 text-foreground min-h-[450px] flex flex-col">
             <div className="flex items-center gap-4 p-5 bg-secondary/30 rounded-3xl border border-white/5">
               <div className={cn(
                 "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg",
@@ -257,27 +280,8 @@ export const WorkoutsView: React.FC = () => {
                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Темп</p>
                    <p className="text-lg font-bold">{selectedWorkout.pace || '-'}</p>
                 </div>
-                 {selectedWorkout.heartRate && (
-                  <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                    <Heart className="w-4 h-4 mb-2 text-red-500" />
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Пульс</p>
-                    <p className="text-lg font-bold text-red-400">{selectedWorkout.heartRate} BPM</p>
-                  </div>
-                )}
               </div>
             )}
-
-            <div className="grid grid-cols-1 gap-4">
-              {selectedWorkout.weight && (
-                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
-                    <Scale className="w-4 h-4" />
-                    Вес на момент тренировки
-                  </div>
-                  <p className="text-lg font-bold">{selectedWorkout.weight} кг</p>
-                </div>
-              )}
-            </div>
 
             {selectedWorkout.notes && (
               <div className="space-y-3">
@@ -291,18 +295,15 @@ export const WorkoutsView: React.FC = () => {
               </div>
             )}
 
-            <button 
-              onClick={() => {
-                if (confirm('Вы уверены, что хотите удалить эту тренировку?')) {
-                  removeWorkout(selectedWorkout.id);
+            <ModalFooter 
+               onBack={() => setDetailModalOpen(false)}
+               onEdit={() => {
                   setDetailModalOpen(false);
-                }
-              }}
-              className="w-full flex items-center justify-center gap-2 p-5 text-red-400 hover:bg-red-500/10 rounded-2xl transition-all text-xs uppercase font-bold tracking-widest"
-            >
-              <Trash2 className="w-4 h-4" />
-              Удалить из журнала
-            </button>
+                  setEditModalOpen(true);
+               }}
+               onDelete={() => handleDeleteWorkout(selectedWorkout.id)}
+               onClose={() => setDetailModalOpen(false)}
+            />
           </div>
         )}
       </Modal>

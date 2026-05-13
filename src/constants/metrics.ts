@@ -122,7 +122,7 @@ export const METRICS: Record<string, MetricDefinition> = {
     format: (val) => `${Math.round(val)} кг`,
     chartCompatible: true,
     aiCompatible: true,
-    description: 'Суммарный вес, поднятый за всю тренировку (Сеты × Повторения × Вес).'
+    description: 'Сколько веса суммарно поднято за тренировку (Сеты × Повторения × Вес).'
   },
   distance: {
     id: 'distance',

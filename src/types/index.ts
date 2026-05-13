@@ -30,7 +30,7 @@ export interface Goal {
   startDate: string;
   deadline: string;
   createdAt: string;
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
   motivation?: string;
 }
 

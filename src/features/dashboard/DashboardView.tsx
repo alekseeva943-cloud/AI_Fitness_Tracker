@@ -3,7 +3,7 @@ import { RU } from "../../constants";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
-import { ChevronRight, Sparkles, TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, Activity, Heart, Ruler, Zap } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles } from "lucide-react";
 import { useFitnessStore, useGoals, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
 import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
@@ -14,6 +14,7 @@ import { AIRecommendationsSection } from "../ai/components/AIRecommendationsSect
 import { WeightChart } from "./components/WeightChart";
 import { DemoModeBanner } from "../../components/DemoModeBanner";
 import { BaselineParameters } from "../profile/components/BaselineParameters";
+import { ModalFooter } from "../../components/ui/ModalFooter";
 
 export const DashboardView: React.FC = () => {
   const goals = useGoals();
@@ -22,8 +23,11 @@ export const DashboardView: React.FC = () => {
   const initialize = useFitnessStore((state) => state.initialize);
   const addGoal = useFitnessStore((state) => state.addGoal);
   const addWorkout = useFitnessStore((state) => state.addWorkout);
+  const updateWorkout = useFitnessStore((state) => state.updateWorkout);
   const addWeightEntry = useFitnessStore((state) => state.addWeightEntry);
+  const updateWeightEntry = useFitnessStore((state) => state.updateWeightEntry);
   const removeWorkout = useFitnessStore((state) => state.removeWorkout);
+  const removeWeightEntry = useFitnessStore((state) => state.removeWeightEntry);
   const resetData = useFitnessStore((state) => state.resetData);
 
   const stateForSummary = useFitnessStore();
@@ -32,12 +36,14 @@ export const DashboardView: React.FC = () => {
 
   const [isGoalModalOpen, setGoalModalOpen] = useState(false);
   const [isEntryModalOpen, setEntryModalOpen] = useState(false);
+  const [isEditEntryModalOpen, setEditEntryModalOpen] = useState(false);
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedWorkout, setSelectedWorkout] = useState<WorkoutEntry | null>(null);
+  const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
   const [entryType, setEntryType] = useState<'workout' | 'weight'>('workout');
 
   const [isWeightHistoryModalOpen, setWeightHistoryModalOpen] = useState(false);
   const [isWeightDetailModalOpen, setWeightDetailModalOpen] = useState(false);
+  const [isWeightEditModalOpen, setWeightEditModalOpen] = useState(false);
   const [selectedWeightEntry, setSelectedWeightEntry] = useState<any>(null);
 
   useEffect(() => {
@@ -86,7 +92,21 @@ export const DashboardView: React.FC = () => {
     setEntryModalOpen(false);
   };
 
-  const openWorkoutDetail = (workout: WorkoutEntry) => {
+  const handleEditEntrySubmit = (data: any) => {
+    if (entryType === 'workout') {
+      updateWorkout(data.id, data);
+    } else {
+      updateWeightEntry(data.id, data);
+    }
+    setEditEntryModalOpen(false);
+    setWeightEditModalOpen(false);
+    
+    // Update local state for details if open
+    if (entryType === 'workout') setSelectedWorkout(data);
+    else setSelectedWeightEntry(data);
+  };
+
+  const openWorkoutDetail = (workout: any) => {
     setSelectedWorkout(workout);
     setDetailModalOpen(true);
   };
@@ -98,16 +118,17 @@ export const DashboardView: React.FC = () => {
     }
   };
 
+  const handleDeleteWeightEntry = (id: string) => {
+    if (window.confirm('Удалить эту запись о весе?')) {
+      removeWeightEntry(id);
+      setWeightDetailModalOpen(false);
+    }
+  };
+
   const handleResetData = () => {
     if (window.confirm('ВНИМАНИЕ! Это действие удалит ВСЕ ваши данные, включая цели и историю. Это невозможно отменить. Вы уверены?')) {
       resetData();
     }
-  };
-
-  const getTrendIcon = (trend: string) => {
-    if (trend === 'IMPROVING') return <TrendingUp className="w-4 h-4 text-green-400" />;
-    if (trend === 'DECLINING') return <TrendingDown className="w-4 h-4 text-red-400" />;
-    return <Minus className="w-4 h-4 text-yellow-400" />;
   };
 
   return (
@@ -443,6 +464,14 @@ export const DashboardView: React.FC = () => {
         <EntryForm type={entryType} onSubmit={handleEntrySubmit} />
       </Modal>
 
+      <Modal isOpen={isEditEntryModalOpen} onClose={() => setEditEntryModalOpen(false)} title={entryType === 'workout' ? 'Редактировать тренировку' : 'Редактировать замер'}>
+        <EntryForm 
+           type={entryType} 
+           initialData={entryType === 'workout' ? selectedWorkout : selectedWeightEntry} 
+           onSubmit={handleEditEntrySubmit} 
+        />
+      </Modal>
+
       <Modal isOpen={isWeightHistoryModalOpen} onClose={() => setWeightHistoryModalOpen(false)} title="История взвешиваний">
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin text-foreground">
           {weightHistory.length > 0 ? (
@@ -495,15 +524,8 @@ export const DashboardView: React.FC = () => {
 
       <Modal isOpen={isWeightDetailModalOpen} onClose={() => setWeightDetailModalOpen(false)} title="Детали замера">
         {selectedWeightEntry && (
-          <div className="space-y-6 p-2 text-foreground">
-            <button 
-              onClick={() => setWeightDetailModalOpen(false)}
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group"
-            >
-              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Назад
-            </button>
-            <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-2xl">
+          <div className="space-y-6 text-foreground min-h-[300px] flex flex-col">
+            <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-2xl border border-white/10">
               <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
                 <Scale className="w-8 h-8" />
               </div>
@@ -527,27 +549,24 @@ export const DashboardView: React.FC = () => {
                 </div>
               </div>
             )}
-
-            <div className="p-4 rounded-xl bg-secondary/30 text-[10px] text-muted-foreground uppercase tracking-widest font-bold text-center">
-              ID: {selectedWeightEntry.id}
-            </div>
+            
+            <ModalFooter 
+               onBack={() => setWeightDetailModalOpen(false)}
+               onEdit={() => {
+                  setWeightDetailModalOpen(false);
+                  setEntryType('weight');
+                  setEditEntryModalOpen(true);
+               }}
+               onDelete={() => handleDeleteWeightEntry(selectedWeightEntry.id)}
+               onClose={() => setWeightDetailModalOpen(false)}
+            />
           </div>
         )}
       </Modal>
 
       <Modal isOpen={isDetailModalOpen} onClose={() => setDetailModalOpen(false)} title="Детали активности">
         {selectedWorkout && (
-          <div className="space-y-6 p-2 text-foreground">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <button 
-                onClick={() => setDetailModalOpen(false)}
-                className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group mb-2"
-              >
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                Назад
-              </button>
-            </div>
-            
+          <div className="space-y-6 text-foreground min-h-[450px] flex flex-col">
             <div className="flex items-center gap-4 p-5 bg-secondary/30 rounded-3xl border border-white/5">
               <div className={cn(
                 "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg",
@@ -620,33 +639,8 @@ export const DashboardView: React.FC = () => {
                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Темп</p>
                    <p className="text-lg font-bold">{selectedWorkout.pace || '-'}</p>
                 </div>
-                {selectedWorkout.speed && (
-                  <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Скорость</p>
-                    <p className="text-lg font-bold">{selectedWorkout.speed} к/ч</p>
-                  </div>
-                )}
-                 {selectedWorkout.heartRate && (
-                  <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-                    <Heart className="w-4 h-4 mb-2 text-red-500" />
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Пульс</p>
-                    <p className="text-lg font-bold text-red-400">{selectedWorkout.heartRate} BPM</p>
-                  </div>
-                )}
               </div>
             )}
-
-            <div className="grid grid-cols-1 gap-4">
-              {selectedWorkout.weight && (
-                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
-                    <Scale className="w-4 h-4" />
-                    Вес на момент тренировки
-                  </div>
-                  <p className="text-lg font-bold">{selectedWorkout.weight} кг</p>
-                </div>
-              )}
-            </div>
 
             {selectedWorkout.notes && (
               <div className="space-y-3">
@@ -660,13 +654,16 @@ export const DashboardView: React.FC = () => {
               </div>
             )}
 
-            <button 
-              onClick={() => handleDeleteWorkout(selectedWorkout.id)}
-              className="w-full flex items-center justify-center gap-2 p-5 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors text-xs uppercase font-bold tracking-widest"
-            >
-              <Trash2 className="w-4 h-4" />
-              Удалить из журнала
-            </button>
+            <ModalFooter 
+               onBack={() => setDetailModalOpen(false)}
+               onEdit={() => {
+                  setDetailModalOpen(false);
+                  setEntryType('workout');
+                  setEditEntryModalOpen(true);
+               }}
+               onDelete={() => handleDeleteWorkout(selectedWorkout.id)}
+               onClose={() => setDetailModalOpen(false)}
+            />
           </div>
         )}
       </Modal>
