@@ -31,9 +31,17 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   const [showPresets, setShowPresets] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [measurementBaselines, setMeasurementBaselines] = useState<Record<string, number>>(initialData?.baselineMeasurements || {});
+  const [customStartValue, setCustomStartValue] = useState<number | undefined>(initialData?.startValue);
   const [showAllBodyMetrics, setShowAllBodyMetrics] = useState(false);
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(initialData?.metricId || (selectedType === GoalType.STRENGTH ? 'workingWeight' : selectedType === GoalType.ENDURANCE ? 'distance' : 'weight'));
+
+  // Reset custom start value when metric changes to avoid carrying over wrong baseline
+  React.useEffect(() => {
+    if (!initialData) { // Only reset for new goals or if we want to re-baseline
+        setCustomStartValue(undefined);
+    }
+  }, [selectedMetricId]);
 
   const metric = METRICS[selectedMetricId] || METRICS.weight;
 
@@ -48,6 +56,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   };
 
   const getBaselineValue = () => {
+    if (customStartValue !== undefined) return customStartValue;
     if (selectedMetricId === 'weight') return weightHistory[0]?.value || profile?.startingWeight || 0;
     // For other metrics, we can look at the latest entries or profile
     return 0;
@@ -266,17 +275,25 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
         </div>
 
         {/* Info Box about Baseline */}
-        <div className="p-5 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-black shrink-0 relative overflow-hidden">
-                <Target className="w-6 h-6 stroke-[2.5] relative z-10" />
+        <div className="p-3 bg-primary/5 rounded-[2.5rem] border border-primary/10 flex flex-col md:flex-row items-center gap-4 transition-all hover:bg-primary/10">
+            <div className="w-14 h-14 rounded-3xl bg-primary flex items-center justify-center text-black shrink-0 relative overflow-hidden shadow-lg shadow-primary/20">
+                <Scale className="w-7 h-7 stroke-[2.5] relative z-10" />
                 <div className="absolute inset-0 bg-white/20 animate-pulse" />
             </div>
-            <div className="space-y-0.5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Базовый показатель</p>
-              <p className="text-sm text-foreground leading-tight font-bold">
-                Отсчет от: <span className="text-primary text-lg">{getBaselineValue()} {metric.unit}</span>
-              </p>
-              <p className="text-[10px] text-muted-foreground font-medium">Это ваш текущий уровень в выбранной метрике</p>
+            <div className="flex-1 w-full space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70 px-1">Базовый показатель (Точка отсчета)</p>
+              <div className="relative group">
+                <input 
+                  type="number"
+                  step="0.1"
+                  value={customStartValue ?? getBaselineValue()}
+                  onChange={(e) => setCustomStartValue(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder={metric.placeholder}
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all text-xl font-black text-primary pr-16 shadow-inner"
+                />
+                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-black text-primary/40 uppercase tracking-widest">{metric.unit}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-medium px-2 italic">Вы можете изменить это значение, если текущее определено неверно</p>
             </div>
         </div>
       </div>
