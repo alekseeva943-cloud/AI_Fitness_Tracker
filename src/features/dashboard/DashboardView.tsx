@@ -3,7 +3,7 @@ import { RU } from "../../constants";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
-import { ChevronRight, Sparkles, TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2 } from "lucide-react";
+import { ChevronRight, Sparkles, TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft } from "lucide-react";
 import { useFitnessStore, useGoals, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
 import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
@@ -37,6 +37,8 @@ export const DashboardView: React.FC = () => {
   const [entryType, setEntryType] = useState<'workout' | 'weight'>('workout');
 
   const [isWeightHistoryModalOpen, setWeightHistoryModalOpen] = useState(false);
+  const [isWeightDetailModalOpen, setWeightDetailModalOpen] = useState(false);
+  const [selectedWeightEntry, setSelectedWeightEntry] = useState<any>(null);
 
   useEffect(() => {
     initialize();
@@ -228,8 +230,19 @@ export const DashboardView: React.FC = () => {
                     </p>
                     <div className="space-y-2">
                       {weightHistory.slice(0, 3).map((w) => (
-                        <div key={w.id} className="flex justify-between items-center text-xs py-2 border-b border-white/5 last:border-0 group-hover:border-primary/10">
-                          <span className="text-muted-foreground">{formatDate(w.date)}</span>
+                        <div 
+                          key={w.id} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedWeightEntry(w);
+                            setWeightDetailModalOpen(true);
+                          }}
+                          className="flex justify-between items-center text-xs py-2 border-b border-white/5 last:border-0 group-hover:border-primary/10 hover:bg-white/5 px-1 rounded transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">{formatDate(w.date)}</span>
+                            {w.notes && <FileText className="w-3 h-3 text-primary/40" />}
+                          </div>
                           <span className="font-bold">{w.value} кг</span>
                         </div>
                       ))}
@@ -372,20 +385,38 @@ export const DashboardView: React.FC = () => {
       </Modal>
 
       <Modal isOpen={isWeightHistoryModalOpen} onClose={() => setWeightHistoryModalOpen(false)} title="История взвешиваний">
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin text-foreground">
           {weightHistory.length > 0 ? (
             weightHistory.map((entry) => (
-              <div key={entry.id} className="flex justify-between items-center p-4 bg-secondary/30 rounded-2xl border border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Scale className="w-5 h-5" />
+              <div 
+                key={entry.id} 
+                onClick={() => {
+                  setSelectedWeightEntry(entry);
+                  setWeightDetailModalOpen(true);
+                }}
+                className="flex flex-col p-4 bg-secondary/30 rounded-2xl border border-white/5 hover:bg-white/5 cursor-pointer transition-all"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                      <Scale className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">{entry.value} {entry.unit}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(entry.date)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-lg">{entry.value} {entry.unit}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(entry.date)}</p>
-                  </div>
+                  {entry.notes && (
+                    <div className="p-2 bg-primary/20 rounded-lg text-primary">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                  )}
                 </div>
-                {/* Optional: Add delete button for weight too if needed */}
+                {entry.notes && (
+                  <p className="text-xs text-muted-foreground line-clamp-1 mt-2 pl-12 border-l border-primary/20 italic">
+                    {entry.notes}
+                  </p>
+                )}
               </div>
             ))
           ) : (
@@ -403,9 +434,60 @@ export const DashboardView: React.FC = () => {
         </GradientButton>
       </Modal>
 
+      <Modal isOpen={isWeightDetailModalOpen} onClose={() => setWeightDetailModalOpen(false)} title="Детали замера">
+        {selectedWeightEntry && (
+          <div className="space-y-6 p-2 text-foreground">
+            <button 
+              onClick={() => setWeightDetailModalOpen(false)}
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group"
+            >
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Назад
+            </button>
+            <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+                <Scale className="w-8 h-8" />
+              </div>
+              <div>
+                <h4 className="text-xl font-bold">{selectedWeightEntry.value} {selectedWeightEntry.unit}</h4>
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Calendar className="w-4 h-4" />
+                  {formatDate(selectedWeightEntry.date)}
+                </div>
+              </div>
+            </div>
+
+            {selectedWeightEntry.notes && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  <FileText className="w-3 h-3" />
+                  Контекст замера
+                </div>
+                <div className="bg-primary/5 border border-primary/20 p-5 rounded-2xl text-sm leading-relaxed italic">
+                  {selectedWeightEntry.notes}
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 rounded-xl bg-secondary/30 text-[10px] text-muted-foreground uppercase tracking-widest font-bold text-center">
+              ID: {selectedWeightEntry.id}
+            </div>
+          </div>
+        )}
+      </Modal>
+
       <Modal isOpen={isDetailModalOpen} onClose={() => setDetailModalOpen(false)} title="Детали активности">
         {selectedWorkout && (
-          <div className="space-y-6 p-2">
+          <div className="space-y-6 p-2 text-foreground">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <button 
+                onClick={() => setDetailModalOpen(false)}
+                className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group mb-2"
+              >
+                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                Назад
+              </button>
+            </div>
             <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-2xl">
               <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
                 <Dumbbell className="w-8 h-8" />

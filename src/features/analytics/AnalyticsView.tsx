@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFitnessStore, useWeightHistory, useWorkouts, useGoals } from '../../store/useFitnessStore';
 import { selectAnalyticsSummary } from './selectors/fitnessSelectors';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { StatCard } from '../../components/ui/StatCard';
 import { WeightChart } from '../dashboard/components/WeightChart';
 import { Modal } from '../../components/ui/Modal';
-import { TrendingUp, Activity, Target, Zap, Clock, Calendar, BarChart3, Info, ChevronRight, Scale, Flame, ArrowRight, Dumbbell, Sparkles } from 'lucide-react';
+import { TrendingUp, Activity, Target, Zap, Clock, Calendar, BarChart3, Info, ChevronRight, Scale, Flame, ArrowRight, Dumbbell, Sparkles, ChevronLeft, FileText } from 'lucide-react';
 import { RU } from '../../constants';
 import { cn, formatWeight, formatVelocity, formatPercent, formatDate } from '../../lib/utils';
 
 export const AnalyticsView: React.FC = () => {
+  const navigate = useNavigate();
   const state = useFitnessStore();
   const summary = selectAnalyticsSummary(state);
   const weightHistory = useWeightHistory();
@@ -32,9 +34,18 @@ export const AnalyticsView: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="space-y-1">
-        <h1 className="text-4xl font-display font-medium tracking-tight">Глубокая аналитика</h1>
-        <p className="text-muted-foreground">Детальный разбор вашей формы и динамики прогресса</p>
+      <div className="space-y-4">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Назад
+        </button>
+        <div className="space-y-1">
+          <h1 className="text-4xl font-display font-medium tracking-tight">Глубокая аналитика</h1>
+          <p className="text-muted-foreground">Детальный разбор вашей формы и динамики прогресса</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -143,7 +154,14 @@ export const AnalyticsView: React.FC = () => {
         onClose={() => setActiveModal(null)}
         title="Анализ массы тела"
       >
-        <div className="space-y-6">
+        <div className="space-y-6 text-foreground">
+          <button 
+            onClick={() => setActiveModal(null)}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group mb-2"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Назад
+          </button>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl bg-secondary/50 space-y-1">
               <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Старт</p>
@@ -182,7 +200,14 @@ export const AnalyticsView: React.FC = () => {
         onClose={() => setActiveModal(null)}
         title="История и анализ активности"
       >
-        <div className="space-y-6">
+        <div className="space-y-6 text-foreground">
+          <button 
+            onClick={() => setActiveModal(null)}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group mb-2"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Назад
+          </button>
           <div className="grid grid-cols-3 gap-2">
              <div className="text-center p-3 rounded-xl bg-secondary/50">
                <p className="text-[10px] uppercase font-bold text-muted-foreground">Всего</p>
@@ -249,7 +274,14 @@ export const AnalyticsView: React.FC = () => {
         onClose={() => setActiveModal(null)}
         title="Прогресс цели"
       >
-        <div className="space-y-8">
+        <div className="space-y-8 text-foreground">
+          <button 
+            onClick={() => setActiveModal(null)}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group mb-2"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Назад
+          </button>
           <div className="relative pt-1">
             <div className="flex mb-2 items-center justify-between">
               <div>

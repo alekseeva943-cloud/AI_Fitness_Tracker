@@ -47,6 +47,7 @@ export interface WeightEntry {
   date: string;
   value: number;
   unit: string;
+  notes?: string;
 }
 
 export interface AIRecommendation {

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFitnessStore, useGoals } from '../../store/useFitnessStore';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { GoalForm } from './components/GoalForm';
-import { Plus, Target, Trash2, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft } from 'lucide-react';
 import { RU } from '../../constants';
 import { formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
 
 export const GoalsView: React.FC = () => {
+  const navigate = useNavigate();
   const goals = useGoals();
   const removeGoal = useFitnessStore((state) => state.removeGoal);
   const addGoal = useFitnessStore((state) => state.addGoal);
@@ -33,15 +35,24 @@ export const GoalsView: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-display font-medium tracking-tight">Мои цели</h1>
-          <p className="text-muted-foreground">Управляйте своими стремлениями и отслеживайте прогресс</p>
+      <div className="space-y-4">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Назад
+        </button>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-display font-medium tracking-tight">Мои цели</h1>
+            <p className="text-muted-foreground">Управляйте своими стремлениями и отслеживайте прогресс</p>
+          </div>
+          <GradientButton onClick={() => setModalOpen(true)} className="flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Добавить цель
+          </GradientButton>
         </div>
-        <GradientButton onClick={() => setModalOpen(true)} className="flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Добавить цель
-        </GradientButton>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

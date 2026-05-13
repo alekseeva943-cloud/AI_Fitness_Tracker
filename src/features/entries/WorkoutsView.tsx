@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFitnessStore, useWorkouts } from '../../store/useFitnessStore';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { EntryForm } from '../entries/components/EntryForm';
-import { Plus, Dumbbell, Trash2, Clock, Calendar, ExternalLink, Filter, ChevronRight, Flame, FileText, Scale } from 'lucide-react';
+import { Plus, Dumbbell, Trash2, Clock, Calendar, ExternalLink, Filter, ChevronRight, Flame, FileText, Scale, ChevronLeft } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import { cn } from '../../lib/utils';
 import { WorkoutEntry } from '../../types';
 
 export const WorkoutsView: React.FC = () => {
+  const navigate = useNavigate();
   const workouts = useWorkouts();
   const addWorkout = useFitnessStore((state) => state.addWorkout);
   const addWeightEntry = useFitnessStore((state) => state.addWeightEntry);
@@ -57,15 +59,24 @@ export const WorkoutsView: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-display font-medium tracking-tight">Журнал тренировок</h1>
-          <p className="text-muted-foreground">История ваших достижений и приложенных усилий</p>
+      <div className="space-y-4">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Назад
+        </button>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-display font-medium tracking-tight">Журнал тренировок</h1>
+            <p className="text-muted-foreground">История ваших достижений и приложенных усилий</p>
+          </div>
+          <GradientButton onClick={() => setModalOpen(true)} className="flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Новая тренировка
+          </GradientButton>
         </div>
-        <GradientButton onClick={() => setModalOpen(true)} className="flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Новая тренировка
-        </GradientButton>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">

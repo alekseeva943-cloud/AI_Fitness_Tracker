@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useFitnessStore } from "../../store/useFitnessStore";
 import { NAVIGATION_CONFIG } from "../../config/navigation.config";
 import { cn } from "../../lib/utils";
@@ -10,12 +10,12 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="w-64 border-r border-white/5 flex flex-col h-screen sticky top-0 bg-background/50 backdrop-blur-md">
-      <div className="p-8 flex items-center gap-3">
+      <Link to="/" className="p-8 flex items-center gap-3 hover:opacity-80 transition-opacity">
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
           <Dumbbell className="w-5 h-5 text-black" />
         </div>
         <span className="text-xl font-display font-bold tracking-tight">AI FITNESS</span>
-      </div>
+      </Link>
 
       <nav className="flex-1 px-4 space-y-2">
         {NAVIGATION_CONFIG.map((item) => (

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { RU } from "../../../constants";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
+import { ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 
 interface EntryFormProps {
   type: 'workout' | 'weight';
@@ -9,6 +10,7 @@ interface EntryFormProps {
 
 export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,68 +72,121 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
             />
             {errors.type && <p className="text-[10px] text-red-400 font-medium">{errors.type}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{RU.ENTRIES.DURATION} (мин)</label>
-              <input 
-                name="duration" 
-                type="number" 
-                inputMode="numeric" 
-                required 
-                className={`w-full bg-secondary/50 border ${errors.duration ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
-              />
-              {errors.duration && <p className="text-[10px] text-red-400 font-medium">{errors.duration}</p>}
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{RU.ENTRIES.CALORIES}</label>
-              <input 
-                name="caloriesBurned" 
-                type="number" 
-                inputMode="numeric" 
-                className={`w-full bg-secondary/50 border ${errors.caloriesBurned ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
-              />
-              {errors.caloriesBurned && <p className="text-[10px] text-red-400 font-medium">{errors.caloriesBurned}</p>}
-            </div>
-          </div>
+          
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Вес (кг, опционально)</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{RU.ENTRIES.DURATION} (мин)</label>
             <input 
-              name="weight" 
+              name="duration" 
+              type="number" 
+              inputMode="numeric" 
+              required 
+              placeholder="Напр: 45"
+              className={`w-full bg-secondary/50 border ${errors.duration ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
+            />
+            {errors.duration && <p className="text-[10px] text-red-400 font-medium">{errors.duration}</p>}
+          </div>
+
+          <button 
+            type="button" 
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors py-2"
+          >
+            <Settings2 className="w-3 h-3" />
+            Дополнительно
+            {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          {showAdvanced && (
+            <div className="space-y-6 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{RU.ENTRIES.CALORIES}</label>
+                  <input 
+                    name="caloriesBurned" 
+                    type="number" 
+                    inputMode="numeric" 
+                    className={`w-full bg-secondary/50 border ${errors.caloriesBurned ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
+                  />
+                  {errors.caloriesBurned && <p className="text-[10px] text-red-400 font-medium">{errors.caloriesBurned}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Вес (кг)</label>
+                  <input 
+                    name="weight" 
+                    type="number" 
+                    step="0.1" 
+                    inputMode="decimal" 
+                    className={`w-full bg-secondary/50 border ${errors.weight ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
+                    placeholder="На замере"
+                  />
+                  {errors.weight && <p className="text-[10px] text-red-400 font-medium">{errors.weight}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Дата и время</label>
+                <input 
+                  name="date" 
+                  type="datetime-local" 
+                  defaultValue={new Date().toISOString().slice(0, 16)} 
+                  required 
+                  className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" 
+                />
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Вес (кг)</label>
+            <input 
+              name="value" 
               type="number" 
               step="0.1" 
               inputMode="decimal" 
-              className={`w-full bg-secondary/50 border ${errors.weight ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
-              placeholder="Укажите вес, если актуально"
+              required 
+              className={`w-full bg-secondary/50 border ${errors.value ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
             />
-            {errors.weight && <p className="text-[10px] text-red-400 font-medium">{errors.weight}</p>}
+            {errors.value && <p className="text-[10px] text-red-400 font-medium">{errors.value}</p>}
           </div>
+
+          <button 
+            type="button" 
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors py-2"
+          >
+            <Settings2 className="w-3 h-3" />
+            Дополнительно
+            {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          {showAdvanced && (
+            <div className="space-y-6 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Дата и время</label>
+                <input 
+                  name="date" 
+                  type="datetime-local" 
+                  defaultValue={new Date().toISOString().slice(0, 16)} 
+                  required 
+                  className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" 
+                />
+              </div>
+            </div>
+          )}
         </>
-      ) : (
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Вес (кг)</label>
-          <input 
-            name="value" 
-            type="number" 
-            step="0.1" 
-            inputMode="decimal" 
-            required 
-            className={`w-full bg-secondary/50 border ${errors.value ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
-          />
-          {errors.value && <p className="text-[10px] text-red-400 font-medium">{errors.value}</p>}
-        </div>
       )}
 
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Дата</label>
-        <input name="date" type="datetime-local" defaultValue={new Date().toISOString().slice(0, 16)} required className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" />
+        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Заметки</label>
+        <textarea 
+          name="notes" 
+          rows={3} 
+          placeholder={type === 'weight' ? "Напр: Много соли, Плохой сон, Читмил..." : "Детали тренировки..."}
+          className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors resize-none" 
+        />
       </div>
-
-      {type === 'workout' && (
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Заметки</label>
-          <textarea name="notes" rows={3} className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors resize-none" />
-        </div>
-      )}
 
       <button 
         type="submit" 
