@@ -1,11 +1,25 @@
 import React from 'react';
 import { AreaChart, Area, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { WeightEntry } from '../../../types';
-import { formatDate } from '../../../lib/utils';
+import { formatDate, formatWeight } from '../../../lib/utils';
 
 interface WeightChartProps {
   data: WeightEntry[];
 }
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl shadow-2xl backdrop-blur-md">
+        <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest mb-1">{label}</p>
+        <p className="text-sm font-display font-medium text-primary">
+          {formatWeight(payload[0].value)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const WeightChart: React.FC<WeightChartProps> = ({ data }) => {
   const chartData = [...data].reverse().map(entry => ({
@@ -36,13 +50,8 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data }) => {
             domain={['dataMin - 1', 'dataMax + 1']} 
           />
           <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#18181b', 
-              border: '1px solid #27272a', 
-              borderRadius: '12px',
-              fontSize: '12px'
-            }}
-            itemStyle={{ color: '#DFFF00' }}
+            content={<CustomTooltip />}
+            cursor={{ stroke: '#ffffff20', strokeWidth: 1 }}
           />
           <Area 
             type="monotone" 

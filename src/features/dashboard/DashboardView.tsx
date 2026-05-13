@@ -6,7 +6,7 @@ import { GradientButton } from "../../components/ui/GradientButton";
 import { ChevronRight, Sparkles, TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2 } from "lucide-react";
 import { useFitnessStore, useGoals, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
-import { formatDate } from "../../lib/utils";
+import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
 import { Modal } from "../../components/ui/Modal";
 import { GoalForm } from "../goals/components/GoalForm";
 import { EntryForm } from "../entries/components/EntryForm";
@@ -197,12 +197,12 @@ export const DashboardView: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Текущий вес</p>
-                    <p className="text-2xl font-bold">{summary?.weight.currentWeight ?? '--'} кг</p>
+                    <p className="text-2xl font-bold">{formatWeight(summary?.weight.currentWeight ?? 0)}</p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {summary?.weight.totalChange !== undefined 
-                    ? `Всего ${summary.weight.totalChange < 0 ? 'сброшено' : 'набрано'} ${Math.abs(summary.weight.totalChange).toFixed(1)} кг с начала отслеживания.`
+                    ? `Всего ${summary.weight.totalChange < 0 ? 'сброшено' : 'набрано'} ${formatWeight(Math.abs(summary.weight.totalChange))} с начала отслеживания.`
                     : 'Начните регулярно взвешиваться для точного анализа.'}
                 </p>
               </GlassCard>
@@ -275,7 +275,7 @@ export const DashboardView: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Завершено</span>
-                    <span className="text-primary font-bold">{summary.goal.completionPercentage}%</span>
+                    <span className="text-primary font-bold">{formatPercent(summary.goal.completionPercentage)}</span>
                   </div>
                 </div>
               ) : (

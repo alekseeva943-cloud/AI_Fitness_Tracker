@@ -6,7 +6,7 @@ import { Modal } from '../../components/ui/Modal';
 import { GoalForm } from './components/GoalForm';
 import { Plus, Target, Trash2, Calendar, TrendingUp } from 'lucide-react';
 import { RU } from '../../constants';
-import { formatDate } from '../../lib/utils';
+import { formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
 
 export const GoalsView: React.FC = () => {
@@ -78,7 +78,7 @@ export const GoalsView: React.FC = () => {
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Текущий / Цель</p>
                     <p className="text-lg font-display font-medium">
-                      {currentWeight} / <span className="text-primary">{goal.targetValue}</span> кг
+                      {formatWeight(currentWeight)} / <span className="text-primary">{formatWeight(goal.targetValue)}</span>
                     </p>
                   </div>
                   <div className="text-right">
