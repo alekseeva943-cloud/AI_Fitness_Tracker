@@ -42,6 +42,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
             name="targetValue" 
             type="number" 
             step="0.1"
+            inputMode="decimal"
             defaultValue={initialData?.targetValue}
             required
             className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors"

@@ -12,6 +12,7 @@ export interface WeightTrend {
   totalChange: number;
   isPlateau: boolean;
   velocity: number; // change per day
+  forecastedWeight: number; // Predicted weight in 30 days
 }
 
 export interface WorkoutStats {

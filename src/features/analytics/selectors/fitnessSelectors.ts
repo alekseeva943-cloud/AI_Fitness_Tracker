@@ -16,9 +16,14 @@ export const selectAnalyticsSummary = (state: FitnessState): AnalyticsSummary | 
     const weightTrend = calculateWeightTrend(state.weightHistory, activeGoal);
     const workoutStats = calculateWorkoutStats(state.workouts);
     const goalProgress = calculateGoalProgress(activeGoal, weightTrend);
+    const forecast = weightTrend?.forecastedWeight;
 
     if (weightTrend) {
-      logger.log('analytics', `Weight: curr=${weightTrend.currentWeight}, totalDelta=${weightTrend.totalChange.toFixed(1)}kg, weeklyDelta=${weightTrend.weeklyChange.toFixed(1)}kg`);
+      logger.log('analytics', `Weight: curr=${weightTrend.currentWeight}, totalDelta=${weightTrend.totalChange.toFixed(1)}kg, weeklyDelta=${weightTrend.weeklyChange.toFixed(1)}kg, forecast30d=${forecast?.toFixed(1)}kg`);
+    }
+
+    if (goalProgress) {
+      logger.log('analytics', `Goal: progress=${goalProgress.completionPercentage}%, remaining=${goalProgress.remainingValue.toFixed(1)}kg, status=${goalProgress.status}`);
     }
 
     if (!weightTrend) return null;

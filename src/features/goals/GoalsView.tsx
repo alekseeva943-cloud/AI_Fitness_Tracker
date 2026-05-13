@@ -46,10 +46,10 @@ export const GoalsView: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {goals.map((goal) => {
-          const progress = Math.min(
-            100,
-            Math.abs((goal.currentValue - goal.startValue) / (goal.targetValue - goal.startValue)) * 100
-          ) || 0;
+          const currentWeight = summary?.weight.currentWeight ?? goal.currentValue;
+          const totalDiff = Math.abs(goal.targetValue - goal.startValue);
+          const currentDiff = Math.abs(currentWeight - goal.startValue);
+          const progress = totalDiff > 0 ? Math.min(100, (currentDiff / totalDiff) * 100) : 0;
 
           return (
             <GlassCard key={goal.id} className="p-6 space-y-6 flex flex-col group">
@@ -78,7 +78,7 @@ export const GoalsView: React.FC = () => {
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Текущий / Цель</p>
                     <p className="text-lg font-display font-medium">
-                      {goal.currentValue} / <span className="text-primary">{goal.targetValue}</span> кг
+                      {currentWeight} / <span className="text-primary">{goal.targetValue}</span> кг
                     </p>
                   </div>
                   <div className="text-right">

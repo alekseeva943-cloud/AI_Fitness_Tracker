@@ -19,7 +19,7 @@ export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats =>
   const totalDuration = workouts.reduce((sum, w) => sum + w.duration, 0);
   
   const spanDays = differenceInDays(new Date(), new Date(sorted[sorted.length - 1].date)) || 1;
-  const spanWeeks = spanDays / 7 || 1;
+  const spanWeeks = Math.max(1, spanDays / 7);
 
   const avgWorkoutsPerWeek = totalWorkouts / spanWeeks;
 

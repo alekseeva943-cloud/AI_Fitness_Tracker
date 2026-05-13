@@ -46,7 +46,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
       />
       <StatCard 
         label="Прогноз веса"
-        value={summary?.weight.currentWeight ?? '--'}
+        value={summary?.weight.forecastedWeight.toFixed(1) ?? '--'}
         unit="кг"
         icon={<TrendingUp className="w-4 h-4" />}
         onClick={() => navigate('/analytics')}

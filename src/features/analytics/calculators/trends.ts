@@ -33,6 +33,9 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
   const daysDiff = differenceInDays(new Date(sorted[0].date), new Date(sorted[sorted.length - 1].date)) || 1;
   const velocity = (current - starting) / daysDiff;
 
+  // Forecast for 30 days
+  const forecastedWeight = current + (velocity * 30);
+
   return {
     currentWeight: current,
     startingWeight: starting,
@@ -41,6 +44,7 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
     weeklyChange,
     totalChange: current - starting,
     isPlateau,
-    velocity
+    velocity,
+    forecastedWeight
   };
 };

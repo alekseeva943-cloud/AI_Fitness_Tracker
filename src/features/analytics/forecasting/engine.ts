@@ -8,6 +8,8 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
   const current = trend ? trend.currentWeight : goal.currentValue;
   const target = goal.targetValue;
   const initial = goal.startValue; 
+  
+  logger.log('analytics', `Calculating progress for goal "${goal.title}": current=${current}, target=${target}, initial=${initial}`);
 
   // Completion Percentage
   let completionPercentage = 0;

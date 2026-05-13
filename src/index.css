@@ -39,6 +39,17 @@
   --shadow-neon: 0 0 20px rgba(223, 255, 0, 0.15);
 }
 
+/* Hide spin buttons in number inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 @layer base {
   :root {
     --bg: #fafafa;

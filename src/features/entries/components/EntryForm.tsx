@@ -24,18 +24,18 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{RU.ENTRIES.DURATION} (мин)</label>
-              <input name="duration" type="number" required className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" />
+              <input name="duration" type="number" inputMode="numeric" required className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{RU.ENTRIES.CALORIES}</label>
-              <input name="caloriesBurned" type="number" className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" />
+              <input name="caloriesBurned" type="number" inputMode="numeric" className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" />
             </div>
           </div>
         </>
       ) : (
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Вес (кг)</label>
-          <input name="value" type="number" step="0.1" required className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" />
+          <input name="value" type="number" step="0.1" inputMode="decimal" required className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors" />
         </div>
       )}
 
