@@ -84,6 +84,15 @@ export interface AIAnalysis {
   recommendations: AIRecommendation[];
 }
 
+export interface MetricBaseline {
+  id: string; // matches METRICS registry or custom ID
+  name: string;
+  value: number;
+  unit: string;
+  date: string;
+  isCustom?: boolean;
+}
+
 export interface UserProfile {
   name: string;
   age: number;
@@ -91,7 +100,7 @@ export interface UserProfile {
   height: number;
   startingWeight: number;
   activityLevel: ActivityLevel;
-  baselines?: Record<string, number>; // Baseline metrics for comparison
+  baselines: MetricBaseline[]; // Centralized baseline metrics
 }
 
 export interface FitnessState {

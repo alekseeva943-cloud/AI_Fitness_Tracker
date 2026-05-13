@@ -10,6 +10,11 @@ export const INITIAL_DEMO_STATE: FitnessState = {
     height: 182,
     startingWeight: 85.5,
     activityLevel: ActivityLevel.MODERATE,
+    baselines: [
+      { id: 'weight', name: 'Вес', value: 85.5, unit: 'кг', date: '2026-04-01T00:00:00.000Z' },
+      { id: 'workingWeight', name: 'Жим лежа', value: 60, unit: 'кг', date: '2026-04-01T00:00:00.000Z' },
+      { id: 'distance', name: 'Бег (5км)', value: 32, unit: 'мин', date: '2026-04-01T00:00:00.000Z' }
+    ],
   },
   goals: [
     {

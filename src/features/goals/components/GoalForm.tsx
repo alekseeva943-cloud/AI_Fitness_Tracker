@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, ChevronDown, ChevronUp, Sparkles, Scale, Dumbbell, Zap, Trophy, Heart } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, Sparkles, Scale, Dumbbell, Zap, Trophy, Heart, Calendar } from 'lucide-react';
 import { Goal, GoalType } from '../../../types';
 import { RU } from '../../../constants';
 import { METRICS } from '../../../constants/metrics';
 import { FitnessSelect } from '../../../components/ui/FitnessSelect';
 import { cn } from '../../../lib/utils';
 import { isValidTitle, validateNumeric } from '../../../lib/validation';
+import { useFitnessStore } from '../../../store/useFitnessStore';
 
 const GOAL_PRESETS = [
   { title: 'Сбросить лишний вес', type: GoalType.WEIGHT_LOSS, icon: '📉' },
@@ -23,6 +24,7 @@ interface GoalFormProps {
 }
 
 export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCancel }) => {
+  const profile = useFitnessStore(state => state.profile);
   const [selectedType, setSelectedType] = useState<GoalType>(initialData?.type || GoalType.WEIGHT_LOSS);
   const [title, setTitle] = useState(initialData?.title || '');
   const [showPresets, setShowPresets] = useState(false);
@@ -30,11 +32,19 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
 
   const metric = Object.values(METRICS).find(m => m.compatibleGoalTypes?.includes(selectedType)) || METRICS.weight;
 
+  // Get baseline from profile
+  const getBaselineValue = () => {
+    if (initialData?.startValue !== undefined) return initialData.startValue;
+    const baseline = profile?.baselines?.find(b => b.id === metric.id);
+    return baseline?.value || 0;
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const newErrors: Record<string, string> = {};
 
+    const startVal = getBaselineValue();
     const data = {
       title: title,
       type: selectedType,
@@ -42,8 +52,8 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
       deadline: formData.get('deadline') as string,
       motivation: formData.get('motivation') as string,
       startDate: initialData?.startDate || new Date().toISOString(),
-      currentValue: initialData?.currentValue || 0,
-      startValue: initialData?.startValue || 0,
+      currentValue: initialData?.currentValue || startVal,
+      startValue: startVal,
       status: initialData?.status || 'ACTIVE',
       createdAt: initialData?.createdAt || new Date().toISOString(),
       id: initialData?.id
@@ -69,19 +79,23 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   };
 
   const typeOptions = [
-    { value: GoalType.WEIGHT_LOSS, label: '📉 Похудение', icon: '📉' },
-    { value: GoalType.MUSCLE_GAIN, label: '💪 Набор массы', icon: '💪' },
-    { value: GoalType.STRENGTH, label: '⚡ Сила и мощь', icon: '⚡' },
+    { value: GoalType.WEIGHT_LOSS, label: 'Похудение', icon: '📉' },
+    { value: GoalType.MUSCLE_GAIN, label: 'Набор массы', icon: '💪' },
+    { value: GoalType.STRENGTH, label: 'Сила и мощь', icon: '⚡' },
   ];
 
   return (
     <form 
       onSubmit={handleSubmit}
-      className="space-y-8"
+      className="space-y-10"
     >
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Title & Presets */}
         <div className="space-y-3 relative">
-          <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 px-1">Какая у вас цель?</label>
+          <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
+            <Sparkles className="w-3 h-3 text-primary/60" />
+            Какая у вас цель?
+          </label>
           
           <div className="relative group">
             <input 
@@ -90,14 +104,14 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
               onChange={(e) => setTitle(e.target.value)}
               onFocus={() => setShowPresets(true)}
               required
-              placeholder="Введите цель или выберите из списка..."
+              placeholder="Например: Пляжный сезон 2024..."
               className={cn(
-                "w-full bg-secondary/40 border rounded-2xl px-5 py-4 outline-none focus:bg-secondary/60 transition-all text-base font-medium shadow-inner placeholder:text-muted-foreground/20",
+                "w-full bg-secondary/40 border rounded-3xl px-6 py-5 outline-none focus:bg-secondary/60 transition-all text-lg font-medium shadow-inner placeholder:text-muted-foreground/30",
                 errors.title ? 'border-red-500/50' : 'border-white/5 focus:border-primary/50'
               )}
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-               {showPresets ? <ChevronUp className="w-4 h-4 text-primary/40" /> : <ChevronDown className="w-4 h-4 text-muted-foreground/20" />}
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+               {showPresets ? <ChevronUp className="w-5 h-5 text-primary/40" /> : <ChevronDown className="w-5 h-5 text-muted-foreground/20" />}
             </div>
           </div>
 
@@ -113,9 +127,9 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
                 />
                 <motion.div
                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 4, scale: 1 }}
+                  animate={{ opacity: 1, y: 8, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="absolute z-50 left-0 right-0 top-full bg-secondary/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden p-2 grid grid-cols-1 sm:grid-cols-2 gap-2"
+                  className="absolute z-50 left-0 right-0 top-full bg-secondary/95 border border-white/10 rounded-3xl shadow-2xl backdrop-blur-2xl overflow-hidden p-3 grid grid-cols-1 sm:grid-cols-2 gap-2"
                 >
                   {GOAL_PRESETS.map((preset) => (
                     <button
@@ -126,32 +140,33 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
                         setSelectedType(preset.type);
                         setShowPresets(false);
                       }}
-                      className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-primary/10 hover:border-primary/20 transition-all text-left text-xs font-medium group"
+                      className="flex items-center gap-3 p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-primary/10 hover:border-primary/20 transition-all text-left text-sm font-semibold group"
                     >
-                      <span className="text-lg group-hover:scale-125 transition-transform">{preset.icon}</span>
+                      <span className="text-xl group-hover:scale-125 transition-transform">{preset.icon}</span>
                       {preset.title}
                     </button>
                   ))}
-                  <div className="col-span-full p-2 border-t border-white/5 text-[9px] text-muted-foreground/40 text-center uppercase tracking-widest">
-                    Или продолжайте вводить свой вариант
-                  </div>
                 </motion.div>
               </>
             )}
           </AnimatePresence>
-          {errors.title && <p className="text-[10px] text-red-400 font-medium px-2">{errors.title}</p>}
+          {errors.title && <p className="text-[10px] text-red-400 font-bold px-2 uppercase tracking-widest">{errors.title}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FitnessSelect
-            label="Направление"
-            options={typeOptions}
-            value={selectedType}
-            onChange={(val) => setSelectedType(val as GoalType)}
-          />
+        {/* Direction & Value */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+             <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Направление</label>
+             <FitnessSelect
+               options={typeOptions}
+               value={selectedType}
+               onChange={(val) => setSelectedType(val as GoalType)}
+               selectClassName="h-[68px] rounded-3xl"
+             />
+          </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 px-1 text-center block">Цель ({metric.unit})</label>
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Цель ({metric.unit})</label>
             <div className="relative">
               <input 
                 name="targetValue" 
@@ -162,62 +177,71 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
                 required
                 placeholder={metric.placeholder}
                 className={cn(
-                  "w-full bg-secondary/40 border rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all text-xl font-bold shadow-lg text-center pr-12",
+                  "w-full bg-secondary/40 border rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all text-2xl font-black shadow-xl text-center pr-16 h-[68px]",
                   errors.targetValue ? 'border-red-500/50' : 'border-white/10'
                 )}
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-primary/40 uppercase">{metric.unit}</span>
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-primary/40 uppercase tracking-tighter">{metric.unit}</span>
             </div>
-            {errors.targetValue && <p className="text-[10px] text-red-400 font-medium px-2">{errors.targetValue}</p>}
           </div>
+        </div>
+
+        {/* Info Box about Baseline */}
+        {!initialData && (
+          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center gap-3">
+             <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <Target className="w-4 h-4" />
+             </div>
+             <p className="text-[11px] text-muted-foreground/80 leading-relaxed font-medium">
+               Точка отсчета: <span className="text-primary font-bold">{getBaselineValue()} {metric.unit}</span> (из личных показателей). Прогноз будет строиться от этого значения.
+             </p>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 border-t border-white/5">
+        <div className="space-y-3">
+          <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5 text-primary" />
+            Желаемая дата
+          </label>
+          <input 
+            name="deadline" 
+            type="date"
+            defaultValue={initialData?.deadline?.split('T')[0]}
+            required
+            className="w-full bg-secondary/30 border border-white/5 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all text-base font-bold text-center h-[60px]"
+          />
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
+            <Heart className="w-3.5 h-3.5 text-primary" />
+            Твоя мотивация
+          </label>
+          <textarea 
+            name="motivation" 
+            defaultValue={initialData?.motivation}
+            placeholder="Зачем тебе это?"
+            rows={1}
+            className="w-full bg-secondary/30 border border-white/5 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all resize-none text-base font-medium placeholder:text-muted-foreground/30 h-[60px] flex items-center"
+          />
         </div>
       </div>
 
-      <div className="space-y-6 pt-6 border-t border-white/5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 px-1 flex items-center gap-2">
-              <Trophy className="w-3 h-3 text-primary" />
-              Желаемая дата
-            </label>
-            <input 
-              name="deadline" 
-              type="date"
-              defaultValue={initialData?.deadline?.split('T')[0]}
-              required
-              className="w-full bg-secondary/30 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all text-sm font-medium"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 px-1 flex items-center gap-2">
-              <Heart className="w-3 h-3 text-primary" />
-              Твоя мотивация
-            </label>
-            <textarea 
-              name="motivation" 
-              defaultValue={initialData?.motivation}
-              placeholder="Зачем тебе это?"
-              rows={1}
-              className="w-full bg-secondary/30 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all resize-none text-sm font-medium placeholder:text-muted-foreground/20"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-4 pt-6">
         {onCancel && (
           <button 
             type="button" 
             onClick={onCancel}
-            className="px-6 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest text-muted-foreground hover:bg-white/5 transition-all"
+            className="px-8 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:bg-white/5 transition-all"
           >
             Отмена
           </button>
         )}
         <button 
           type="submit" 
-          className="flex-1 bg-primary text-black px-6 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group"
+          className="flex-1 bg-primary text-black px-8 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(223,255,0,0.3)] active:scale-95 transition-all flex items-center justify-center gap-3 group"
         >
           <Zap className="w-4 h-4 fill-black group-hover:animate-pulse" />
           {initialData ? 'Сохранить изменения' : 'Активировать цель'}

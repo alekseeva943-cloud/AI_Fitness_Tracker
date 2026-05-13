@@ -54,8 +54,8 @@ export const DashboardView: React.FC = () => {
     addGoal({
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      currentValue: summary?.weight.currentWeight || 0,
-      startValue: summary?.weight.currentWeight || 0,
+      currentValue: summary?.weight?.currentWeight || 0,
+      startValue: summary?.weight?.currentWeight || 0,
       status: 'ACTIVE',
       unit: 'кг',
       startDate: new Date().toISOString(),

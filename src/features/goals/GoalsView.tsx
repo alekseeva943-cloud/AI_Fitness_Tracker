@@ -31,8 +31,8 @@ export const GoalsView: React.FC = () => {
     addGoal({
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      currentValue: summary?.weight.currentWeight || 0,
-      startValue: summary?.weight.currentWeight || 0,
+      currentValue: summary?.weight?.currentWeight || 0,
+      startValue: summary?.weight?.currentWeight || 0,
       status: 'ACTIVE',
       unit: 'кг',
       startDate: new Date().toISOString(),
@@ -99,7 +99,7 @@ export const GoalsView: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {goals.map((goal, index) => {
-          const currentWeight = summary?.weight.currentWeight ?? goal.currentValue;
+          const currentWeight = summary?.weight?.currentWeight ?? goal.currentValue;
           
           // Semantic progress calculation
           let progress = 0;
@@ -242,7 +242,7 @@ export const GoalsView: React.FC = () => {
         title="Детали цели"
       >
         {selectedGoal && (() => {
-          const currentWeight = summary?.weight.currentWeight ?? selectedGoal.currentValue;
+          const currentWeight = summary?.weight?.currentWeight ?? selectedGoal.currentValue;
           const totalDiff = Math.abs(selectedGoal.targetValue - selectedGoal.startValue);
           const currentProgress = totalDiff > 0 ? Math.min(100, (Math.abs(currentWeight - selectedGoal.startValue) / totalDiff) * 100) : 0;
           
