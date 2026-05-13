@@ -5,7 +5,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { StatCard } from '../../components/ui/StatCard';
 import { WeightChart } from '../dashboard/components/WeightChart';
 import { Modal } from '../../components/ui/Modal';
-import { TrendingUp, Activity, Target, Zap, Clock, Calendar, BarChart3, Info, ChevronRight, Scale, Flame, ArrowRight, Dumbbell } from 'lucide-react';
+import { TrendingUp, Activity, Target, Zap, Clock, Calendar, BarChart3, Info, ChevronRight, Scale, Flame, ArrowRight, Dumbbell, Sparkles } from 'lucide-react';
 import { RU } from '../../constants';
 import { cn, formatWeight, formatVelocity, formatPercent, formatDate } from '../../lib/utils';
 
@@ -85,10 +85,13 @@ export const AnalyticsView: React.FC = () => {
 
         <div className="space-y-6">
           <GlassCard className="p-8 space-y-6">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              Статистика за месяц
-            </h3>
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                Статистика за месяц
+              </h3>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Основано на последних 30 днях</p>
+            </div>
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-1 hover:bg-white/10 transition-colors cursor-pointer group" onClick={() => setActiveModal('workouts')}>
                 <div className="flex justify-between items-center">
@@ -98,19 +101,21 @@ export const AnalyticsView: React.FC = () => {
                 <p className="text-xl font-display font-medium">{summary.workouts.consistencyScore}% <span className={cn("text-xs font-sans ml-1", summary.workouts.consistencyScore > 70 ? "text-green-400" : "text-yellow-400")}>
                   {summary.workouts.consistencyScore > 70 ? "Отлично" : "Норма"}
                 </span></p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Комбинация частоты, объема и регулярности ваших тренировок.</p>
               </div>
               <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Интенсивность</p>
                 <p className="text-xl font-display font-medium">
                   {summary.workouts.avgDuration > 60 ? 'Высокая' : summary.workouts.avgDuration > 30 ? 'Средняя' : 'Низкая'}
                 </p>
+                <p className="text-[10px] text-muted-foreground">Среднее время под нагрузкой: {summary.workouts.avgDuration.toFixed(0)} мин</p>
               </div>
               <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-1 hover:bg-white/10 transition-colors cursor-pointer group" onClick={() => setActiveModal('workouts')}>
                 <div className="flex justify-between items-center">
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Средняя тренировка</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Темп прогресса</p>
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-                <p className="text-xl font-display font-medium">{summary.workouts.avgDuration.toFixed(0)} мин</p>
+                <p className="text-xl font-display font-medium">{summary.workouts.avgWorkoutsPerWeek.toFixed(1)} <span className="text-xs">тр/нед</span></p>
               </div>
             </div>
           </GlassCard>
@@ -175,7 +180,7 @@ export const AnalyticsView: React.FC = () => {
       <Modal 
         isOpen={activeModal === 'workouts'} 
         onClose={() => setActiveModal(null)}
-        title="История активностей"
+        title="История и анализ активности"
       >
         <div className="space-y-6">
           <div className="grid grid-cols-3 gap-2">
@@ -188,12 +193,38 @@ export const AnalyticsView: React.FC = () => {
                <p className="text-lg font-bold">~{summary.workouts.totalWorkouts * 350}</p>
              </div>
              <div className="text-center p-3 rounded-xl bg-secondary/50">
-               <p className="text-[10px] uppercase font-bold text-muted-foreground">Топ</p>
-               <p className="text-lg font-bold">Силовая</p>
+               <p className="text-[10px] uppercase font-bold text-muted-foreground">Показатель</p>
+               <p className="text-lg font-bold">{summary.workouts.consistencyScore}%</p>
              </div>
           </div>
 
+          <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="w-3 h-3 text-primary" />
+              Как считается активность?
+            </h4>
+            <div className="grid grid-cols-2 gap-4 text-[10px]">
+              <div className="space-y-1">
+                <p className="text-muted-foreground uppercase font-bold">Общий объем</p>
+                <p className="font-medium text-foreground">{(summary.workouts.totalDuration / 60).toFixed(1)} часов тренировок</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground uppercase font-bold">Регулярность</p>
+                <p className="font-medium text-foreground">{summary.workouts.avgWorkoutsPerWeek.toFixed(1)} тр. в неделю</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground uppercase font-bold">Интенсивность</p>
+                <p className="font-medium text-foreground">{summary.workouts.avgDuration.toFixed(0)} мин / тренировка</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground uppercase font-bold">Consistency Score</p>
+                <p className="font-medium text-foreground">Базируется на отклонении от графика</p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground px-1">Последние 10 записей</p>
             {workouts.slice(0, 10).map(workout => (
               <div key={workout.id} className="flex justify-between items-center p-3 border border-white/5 bg-white/5 rounded-xl">
                 <div className="flex items-center gap-3">

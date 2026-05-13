@@ -155,23 +155,32 @@ export const DashboardView: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <GlassCard className="min-h-[400px] flex flex-col p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  {RU.DASHBOARD.WEIGHT_TREND}
-                </h2>
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    {RU.DASHBOARD.WEIGHT_TREND}
+                  </h2>
                   {summary && (
-                    <div className="flex gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                      <span className="text-primary border-b border-primary/20 pb-1 flex items-center gap-2">
-                        {getTrendIcon(summary.weight.isPlateau ? 'STAGNATING' : (summary.weight.weeklyChange < 0 ? 'IMPROVING' : 'DECLINING'))}
-                        ИИ Анализ: {summary.weight.isPlateau ? 'Плато' : (summary.weight.weeklyChange < 0 ? 'Снижение' : 'Стабильно')}
+                    <div className="flex gap-2 text-xs font-bold uppercase tracking-widest text-primary/60 mt-1">
+                      <span>Начало: {formatWeight(activeGoal?.startValue ?? 0)}</span>
+                      <span>•</span>
+                      <span>Цель: {formatWeight(activeGoal?.targetValue ?? 0)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {summary && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full">
+                      {getTrendIcon(summary.weight.isPlateau ? 'STAGNATING' : (summary.weight.weeklyChange < 0 ? 'IMPROVING' : 'DECLINING'))}
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                        {summary.weight.isPlateau ? 'Плато' : (summary.weight.weeklyChange < 0 ? 'Снижение' : 'Стабильно')}
                       </span>
                     </div>
                   )}
                   <button 
                     onClick={() => setWeightHistoryModalOpen(true)}
-                    className="text-[10px] uppercase font-bold tracking-widest text-primary hover:text-primary/80 transition-colors bg-primary/10 px-2 py-1 rounded-md"
+                    className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-primary transition-colors bg-secondary/50 px-3 py-1.5 rounded-full"
                   >
                     История
                   </button>
@@ -190,113 +199,118 @@ export const DashboardView: React.FC = () => {
             </GlassCard>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <GlassCard className="p-6 bg-primary/5 border border-primary/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                    <Scale className="w-6 h-6" />
+              <div className="space-y-6">
+                <GlassCard className="p-6 bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-all cursor-pointer group" onClick={() => setWeightHistoryModalOpen(true)}>
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+                        <Scale className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Текущий вес</p>
+                        <p className="text-3xl font-bold">{formatWeight(summary?.weight.currentWeight ?? 0)}</p>
+                      </div>
+                    </div>
+                    {summary?.weight.weeklyChange !== undefined && (
+                      <div className={cn(
+                        "flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg",
+                        summary.weight.weeklyChange < 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                      )}>
+                        {summary.weight.weeklyChange < 0 ? "−" : "+"}{Math.abs(summary.weight.weeklyChange).toFixed(1)}/нед
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Текущий вес</p>
-                    <p className="text-2xl font-bold">{formatWeight(summary?.weight.currentWeight ?? 0)}</p>
+                  
+                  <div className="space-y-3">
+                    <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
+                       <Calendar className="w-3 h-3" />
+                       Последние замеры
+                    </p>
+                    <div className="space-y-2">
+                      {weightHistory.slice(0, 3).map((w) => (
+                        <div key={w.id} className="flex justify-between items-center text-xs py-2 border-b border-white/5 last:border-0 group-hover:border-primary/10">
+                          <span className="text-muted-foreground">{formatDate(w.date)}</span>
+                          <span className="font-bold">{w.value} кг</span>
+                        </div>
+                      ))}
+                      {weightHistory.length === 0 && (
+                        <p className="text-xs text-muted-foreground italic">Данных пока нет</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {summary?.weight.totalChange !== undefined 
-                    ? `Всего ${summary.weight.totalChange < 0 ? 'сброшено' : 'набрано'} ${formatWeight(Math.abs(summary.weight.totalChange))} с начала отслеживания.`
-                    : 'Начните регулярно взвешиваться для точного анализа.'}
-                </p>
-              </GlassCard>
+                </GlassCard>
+              </div>
 
-              <GlassCard className="p-6 bg-secondary/30">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Calendar className="w-6 h-6" />
-                    </div>
-                    <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Последние замеры</p>
+              <div className="space-y-6">
+                <GlassCard className="p-6 h-full flex flex-col justify-between border-l-4 border-l-primary relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <Sparkles className="w-24 h-24 text-primary" />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  {weightHistory.slice(0, 3).map((w) => (
-                    <div key={w.id} className="flex justify-between items-center text-sm py-1 border-b border-white/5 last:border-0">
-                      <span className="text-muted-foreground">{formatDate(w.date)}</span>
-                      <span className="font-bold">{w.value} кг</span>
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+                          <Target className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Прогресс цели</p>
+                          <p className="text-3xl font-bold">{formatPercent(summary?.goal.completionPercentage ?? 0)}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setGoalModalOpen(true)}
+                        className="p-2 hover:bg-white/5 rounded-xl text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Target className="w-5 h-5" />
+                      </button>
                     </div>
-                  ))}
-                  {weightHistory.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">Данных о весе пока нет</p>
-                  )}
-                  {weightHistory.length > 3 && (
-                    <button 
-                      onClick={() => setWeightHistoryModalOpen(true)}
-                      className="text-[10px] text-primary hover:underline w-full text-center mt-2"
-                    >
-                      Смотреть всё
-                    </button>
-                  )}
-                </div>
-              </GlassCard>
+
+                    {summary?.goal.estimatedCompletionDate ? (
+                      <div className="space-y-4">
+                        <div className="bg-secondary/50 rounded-2xl p-4 backdrop-blur-sm border border-white/5">
+                          <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest mb-1">Прогноз достижения</p>
+                          <p className="text-2xl font-bold text-primary">
+                            {formatDate(summary.goal.estimatedCompletionDate)}
+                          </p>
+                        </div>
+                        <div className="w-full bg-secondary h-2.5 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-primary h-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(223,255,0,0.4)]" 
+                            style={{ width: `${summary.goal.completionPercentage}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest text-center">
+                          Осталось: {formatWeight(Math.abs(summary.goal.remainingValue))}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground italic mb-6 leading-relaxed">
+                          Установите цель по весу для активации ИИ-прогноза завершения.
+                        </p>
+                        <GradientButton variant="outline" size="sm" onClick={() => setGoalModalOpen(true)} className="w-full">
+                          Установить цель
+                        </GradientButton>
+                      </div>
+                    )}
+                  </div>
+                </GlassCard>
+              </div>
             </div>
 
             <AIRecommendationsSection />
           </div>
 
           <div className="space-y-8">
-            <GlassCard className="p-6 border-l-4 border-l-primary relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                <Sparkles className="w-24 h-24 text-primary" />
-              </div>
-              <div className="flex justify-between items-start mb-4 relative z-10">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  {RU.DASHBOARD.FORECAST}
-                </h3>
-                <button 
-                  onClick={() => setGoalModalOpen(true)}
-                  className="p-1 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <Target className="w-4 h-4" />
-                </button>
-              </div>
-
-              {summary?.goal.estimatedCompletionDate ? (
-                <div className="relative z-10">
-                  <div className="bg-secondary/50 rounded-2xl p-4 mb-4 backdrop-blur-sm">
-                    <p className="text-2xl font-bold mb-1">
-                      {formatDate(summary.goal.estimatedCompletionDate)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Прогноз достижения: <span className="text-foreground font-medium">{activeGoal?.title}</span></p>
-                  </div>
-                  <div className="w-full bg-secondary h-2.5 rounded-full mb-3 overflow-hidden">
-                    <div 
-                      className="bg-primary h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(223,255,0,0.3)]" 
-                      style={{ width: `${summary.goal.completionPercentage}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Завершено</span>
-                    <span className="text-primary font-bold">{formatPercent(summary.goal.completionPercentage)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-6 relative z-10">
-                  <p className="text-sm text-muted-foreground italic mb-4">Активная цель не установлена или данных недостаточно</p>
-                  <GradientButton variant="outline" size="sm" onClick={() => setGoalModalOpen(true)} className="w-full">
-                    Установить цель
-                  </GradientButton>
-                </div>
-              )}
-            </GlassCard>
-
             <GlassCard className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold">{RU.ENTRIES.TITLE}</h3>
                 <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
-                  Последние {workouts.slice(0, 3).length}
+                  Последние {workouts.slice(0, 4).length}
                 </span>
               </div>
               <div className="space-y-3">
-                {workouts.slice(0, 4).map(workout => (
+                {workouts.slice(0, 5).map(workout => (
                   <div 
                     key={workout.id} 
                     onClick={() => openWorkoutDetail(workout)}
@@ -324,6 +338,26 @@ export const DashboardView: React.FC = () => {
               <GradientButton variant="outline" className="w-full mt-6" onClick={() => { setEntryType('workout'); setEntryModalOpen(true); }}>
                 Все активности
               </GradientButton>
+            </GlassCard>
+
+            <GlassCard className="p-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/10">
+              <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-primary" />
+                ИИ Помощник
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                {summary ? (
+                  summary.weight.isPlateau 
+                    ? "Замечено замедление прогресса. Попробуйте изменить тип нагрузки или пересмотреть калорийность рациона для преодоления плато."
+                    : summary.weight.weeklyChange < 0 
+                      ? "Отличная динамика! Вы теряете вес в здоровом темпе. Продолжайте текущий режим тренировок."
+                      : "Вес стабилен или немного вырос. Это может быть связано с ростом мышечной массы или задержкой воды после интенсивных тренировок."
+                ) : "Добавьте больше данных, чтобы ИИ смог составить рекомендации для вас."}
+              </p>
+              <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-primary">
+                <Target className="w-3 h-3" />
+                {summary?.goal.status === 'AHEAD_OF_SCHEDULE' ? "Опережение графика" : "План соблюдается"}
+              </div>
             </GlassCard>
           </div>
         </div>
