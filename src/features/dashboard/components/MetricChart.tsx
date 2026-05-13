@@ -147,8 +147,20 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     return { label, isPositive, isUp };
   }, [chartData, goal]);
 
+  // DEBUG LOGS
+  console.group('[METRIC CHART]');
+  console.log('metricId:', metricId);
+  console.log('goal:', goal);
+  console.log('raw data length:', data?.length);
+  console.log('chartData length:', chartData?.length);
+  console.log('chartData:', chartData);
+  console.log('minVal:', minVal);
+  console.log('maxVal:', maxVal);
+  console.groupEnd();
+
   if (!data.length && !goal) return (
-    <div className="w-full h-full min-h-[260px] flex items-center justify-center text-muted-foreground/40 italic text-xs">
+    <div className="w-full h-full min-h-[260px] flex flex-col items-center justify-center text-muted-foreground/40 italic text-xs">
+       <Activity className="w-8 h-8 mb-2 opacity-20" />
        Нет данных для отображения графика
     </div>
   );
@@ -158,167 +170,174 @@ export const MetricChart: React.FC<MetricChartProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="w-full h-full min-h-[260px] relative group"
+      className="w-full h-full min-h-[260px] relative group flex flex-col"
     >
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-          <defs>
-            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
-              <stop offset="95%" stopColor={color} stopOpacity={0}/>
-            </linearGradient>
-            <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.05}/>
-              <stop offset="95%" stopColor={color} stopOpacity={0.01}/>
-            </linearGradient>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff03" vertical={false} />
-          <XAxis 
-            dataKey="displayDate" 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fill: '#71717a', fontSize: 9, fontWeight: 700 }}
-            dy={15}
-            minTickGap={30}
-          />
-          <YAxis 
-            hide 
-            domain={[minVal, maxVal]} 
-          />
-          <Tooltip 
-            content={<CustomTooltip />}
-            cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.3 }}
-          />
-
-           {goal && (
-            <ReferenceLine 
-              y={goal.targetValue} 
-              stroke={color} 
-              strokeDasharray="10 5" 
-              strokeOpacity={0.2}
-              label={{ 
-                position: 'insideTopRight', 
-                value: `ЦЕЛЬ: ${goal.targetValue}`, 
-                fill: color, 
-                fontSize: 9, 
-                fontWeight: 900,
-                opacity: 0.4,
-                tracking: '0.1em',
-                dy: -12
-              }} 
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+            <defs>
+              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+                <stop offset="95%" stopColor={color} stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.05}/>
+                <stop offset="95%" stopColor={color} stopOpacity={0.01}/>
+              </linearGradient>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff03" vertical={false} />
+            <XAxis 
+              dataKey="displayDate" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fill: '#71717a', fontSize: 9, fontWeight: 700 }}
+              dy={15}
+              minTickGap={30}
             />
-          )}
+            <YAxis 
+              hide 
+              domain={[minVal, maxVal]} 
+            />
+            <Tooltip 
+              content={<CustomTooltip />}
+              cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.3 }}
+            />
 
-          <Line 
-            name="ideal"
-            type="monotone" 
-            dataKey="ideal" 
-            stroke={color} 
-            strokeWidth={1}
-            strokeDasharray="10 5"
-            strokeOpacity={0.2}
-            dot={false}
-            animationDuration={1500}
-            connectNulls={true}
-          />
+             {goal && (
+              <ReferenceLine 
+                y={goal.targetValue} 
+                stroke={color} 
+                strokeDasharray="10 5" 
+                strokeOpacity={0.2}
+                label={{ 
+                  position: 'insideTopRight', 
+                  value: `ЦЕЛЬ: ${goal.targetValue}`, 
+                  fill: color, 
+                  fontSize: 9, 
+                  fontWeight: 900,
+                  opacity: 0.4,
+                  tracking: '0.1em',
+                  dy: -12
+                }} 
+              />
+            )}
 
-          <Area 
-            name="current"
-            type="monotone" 
-            dataKey="current" 
-            stroke={color} 
-            strokeWidth={3}
-            fillOpacity={1} 
-            fill="url(#colorValue)" 
-            animationDuration={2000}
-            style={{ filter: 'url(#glow)' }}
-            dot={(props: any) => {
-              const { cx, cy, payload, index } = props;
-              
-              // Only render dots for REAL measurements or WORKOUTS
-              if (!payload.isReal && !payload.workout) return null;
+            <Line 
+              name="ideal"
+              type="monotone" 
+              dataKey="ideal" 
+              stroke={color} 
+              strokeWidth={1}
+              strokeDasharray="10 5"
+              strokeOpacity={0.2}
+              dot={false}
+              animationDuration={1500}
+              connectNulls={true}
+            />
 
-              const isStart = index === 0;
-              
-              const handleClick = (e: React.MouseEvent) => {
-                e.stopPropagation();
-                if (onPointClick) {
-                  if (payload.workoutsAtDate.length > 0) {
-                    onPointClick('workout', payload.workoutsAtDate[0].id, payload.workoutsAtDate[0]);
-                  } else if (payload.measurementEntries.length > 0) {
-                    onPointClick('measurement', payload.measurementEntries[0].id, payload.measurementEntries[0]);
+            <Area 
+              name="current"
+              type="monotone" 
+              dataKey="current" 
+              stroke={color} 
+              strokeWidth={3}
+              fillOpacity={1} 
+              fill="url(#colorValue)" 
+              animationDuration={2000}
+              style={{ filter: 'url(#glow)' }}
+              dot={(props: any) => {
+                const { cx, cy, payload, index } = props;
+                
+                // Only render dots for REAL measurements or WORKOUTS
+                if (!payload.isReal && !payload.workout) return null;
+
+                const isStart = index === 0;
+                
+                const handleClick = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (onPointClick) {
+                    if (payload.workoutsAtDate.length > 0) {
+                      onPointClick('workout', payload.workoutsAtDate[0].id, payload.workoutsAtDate[0]);
+                    } else if (payload.measurementEntries.length > 0) {
+                      onPointClick('measurement', payload.measurementEntries[0].id, payload.measurementEntries[0]);
+                    }
                   }
+                };
+
+                if (payload.workout) {
+                  return (
+                    <g key={`dot-${payload.dateKey}`} className="cursor-pointer" onClick={handleClick}>
+                      <circle cx={cx} cy={cy} r={5} fill={color} stroke="#000" strokeWidth={1.5} />
+                      <circle cx={cx} cy={cy} r={10} fill={color} fillOpacity={0.1} className="animate-pulse" />
+                    </g>
+                  );
                 }
-              };
 
-              if (payload.workout) {
+                if (isStart) {
+                  return (
+                    <g key={`start-dot`}>
+                      <circle cx={cx} cy={cy} r={6} fill="#fff" stroke={color} strokeWidth={2} />
+                      <circle cx={cx} cy={cy} r={12} fill={color} fillOpacity={0.15} className="animate-pulse" />
+                      <text x={cx} y={cy - 15} textAnchor="middle" fill="#71717a" fontSize="8" fontWeight="bold">СТАРТ</text>
+                    </g>
+                  );
+                }
+                
+                // Standard interactive point
                 return (
-                  <g key={`dot-${payload.dateKey}`} className="cursor-pointer" onClick={handleClick}>
-                    <circle cx={cx} cy={cy} r={5} fill={color} stroke="#000" strokeWidth={1.5} />
-                    <circle cx={cx} cy={cy} r={10} fill={color} fillOpacity={0.1} className="animate-pulse" />
-                  </g>
+                  <circle 
+                    key={`dot-${index}`}
+                    cx={cx} cy={cy} r={3} 
+                    fill={color}
+                    fillOpacity={0.8}
+                    stroke={color}
+                    strokeWidth={1}
+                    className="cursor-pointer hover:fill-white hover:fill-opacity-100 transition-all shadow-xl" 
+                    onClick={handleClick}
+                  />
                 );
-              }
+              }}
+              activeDot={{ r: 6, fill: color, stroke: '#000', strokeWidth: 2 }}
+              connectNulls={true}
+            />
 
-              if (isStart) {
-                return (
-                  <g key={`start-dot`}>
-                    <circle cx={cx} cy={cy} r={6} fill="#fff" stroke={color} strokeWidth={2} />
-                    <circle cx={cx} cy={cy} r={12} fill={color} fillOpacity={0.15} className="animate-pulse" />
-                    <text x={cx} y={cy - 15} textAnchor="middle" fill="#71717a" fontSize="8" fontWeight="bold">СТАРТ</text>
-                  </g>
-                );
-              }
-              
-              // Standard interactive point
-              return (
-                <circle 
-                  key={`dot-${index}`}
-                  cx={cx} cy={cy} r={3} 
-                  fill={color}
-                  fillOpacity={0.8}
-                  stroke={color}
-                  strokeWidth={1}
-                  className="cursor-pointer hover:fill-white hover:fill-opacity-100 transition-all shadow-xl" 
-                  onClick={handleClick}
-                />
-              );
-            }}
-            activeDot={{ r: 6, fill: color, stroke: '#000', strokeWidth: 2 }}
-            connectNulls={true}
-          />
+            <Line 
+              name="forecast"
+              type="monotone" 
+              dataKey="forecast" 
+              stroke={color} 
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              strokeOpacity={0.6}
+              animationDuration={3000}
+              connectNulls={true}
+              dot={(props: any) => {
+                const { cx, cy, payload, index } = props;
+                const isLast = index === chartData.length - 1;
+                if (isLast && payload.isForecast) {
+                  return (
+                    <g key="forecast-end">
+                      <circle cx={cx} cy={cy} r={5} fill={color} stroke="#000" strokeWidth={1} />
+                      <text x={cx} y={cy - 15} textAnchor="middle" fill={color} fontSize="8" fontWeight="800">ПРОГНОЗ</text>
+                      <path d={`M${cx},${cy} L${cx},${cy+40}`} stroke={color} strokeWidth={1} strokeDasharray="2 2" strokeOpacity={0.5} />
+                    </g>
+                  );
+                }
+                return null;
+              }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
 
-          <Line 
-            name="forecast"
-            type="monotone" 
-            dataKey="forecast" 
-            stroke={color} 
-            strokeWidth={2}
-            strokeDasharray="5 5"
-            strokeOpacity={0.6}
-            animationDuration={3000}
-            connectNulls={true}
-            dot={(props: any) => {
-              const { cx, cy, payload, index } = props;
-              const isLast = index === chartData.length - 1;
-              if (isLast && payload.isForecast) {
-                return (
-                  <g key="forecast-end">
-                    <circle cx={cx} cy={cy} r={5} fill={color} stroke="#000" strokeWidth={1} />
-                    <text x={cx} y={cy - 15} textAnchor="middle" fill={color} fontSize="8" fontWeight="800">ПРОГНОЗ</text>
-                    <path d={`M${cx},${cy} L${cx},${cy+40}`} stroke={color} strokeWidth={1} strokeDasharray="2 2" strokeOpacity={0.5} />
-                  </g>
-                );
-              }
-              return null;
-            }}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+      {/* DEBUG DATA OUTPUT */}
+      <div className="absolute bottom-0 left-0 right-0 max-h-[100px] overflow-auto bg-black/80 p-2 text-[8px] font-mono whitespace-pre text-green-400 opacity-20 pointer-events-none">
+        {JSON.stringify(chartData, null, 2)}
+      </div>
     </motion.div>
   );
 };

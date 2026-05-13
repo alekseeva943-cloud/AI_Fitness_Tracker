@@ -303,5 +303,15 @@ export const buildChartTimeline = (
     });
   }
 
+  // DEBUG LOGS
+  console.group('[CHART ENGINE]');
+  console.log('goal:', goal);
+  console.log('metricId:', metricId);
+  console.log('measurements:', measurements);
+  console.log('workouts count:', workouts.length);
+  console.log('forecastedDate:', forecastedDate);
+  console.log('finalTimeline:', timeline);
+  console.groupEnd();
+
   return timeline;
 };

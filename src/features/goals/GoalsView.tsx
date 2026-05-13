@@ -295,8 +295,20 @@ export const GoalsView: React.FC = () => {
         {selectedGoal && (() => {
           const summary = selectAnalyticsSummary(useFitnessStore.getState());
           const baselineMetricId = selectedGoal.metricId || 'weight';
+          
+          // Latest value for 'Current' display
+          const latestValue = (() => {
+            if (baselineMetricId === 'weight') {
+              const latest = [...weightHistory].reverse().find(h => h.value > 0);
+              return latest?.value || selectedGoal.currentValue || selectedGoal.startValue || 0;
+            }
+            // For other metrics, look in workouts or additional metrics
+            // (Simplifying to use summary or goal for now if not weight)
+            return selectedGoal.currentValue || selectedGoal.startValue || 0;
+          })();
+
           const totalDiff = Math.abs(selectedGoal.targetValue - selectedGoal.startValue);
-          const currentDiff = Math.abs(selectedGoal.currentValue - selectedGoal.startValue);
+          const currentDiff = Math.abs(latestValue - selectedGoal.startValue);
           const currentProgress = totalDiff > 0 ? Math.min(100, (currentDiff / totalDiff) * 100) : 0;
 
           const categoryLabels: Record<string, string> = {
@@ -370,7 +382,7 @@ export const GoalsView: React.FC = () => {
                 </div>
                 <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
                   <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Текущий</p>
-                  <p className="text-xl font-bold text-primary">{selectedGoal.currentValue} {selectedGoal.unit}</p>
+                  <p className="text-xl font-bold text-primary">{latestValue} {selectedGoal.unit}</p>
                 </div>
                 <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
                   <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Целевой</p>
@@ -378,7 +390,7 @@ export const GoalsView: React.FC = () => {
                 </div>
                 <div className="p-5 rounded-3xl bg-primary/5 border border-primary/20 space-y-1">
                   <p className="text-[10px] uppercase font-bold tracking-widest text-primary">Разница</p>
-                  <p className="text-xl font-bold">{Math.abs(selectedGoal.targetValue - selectedGoal.currentValue).toFixed(1)} {selectedGoal.unit}</p>
+                  <p className="text-xl font-bold">{Math.abs(selectedGoal.targetValue - latestValue).toFixed(1)} {selectedGoal.unit}</p>
                 </div>
               </div>
 

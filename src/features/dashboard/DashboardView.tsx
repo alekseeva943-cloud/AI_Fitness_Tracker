@@ -360,23 +360,43 @@ export const DashboardView: React.FC = () => {
                       })()}
                     </div>
                   </div>
-                  <div className="flex-1 mt-4 h-[350px]">
-                    <MetricChart 
-                      data={weightHistory} 
-                      workouts={workouts}
-                      goal={activeGoal && chartMetric === activeGoal.metricId ? activeGoal : null} 
-                      metricId={chartMetric}
-                      forecastedDate={activeGoal && chartMetric === activeGoal.metricId ? summary?.goal.estimatedCompletionDate : null}
-                      unit={METRICS[chartMetric]?.unit}
-                      onPointClick={(type, id, original) => {
-                        if (type === 'workout') {
-                          openWorkoutDetail(original);
-                        } else {
-                          setSelectedWeightEntry(original);
-                          setWeightDetailModalOpen(true);
-                        }
+                  <div className="flex-1 mt-4 min-h-[400px]">
+                    {(() => {
+                        console.group('[DASHBOARD GRAPH]');
+                        console.log('activeGoal:', activeGoal);
+                        console.log('metricId:', activeGoal?.metricId);
+                        console.log('chartMetric:', chartMetric);
+                        console.log('summary:', summary);
+                        console.groupEnd();
+                        return null;
+                    })()}
+                    <div
+                      style={{
+                        width: '100%',
+                        height: 400,
+                        background: 'rgba(255,0,0,0.05)',
+                        border: '1px dashed rgba(255,255,255,0.1)',
+                        borderRadius: '24px',
+                        overflow: 'hidden'
                       }}
-                    />
+                    >
+                      <MetricChart 
+                        data={weightHistory} 
+                        workouts={workouts}
+                        goal={activeGoal && chartMetric === activeGoal.metricId ? activeGoal : null} 
+                        metricId={chartMetric}
+                        forecastedDate={activeGoal && chartMetric === activeGoal.metricId ? summary?.goal.estimatedCompletionDate : null}
+                        unit={METRICS[chartMetric]?.unit}
+                        onPointClick={(type, id, original) => {
+                          if (type === 'workout') {
+                            openWorkoutDetail(original);
+                          } else {
+                            setSelectedWeightEntry(original);
+                            setWeightDetailModalOpen(true);
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 </GlassCard>
 
