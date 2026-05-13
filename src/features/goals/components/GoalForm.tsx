@@ -31,17 +31,20 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   const [showPresets, setShowPresets] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [measurementBaselines, setMeasurementBaselines] = useState<Record<string, number>>(initialData?.baselineMeasurements || {});
-  const [customStartValue, setCustomStartValue] = useState<number | undefined>(initialData?.startValue);
+  const [customStartValue, setCustomStartValue] = useState<string>(initialData?.startValue?.toString() || '');
   const [showAllBodyMetrics, setShowAllBodyMetrics] = useState(false);
 
   const [selectedMetricId, setSelectedMetricId] = useState<string>(initialData?.metricId || (selectedType === GoalType.STRENGTH ? 'workingWeight' : selectedType === GoalType.ENDURANCE ? 'distance' : 'weight'));
 
-  // Reset custom start value when metric changes to avoid carrying over wrong baseline
+  // Update custom start value when metric changes or initial load
   React.useEffect(() => {
-    if (!initialData) { // Only reset for new goals or if we want to re-baseline
-        setCustomStartValue(undefined);
+    if (!initialData) {
+        const baseline = selectedMetricId === 'weight' 
+            ? (weightHistory[0]?.value || profile?.startingWeight || 0)
+            : 0;
+        setCustomStartValue(baseline === 0 ? '' : baseline.toString());
     }
-  }, [selectedMetricId]);
+  }, [selectedMetricId, weightHistory, profile]);
 
   const metric = METRICS[selectedMetricId] || METRICS.weight;
 
@@ -56,9 +59,8 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   };
 
   const getBaselineValue = () => {
-    if (customStartValue !== undefined) return customStartValue;
+    if (customStartValue !== '') return Number(customStartValue);
     if (selectedMetricId === 'weight') return weightHistory[0]?.value || profile?.startingWeight || 0;
-    // For other metrics, we can look at the latest entries or profile
     return 0;
   };
 
@@ -225,6 +227,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
                 step={metric.unit === 'кг' ? '0.5' : (metric.unit === 'см' ? '0.1' : '1')}
                 inputMode="decimal"
                 defaultValue={initialData?.targetValue}
+                onFocus={(e) => e.target.select()}
                 required
                 placeholder={metric.placeholder}
                 className={cn(
@@ -254,6 +257,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
                     step="0.1"
                     value={measurementBaselines[bm.id] || ''}
                     onChange={(e) => handleMeasurementChange(bm.id, e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     placeholder={bm.placeholder}
                     className="w-full bg-black/20 border border-white/5 rounded-2xl px-4 py-3 outline-none focus:border-primary/30 transition-all text-sm font-bold pr-10 hover:border-white/10"
                   />
@@ -286,8 +290,9 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
                 <input 
                   type="number"
                   step="0.1"
-                  value={customStartValue ?? getBaselineValue()}
-                  onChange={(e) => setCustomStartValue(e.target.value === '' ? undefined : Number(e.target.value))}
+                  value={customStartValue}
+                  onChange={(e) => setCustomStartValue(e.target.value)}
+                  onFocus={(e) => e.target.select()}
                   placeholder={metric.placeholder}
                   className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all text-xl font-black text-primary pr-16 shadow-inner"
                 />
