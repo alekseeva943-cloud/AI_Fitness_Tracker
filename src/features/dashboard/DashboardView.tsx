@@ -53,6 +53,13 @@ export const DashboardView: React.FC = () => {
   const [isWeightDetailModalOpen, setWeightDetailModalOpen] = useState(false);
   const [isWeightEditModalOpen, setWeightEditModalOpen] = useState(false);
   const [selectedWeightEntry, setSelectedWeightEntry] = useState<any>(null);
+  const [isInsightModalOpen, setInsightModalOpen] = useState(false);
+  const [insightType, setInsightType] = useState<'progress' | 'regression' | 'plateau' | 'ahead'>('progress');
+
+  const openInsight = (type: any) => {
+    setInsightType(type);
+    setInsightModalOpen(true);
+  };
 
   useEffect(() => {
     initialize();
@@ -285,23 +292,44 @@ export const DashboardView: React.FC = () => {
                           ? summary.weight.weeklyChange < 0 
                           : summary.weight.weeklyChange > 0;
                         
+                        const weeklyChange = summary.weight.weeklyChange;
+                        const tempoText = weeklyChange === 0 ? "Стабильно" : 
+                                         `${weeklyChange > 0 ? '+' : ''}${weeklyChange.toFixed(1)} кг/нед`;
+
                         return (
-                          <div className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 border rounded-full hidden md:flex",
-                            summary.weight.isPlateau 
-                              ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" 
-                              : isImproving 
-                                ? "bg-green-500/10 border-green-500/20 text-green-400" 
-                                : "bg-red-500/10 border-red-500/20 text-red-400"
-                          )}>
-                            {summary.weight.isPlateau 
-                              ? <Minus className="w-4 h-4" /> 
-                              : isImproving 
-                                ? <TrendingUp className="w-4 h-4" /> 
-                                : <TrendingDown className="w-4 h-4" />}
-                            <span className="text-[10px] font-bold uppercase tracking-widest">
-                              {summary.weight.isPlateau ? 'Плато' : (isImproving ? (isWeightLoss ? 'Снижение' : 'Подъем') : 'Регресс')}
-                            </span>
+                          <div className="flex items-center gap-2">
+                            <div className="hidden lg:flex flex-col items-end mr-2">
+                                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Темп</span>
+                                <span className={cn(
+                                    "text-xs font-black",
+                                    isImproving ? "text-green-400" : "text-red-400"
+                                )}>{tempoText}</span>
+                            </div>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const type = summary.weight.isPlateau 
+                                        ? 'plateau' 
+                                        : isImproving ? (summary.goal.status === 'AHEAD_OF_SCHEDULE' ? 'ahead' : 'progress') : 'regression';
+                                    openInsight(type);
+                                }}
+                                className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 border rounded-full hidden md:flex hover:scale-105 active:scale-95 transition-all cursor-help shadow-lg",
+                                summary.weight.isPlateau 
+                                  ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400 shadow-yellow-500/5" 
+                                  : isImproving 
+                                    ? "bg-green-500/10 border-green-500/20 text-green-400 shadow-green-500/5" 
+                                    : "bg-red-500/10 border-red-500/20 text-red-400 shadow-red-500/5"
+                            )}>
+                                {summary.weight.isPlateau 
+                                  ? <Minus className="w-4 h-4" /> 
+                                  : isImproving 
+                                    ? <TrendingUp className="w-4 h-4" /> 
+                                    : <TrendingDown className="w-4 h-4" />}
+                                <span className="text-[10px] font-bold uppercase tracking-widest">
+                                  {summary.weight.isPlateau ? 'Плато' : (isImproving ? (isWeightLoss ? 'Снижение' : 'Подъем') : 'Регресс')}
+                                </span>
+                            </button>
                           </div>
                         );
                       })()}
@@ -415,42 +443,52 @@ export const DashboardView: React.FC = () => {
                           </div>
                         </div>
 
-                        {summary?.goal.estimatedCompletionDate ? (
+            {summary?.goal.estimatedCompletionDate ? (
                           <div className="space-y-4">
                             <div className={cn(
-                              "rounded-2xl p-4 backdrop-blur-sm border transition-all group-hover:border-primary/30",
+                              "rounded-3xl p-5 backdrop-blur-xl border-2 transition-all group-hover:border-primary/20 bg-black/20",
                               summary.goal.status === 'WRONG_DIRECTION' 
-                                ? "bg-red-500/5 border-red-500/20" 
-                                : "bg-secondary/50 border-white/5"
+                                ? "border-red-500/20" 
+                                : "border-white/5"
                             )}>
-                              <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest mb-1">
-                                {summary.goal.status === 'WRONG_DIRECTION' ? 'Прогноз (восстановление)' : 'Прогноз достижения'}
-                              </p>
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
+                                  {summary.goal.status === 'WRONG_DIRECTION' ? 'Прогноз (стабилизация)' : 'Дата завершения'}
+                                </p>
+                                {summary.goal.status === 'AHEAD_OF_SCHEDULE' && (
+                                    <span className="text-[8px] bg-primary text-black px-1.5 py-0.5 rounded font-black">FAST</span>
+                                )}
+                              </div>
                               <p className={cn(
-                                "text-2xl font-bold",
-                                summary.goal.status === 'WRONG_DIRECTION' ? "text-red-400" : "text-primary"
+                                "text-3xl font-display font-medium",
+                                summary.goal.status === 'WRONG_DIRECTION' ? "text-red-400/80" : "text-white"
                               )}>
                                 {formatDate(summary.goal.estimatedCompletionDate)}
                               </p>
+                              {summary.goal.status !== 'WRONG_DIRECTION' && (
+                                  <p className="text-[9px] text-primary font-bold mt-1 tracking-wider">
+                                     ОСТАЛОСЬ ~{Math.abs(Math.round(summary.goal.remainingValue / (summary.weight.weeklyChange || 1)))} НЕДЕЛЬ
+                                  </p>
+                              )}
                             </div>
-                            <div className="w-full bg-secondary h-2.5 rounded-full overflow-hidden">
+                            <div className="w-full bg-secondary/50 h-3 rounded-full overflow-hidden border border-white/5">
                               <div 
                                 className={cn(
                                   "h-full transition-all duration-1000 ease-out",
                                   summary.goal.status === 'WRONG_DIRECTION' 
-                                    ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]" 
-                                    : "bg-primary shadow-[0_0_15px_rgba(223,255,0,0.4)]"
+                                    ? "bg-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)]" 
+                                    : "bg-primary shadow-[0_0_20px_rgba(223,255,0,0.3)]"
                                 )}
-                                style={{ width: `${summary.goal.completionPercentage}%` }}
+                                style={{ width: `${Math.min(100, Math.max(2, summary.goal.completionPercentage))}%` }}
                               />
                             </div>
                             <div className="flex justify-between items-center px-1">
-                              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
                                 Осталось: {formatWeight(summary.goal.remainingValue)}
                               </p>
                               {summary.goal.status === 'WRONG_DIRECTION' && (
-                                <span className="text-[10px] text-red-400/80 font-bold uppercase tracking-widest flex items-center gap-1">
-                                  <TrendingDown className="w-3 h-3" /> Текущий спад
+                                <span className="text-[10px] text-red-500 font-black uppercase tracking-widest flex items-center gap-1 animate-pulse">
+                                  <TrendingDown className="w-3 h-3" /> ОТКЛОНЕНИЕ
                                 </span>
                               )}
                             </div>
@@ -586,6 +624,81 @@ export const DashboardView: React.FC = () => {
           </div>
         )}
       </div>
+
+      <Modal isOpen={isInsightModalOpen} onClose={() => setInsightModalOpen(false)} title="Анализ динамики">
+        <div className="space-y-6 text-foreground">
+          <div className={cn(
+            "p-6 rounded-3xl border flex items-center gap-5",
+            insightType === 'regression' ? "bg-red-500/10 border-red-500/20 text-red-400" :
+            insightType === 'ahead' ? "bg-primary/20 border-primary/30 text-primary" :
+            insightType === 'plateau' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" :
+            "bg-green-500/10 border-green-500/20 text-green-400"
+          )}>
+            <div className="w-16 h-16 rounded-2xl bg-black/20 flex items-center justify-center">
+              {insightType === 'regression' ? <TrendingDown className="w-8 h-8" /> :
+               insightType === 'plateau' ? <Minus className="w-8 h-8" /> :
+               <TrendingUp className="w-8 h-8" />}
+            </div>
+            <div>
+              <h4 className="text-xl font-bold uppercase tracking-tight">
+                {insightType === 'regression' ? 'Обнаружен регресс' :
+                 insightType === 'plateau' ? 'Состояние плато' :
+                 insightType === 'ahead' ? 'Опережение графика' : 'Уверенный прогресс'}
+              </h4>
+              <p className="text-xs opacity-70 font-medium mt-1">
+                {insightType === 'regression' ? 'Текущий тренд отдаляет вас от цели' :
+                 insightType === 'plateau' ? 'Вес стабилизировался, динамика отсутствует' :
+                 'Вы движетесь в правильном направлении'}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Темп в неделю</p>
+              <p className={cn(
+                "text-2xl font-bold",
+                summary?.weight.weeklyChange && (
+                    (activeGoal?.type === 'WEIGHT_LOSS' && summary.weight.weeklyChange > 0) ||
+                    (activeGoal?.type === 'MUSCLE_GAIN' && summary.weight.weeklyChange < 0)
+                ) ? "text-red-400" : "text-primary"
+              )}>
+                {summary?.weight.weeklyChange && summary.weight.weeklyChange > 0 ? '+' : ''}
+                {summary?.weight.weeklyChange?.toFixed(1) || '0.0'} кг
+              </p>
+            </div>
+            <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">До цели осталось</p>
+              <p className="text-2xl font-bold">{summary?.goal.remainingValue.toFixed(1)} кг</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h5 className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1 flex items-center gap-2">
+                <Sparkles className="w-3 h-3 text-primary" />
+                Что это значит для вас?
+            </h5>
+            <div className="bg-white/5 border border-white/10 p-5 rounded-2xl text-sm leading-relaxed">
+              {insightType === 'regression' && (
+                <p>Ваши последние замеры показывают набор веса, в то время как ваша цель — похудение. Это может быть связано с избытком калорий, задержкой воды после тренировок или стрессом. **Рекомендация:** Проверьте дневник питания и убедитесь, что вы находитесь в дефиците.</p>
+              )}
+              {insightType === 'plateau' && (
+                <p>Вес не меняется более 7 дней. Это естественная адаптация организма. **Рекомендация:** Попробуйте "читмил" для разгона метаболизма или, наоборот, повысьте интенсивность кардио на 15-20%.</p>
+              )}
+              {insightType === 'ahead' && (
+                <p>Вы теряете вес быстрее запланированного (более 1 кг в неделю). Это отличный результат, но следите за самочувствием, чтобы не терять мышечную массу. **Рекомендация:** Убедитесь, что вы потребляете достаточное количество белка.</p>
+              )}
+              {insightType === 'progress' && (
+                <p>Ваша динамика идеальна. Вы движетесь точно по графику. Продолжайте в том же духе, вы достигнете цели ориентировочно через {summary?.goal.remainingValue && summary?.weight.weeklyChange ? Math.abs(Math.round(summary.goal.remainingValue / summary.weight.weeklyChange)) : '??'} недель.</p>
+              )}
+            </div>
+          </div>
+
+          <GradientButton onClick={() => setInsightModalOpen(false)} className="w-full">
+            Понятно
+          </GradientButton>
+        </div>
+      </Modal>
 
       <Modal 
         isOpen={isGoalModalOpen} 

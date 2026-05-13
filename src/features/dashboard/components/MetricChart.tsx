@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { WeightEntry, Goal } from '../../../types';
-import { formatDate } from '../../../lib/utils';
+import { formatDate, cn } from '../../../lib/utils';
 import { THEME } from '../../../constants/theme';
 import { motion } from 'motion/react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface DataPoint {
   date: string;
@@ -92,7 +93,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
       workoutMap.set(dayKey, true);
     });
 
-    const processed = Array.from(dailyMap.entries())
+    const sortedProcessed = Array.from(dailyMap.entries())
       .map(([dateKey, vals]) => {
         const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
         return {
@@ -107,6 +108,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
         };
       })
       .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+    const processed = [...sortedProcessed];
 
     if (processed.length === 0 && goal && isValidDate(goal.startDate)) {
       const startIso = new Date(goal.startDate).toISOString().split('T')[0];
@@ -137,6 +140,17 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     }
 
     if (processed.length === 0) return [];
+
+    // If only one point, add a tiny offset point to make it visible in Recharts
+    if (processed.length === 1) {
+      const single = processed[0];
+      const nextDay = new Date(new Date(single.dateKey).getTime() + 86400000);
+      processed.push({
+        ...single,
+        dateKey: nextDay.toISOString().split('T')[0],
+        displayDate: formatDate(nextDay),
+      });
+    }
 
     const lastRealPoint = processed[processed.length - 1];
     if (!lastRealPoint) return processed;
@@ -205,22 +219,40 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     return max + (max * 0.02);
   }, [chartData, goal]);
 
+  const showArrow = useMemo(() => {
+    // Filter out forecast points for trend calculation
+    const realPoints = chartData.filter(p => !p.isForecast && p.current !== null);
+    if (realPoints.length < 2) return null;
+    
+    const first = realPoints[0].current;
+    const last = realPoints[realPoints.length - 1].current;
+    
+    if (first === undefined || last === undefined || first === last) return null;
+    return last > first ? 'up' : 'down';
+  }, [chartData]);
+
   if (!data.length && !goal) return (
     <div className="w-full h-full min-h-[260px] flex items-center justify-center text-muted-foreground/40 italic text-xs">
        Нет данных для отображения графика
     </div>
   );
 
-  const startPoint = chartData[0];
-  const lastPoint = chartData[chartData.length - 1];
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="w-full h-full min-h-[260px] relative"
+      className="w-full h-full min-h-[260px] relative group"
     >
+      {showArrow && (
+        <div className={cn(
+          "absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border backdrop-blur-md transition-all group-hover:scale-110",
+          showArrow === 'up' ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
+        )}>
+           {showArrow === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+           <span className="text-[10px] font-black uppercase tracking-widest">{showArrow === 'up' ? 'Рост' : 'Спад'}</span>
+        </div>
+      )}
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
           <defs>

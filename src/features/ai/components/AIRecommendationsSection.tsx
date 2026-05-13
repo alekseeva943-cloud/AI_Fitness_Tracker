@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { GlassCard } from "../../../components/ui/GlassCard";
-import { Sparkles, MessageSquare, TrendingUp, Apple, Dumbbell, Loader2 } from "lucide-react";
+import { Sparkles, MessageSquare, TrendingUp, Apple, Dumbbell, Loader2, AlertCircle } from "lucide-react";
 import { GradientButton } from "../../../components/ui/GradientButton";
 import { useFitnessStore, useAnalysisRequest } from "../../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../../analytics/selectors/fitnessSelectors";
@@ -58,8 +58,14 @@ export const AIRecommendationsSection: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm">
-          {error}
+        <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-[2.5rem] flex items-center gap-4 text-red-400">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0">
+             <AlertCircle className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold uppercase tracking-tight">Внимание</p>
+            <p className="text-xs opacity-70 leading-relaxed font-medium">Для работы ИИ необходимо настроить API-ключ Gemini. Если приложение в режиме превью — ключ обычно подтягивается автоматически. В ином случае проверьте настройки проекта.</p>
+          </div>
         </div>
       )}
 
