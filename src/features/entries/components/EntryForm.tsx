@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { RU } from "../../../constants";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
-import { ChevronDown, ChevronUp, Settings2, Dumbbell, Activity, Timer, Weight, Heart, Scale, Calendar } from "lucide-react";
+import { ChevronDown, ChevronUp, Settings2, Activity, Timer, Heart, Scale, Calendar, Info } from "lucide-react";
 import { METRICS, getMetricsByCategory } from "../../../constants/metrics";
+import { FitnessSelect } from "../../../components/ui/FitnessSelect";
+import { cn } from "../../../lib/utils";
 
 interface EntryFormProps {
   type: 'workout' | 'weight';
@@ -23,10 +25,9 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
     if (type === 'workout') {
       const title = String(rawData.type);
       if (!isValidTitle(title)) {
-        newErrors.type = "Введите корректное название тренировки (минимум 3 символа)";
+        newErrors.type = "Введите название тренировки";
       }
 
-      // Validate primary metrics
       ['duration', 'caloriesBurned', 'weight'].forEach(metricId => {
         if (rawData[metricId]) {
           const metric = METRICS[metricId];
@@ -38,7 +39,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
       const durationErr = validateNumeric(String(rawData.duration), VALIDATION_LIMITS.workout.duration);
       if (durationErr) newErrors.duration = durationErr;
 
-      // Dynamic validation based on registry for category metrics
       const categoryMetrics = getMetricsByCategory(category as any);
       categoryMetrics.forEach(metric => {
         if (rawData[metric.id]) {
@@ -46,12 +46,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
           if (err) newErrors[metric.id] = err;
         }
       });
-      
-      if (rawData.heartRate) {
-        const metric = METRICS.heartRate;
-        const err = validateNumeric(String(rawData.heartRate), { min: metric.min || 0, max: metric.max || 250 });
-        if (err) newErrors.heartRate = err;
-      }
     } else {
       const metric = METRICS.weight;
       const weightErr = validateNumeric(String(rawData.value), { min: metric.min || 0, max: metric.max || 500 });
@@ -63,14 +57,12 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
       return;
     }
 
-    // Process and cast types
-    const data: any = { ...rawData };
+    const data: any = { ...rawData, category: category };
     if (type === 'workout') {
       Object.keys(METRICS).forEach(metricId => {
         if (data[metricId]) data[metricId] = Number(data[metricId]);
       });
       
-      // Auto-calculate volume for strength
       if (data.sets && data.reps && data.workingWeight) {
         data.volume = data.sets * data.reps * data.workingWeight;
       }
@@ -81,86 +73,81 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
     onSubmit(data);
   };
 
+  const categoryOptions = [
+    { value: 'STRENGTH', label: '💪 Силовая', icon: '💪' },
+    { value: 'CARDIO', label: '🏃 Кардио', icon: '🏃' },
+    { value: 'ENDURANCE', label: '🚴 Выносливость', icon: '🚴' },
+    { value: 'FLEXIBILITY', label: '🧘 Гибкость', icon: '🧘' },
+    { value: 'OTHER', label: '✨ Другое', icon: '✨' },
+  ];
+
   return (
     <form 
       onSubmit={handleSubmit} 
-      onChange={(e) => {
-        const target = e.target as HTMLInputElement | HTMLSelectElement;
-        const name = target.name;
-        if (errors[name]) {
-          const newErrors = { ...errors };
-          delete newErrors[name];
-          setErrors(newErrors);
-        }
-      }}
       className="space-y-6"
     >
       {type === 'workout' ? (
         <div className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Тренировка</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 px-1">Тренировка</label>
               <input 
                 name="type" 
                 required 
-                placeholder="Что тренируем? (Силовая, Бег...)" 
-                className={`w-full bg-secondary/40 border ${errors.type ? 'border-red-500/50' : 'border-white/5'} rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium shadow-inner placeholder:text-muted-foreground/20`} 
+                placeholder="Что тренируем? (Напр: Жим лежа, Бег...)" 
+                className={cn(
+                  "w-full bg-secondary/40 border rounded-2xl px-5 py-4 outline-none focus:bg-secondary/60 transition-all text-base font-medium shadow-inner placeholder:text-muted-foreground/20",
+                  errors.type ? 'border-red-500/50' : 'border-white/5 focus:border-primary/50'
+                )} 
               />
               {errors.type && <p className="text-[10px] text-red-400 font-medium px-2">{errors.type}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 px-1 flex items-center gap-2">
                   <Timer className="w-3 h-3 text-primary" />
-                  Время
+                  Время (мин)
                 </label>
-                <div className="relative">
-                  <input 
-                    name="duration" 
-                    type="number" 
-                    inputMode="numeric" 
-                    required 
-                    placeholder="45"
-                    className={`w-full bg-secondary/40 border ${errors.duration ? 'border-red-500/50' : 'border-white/5'} rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium pr-12`} 
-                  />
-                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground/40 uppercase">Мин</span>
-                </div>
-                {errors.duration && <p className="text-[10px] text-red-400 font-medium px-2">{errors.duration}</p>}
+                <input 
+                  name="duration" 
+                  type="number" 
+                  inputMode="numeric" 
+                  required 
+                  placeholder="45"
+                  className={cn(
+                    "w-full bg-secondary/40 border rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium",
+                    errors.duration ? 'border-red-500/50' : 'border-white/5'
+                  )} 
+                />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 px-1 flex items-center gap-2">
                   <Activity className="w-3 h-3 text-primary" />
                   Калории
                 </label>
-                <div className="relative">
-                  <input 
-                    name="caloriesBurned" 
-                    type="number" 
-                    inputMode="numeric" 
-                    placeholder="350"
-                    className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium pr-14" 
-                  />
-                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground/40 uppercase">ккал</span>
-                </div>
+                <input 
+                  name="caloriesBurned" 
+                  type="number" 
+                  inputMode="numeric" 
+                  placeholder="350"
+                  className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 focus:bg-secondary/60 transition-all text-base font-medium" 
+                />
               </div>
             </div>
 
             <div className="space-y-2 p-1">
-              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary px-1 flex items-center gap-2">
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary px-1 flex items-center gap-2">
                 <Scale className="w-3 h-3" />
-                Твой вес сегодня
+                Вес на момент тренировки (кг)
               </label>
-              <div className="relative">
-                <input 
-                  name="weight" 
-                  type="number" 
-                  step="0.1"
-                  placeholder="75.0"
-                  className="w-full bg-primary/5 border border-primary/20 rounded-2xl px-5 py-4 outline-none focus:border-primary/40 transition-all text-base font-bold text-primary shadow-[0_0_15px_rgba(223,255,0,0.05)]" 
-                />
-                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-bold text-primary/40 uppercase">кг</span>
-              </div>
+              <input 
+                name="weight" 
+                type="number" 
+                step="0.1"
+                placeholder="75.0"
+                className="w-full bg-primary/5 border border-primary/20 rounded-2xl px-5 py-4 outline-none focus:border-primary/40 transition-all text-xl font-black text-primary shadow-[0_0_20px_rgba(223,255,0,0.05)]" 
+              />
             </div>
           </div>
 
@@ -168,73 +155,63 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
             <button 
               type="button" 
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all group"
+              className="w-full flex items-center justify-between p-5 bg-white/5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all group"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                  <Settings2 className="w-4 h-4" />
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <Settings2 className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-bold uppercase tracking-widest leading-none">Дополнительно</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Подходы, дистанция, пульс...</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] leading-none">Дополнительные параметры</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1.5 flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    Подходы, рабочий вес, дистанция, пульс
+                  </p>
                 </div>
               </div>
               {showAdvanced ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
             </button>
 
             {showAdvanced && (
-              <div className="mt-4 p-5 space-y-6 bg-secondary/20 rounded-3xl border border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Категория (AI)</label>
-                  <div className="relative group">
-                    <select 
-                      name="category" 
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all appearance-none cursor-pointer text-sm font-medium pr-10"
-                    >
-                      <option value="STRENGTH">💪 Силовая</option>
-                      <option value="CARDIO">🏃 Кардио</option>
-                      <option value="ENDURANCE">🚴 Выносливость</option>
-                      <option value="FLEXIBILITY">🧘 Гибкость</option>
-                      <option value="OTHER">✨ Другое</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                      <ChevronDown className="w-3 h-3" />
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-4 p-6 space-y-6 bg-secondary/20 rounded-[2.5rem] border border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
+                <FitnessSelect
+                  label="Тип нагрузки"
+                  options={categoryOptions}
+                  value={category}
+                  onChange={setCategory}
+                />
 
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {getMetricsByCategory(category as any).map(metric => (
-                    <div key={metric.id} className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold text-muted-foreground/80 px-1 flex items-center gap-1.5 leading-tight">
-                        {metric.id === 'heartRate' ? <Heart className="w-2.5 h-2.5" /> : null}
-                        {metric.label}
-                      </label>
-                      <div className="relative">
-                        <input 
-                          name={metric.id} 
-                          type="number" 
-                          step={metric.id === 'workingWeight' || metric.id === 'distance' ? '0.1' : '1'}
-                          placeholder={metric.placeholder} 
-                          className="w-full bg-background/50 border border-white/5 rounded-xl px-3 py-3 text-sm outline-none focus:border-primary/40 transition-all font-bold" 
-                        />
-                        {metric.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted-foreground/30 uppercase">{metric.unit}</span>}
+                    <div key={metric.id} className="space-y-2">
+                      <div className="flex justify-between items-center px-1">
+                        <label className="text-[10px] uppercase font-black text-muted-foreground/80 tracking-widest leading-tight">
+                          {metric.label}
+                        </label>
+                        {metric.unit && <span className="text-[8px] font-bold text-primary/40 uppercase">{metric.unit}</span>}
                       </div>
+                      <input 
+                        name={metric.id} 
+                        type="number" 
+                        step={metric.id === 'workingWeight' || metric.id === 'distance' ? '0.1' : '1'}
+                        placeholder={metric.placeholder} 
+                        className="w-full bg-background/40 border border-white/5 rounded-2xl px-4 py-4 text-base outline-none focus:border-primary/40 focus:bg-background/60 transition-all font-bold" 
+                      />
+                      {metric.description && (
+                        <p className="text-[9px] text-muted-foreground/40 leading-tight px-1 italic">
+                          {metric.description}
+                        </p>
+                      )}
                     </div>
                   ))}
                   
-                  <div className="space-y-1.5 col-span-full pt-2">
-                    <label className="text-[10px] uppercase font-bold text-muted-foreground/80 px-1 flex items-center gap-1.5">
-                      <Calendar className="w-2.5 h-2.5" />
-                      Дата и время
-                    </label>
+                  <div className="space-y-2 col-span-full pt-4 border-t border-white/5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Дата свершения</label>
                     <input 
                       name="date" 
                       type="datetime-local" 
                       defaultValue={new Date().toISOString().slice(0, 16)} 
-                      className="w-full bg-background/50 border border-white/5 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
+                      className="w-full bg-background/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
                     />
                   </div>
                 </div>
@@ -244,12 +221,12 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="space-y-2 p-1">
-            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary px-1 flex items-center gap-2">
+          <div className="space-y-3 p-1">
+            <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary px-1 flex items-center gap-2">
               <Scale className="w-3 h-3" />
               Твой вес сегодня
             </label>
-            <div className="relative">
+            <div className="relative group">
               <input 
                 name="value" 
                 type="number" 
@@ -257,41 +234,44 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                 inputMode="decimal" 
                 required 
                 placeholder="75.5"
-                className={`w-full bg-primary/5 border ${errors.value ? 'border-red-400/50' : 'border-primary/20'} rounded-2xl px-6 py-5 text-2xl font-bold outline-none focus:border-primary/40 transition-all text-primary shadow-[0_0_20px_rgba(223,255,0,0.03)]`} 
+                className={cn(
+                  "w-full bg-primary/5 border rounded-3xl px-8 py-8 text-4xl font-black outline-none focus:border-primary/40 focus:bg-primary/10 transition-all text-primary shadow-[0_0_30px_rgba(223,255,0,0.05)] text-center",
+                  errors.value ? 'border-red-400/50' : 'border-primary/20'
+                )} 
               />
-              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-sm font-bold text-primary/40 uppercase">кг</span>
+              <span className="absolute right-8 top-1/2 -translate-y-1/2 text-lg font-black text-primary/20 uppercase tracking-tighter">кг</span>
             </div>
-            {errors.value && <p className="text-[10px] text-red-400 font-medium px-2">{errors.value}</p>}
+            {errors.value && <p className="text-center text-[10px] text-red-400 font-medium animate-pulse">{errors.value}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Когда взвесились?</label>
+            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 text-center block">Время фиксации</label>
             <input 
               name="date" 
               type="datetime-local" 
               defaultValue={new Date().toISOString().slice(0, 16)} 
-              className="w-full bg-secondary/40 border border-white/5 rounded-2xl px-5 py-4 outline-none focus:border-primary/50 transition-all text-base font-medium" 
+              className="w-full bg-secondary/40 border border-white/5 rounded-3xl px-6 py-4 outline-none focus:border-primary/50 transition-all text-base font-medium text-center" 
             />
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Контекст и заметки</label>
+        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1">Заметки и мысли</label>
         <textarea 
           name="notes" 
-          rows={3} 
-          placeholder={type === 'weight' ? "Напр: После читмила, плохой сон..." : "Детали подхода, самочувствие, оборудование..."}
-          className="w-full bg-secondary/50 border border-border rounded-2xl px-4 py-4 outline-none focus:border-primary transition-colors resize-none text-sm" 
+          rows={2} 
+          placeholder={type === 'weight' ? "Как ты себя чувствуешь?" : "Твои впечатления от тренировки..."}
+          className="w-full bg-secondary/30 border border-white/5 rounded-3xl px-6 py-5 outline-none focus:border-primary/40 focus:bg-secondary/50 transition-all resize-none text-sm leading-relaxed" 
         />
       </div>
 
       <button 
         type="submit" 
         disabled={Object.keys(errors).length > 0}
-        className="w-full bg-primary text-primary-foreground font-bold py-5 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(223,255,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-xs"
+        className="w-full bg-primary text-black font-black py-6 rounded-[2rem] hover:scale-[1.01] active:scale-[0.98] transition-all shadow-[0_20px_40px_rgba(223,255,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-[0.3em] text-xs"
       >
-        {RU.COMMON.SAVE}
+        Сохранить достижение
       </button>
     </form>
   );

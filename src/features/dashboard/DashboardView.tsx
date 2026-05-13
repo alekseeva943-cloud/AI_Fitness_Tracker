@@ -13,7 +13,7 @@ import { EntryForm } from "../entries/components/EntryForm";
 import { AIRecommendationsSection } from "../ai/components/AIRecommendationsSection";
 import { WeightChart } from "./components/WeightChart";
 import { DemoModeBanner } from "../../components/DemoModeBanner";
-import { WorkoutEntry } from "../../types";
+import { BaselineParameters } from "../profile/components/BaselineParameters";
 
 export const DashboardView: React.FC = () => {
   const goals = useGoals();
@@ -347,6 +347,7 @@ export const DashboardView: React.FC = () => {
             </div>
 
             <AIRecommendationsSection />
+            <BaselineParameters />
           </div>
 
           <div className="space-y-8">

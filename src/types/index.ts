@@ -91,6 +91,7 @@ export interface UserProfile {
   height: number;
   startingWeight: number;
   activityLevel: ActivityLevel;
+  baselines?: Record<string, number>; // Baseline metrics for comparison
 }
 
 export interface FitnessState {

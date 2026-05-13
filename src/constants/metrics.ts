@@ -98,7 +98,7 @@ export const METRICS: Record<string, MetricDefinition> = {
   },
   workingWeight: {
     id: 'workingWeight',
-    label: 'Рабочий вес',
+    label: 'Рабочий вес в упражнении',
     unit: 'кг',
     category: 'STRENGTH',
     primary: false,
@@ -110,11 +110,11 @@ export const METRICS: Record<string, MetricDefinition> = {
     compatibleGoalTypes: [GoalType.STRENGTH],
     chartCompatible: true,
     aiCompatible: true,
-    description: 'Вес отягощения, используемый в упражнении.'
+    description: 'Вес отягощения для тренировочного упражнения.'
   },
   volume: {
     id: 'volume',
-    label: 'Объем',
+    label: 'Общий поднятый вес',
     unit: 'кг',
     category: 'STRENGTH',
     primary: false,
@@ -122,7 +122,7 @@ export const METRICS: Record<string, MetricDefinition> = {
     format: (val) => `${Math.round(val)} кг`,
     chartCompatible: true,
     aiCompatible: true,
-    description: 'Суммарный тоннаж тренировки (сеты * повторения * вес).'
+    description: 'Суммарный вес, поднятый за всю тренировку (Сеты × Повторения × Вес).'
   },
   distance: {
     id: 'distance',
