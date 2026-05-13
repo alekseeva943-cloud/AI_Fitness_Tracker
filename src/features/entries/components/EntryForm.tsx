@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { RU } from "../../../constants";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
-import { ChevronDown, ChevronUp, Settings2, Dumbbell, Activity, Timer, Weight, Heart } from "lucide-react";
+import { ChevronDown, ChevronUp, Settings2, Dumbbell, Activity, Timer, Weight, Heart, Scale, Calendar } from "lucide-react";
 
 interface EntryFormProps {
   type: 'workout' | 'weight';
@@ -110,18 +110,23 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Категория</label>
-              <select 
-                name="category" 
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
-              >
-                <option value="STRENGTH">💪 Силовая</option>
-                <option value="CARDIO">🏃 Кардио</option>
-                <option value="ENDURANCE">🚴 Выносливость</option>
-                <option value="FLEXIBILITY">🧘 Гибкость</option>
-                <option value="OTHER">✨ Другое</option>
-              </select>
+              <div className="relative group">
+                <select 
+                  name="category" 
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all appearance-none cursor-pointer text-sm font-medium pr-10 shadow-lg backdrop-blur-sm group-hover:bg-secondary group-hover:border-white/20"
+                >
+                  <option value="STRENGTH">💪 Силовая</option>
+                  <option value="CARDIO">🏃 Кардио</option>
+                  <option value="ENDURANCE">🚴 Выносливость</option>
+                  <option value="FLEXIBILITY">🧘 Гибкость</option>
+                  <option value="OTHER">✨ Другое</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-hover:text-primary transition-colors">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Тренировка</label>
@@ -129,15 +134,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                 name="type" 
                 required 
                 placeholder="Жим, Бег и т.д." 
-                className={`w-full bg-secondary/50 border ${errors.type ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
+                className={`w-full bg-secondary/80 border ${errors.type ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-lg backdrop-blur-sm placeholder:text-muted-foreground/30`} 
               />
-              {errors.type && <p className="text-[10px] text-red-400 font-medium">{errors.type}</p>}
+              {errors.type && <p className="text-[10px] text-red-400 font-medium px-1">{errors.type}</p>}
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
                 <Timer className="w-3 h-3" />
                 Время (мин)
               </label>
@@ -147,12 +152,12 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                 inputMode="numeric" 
                 required 
                 placeholder="45"
-                className={`w-full bg-secondary/50 border ${errors.duration ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
+                className={`w-full bg-secondary/80 border ${errors.duration ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-sm`} 
               />
               {errors.duration && <p className="text-[10px] text-red-400 font-medium">{errors.duration}</p>}
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
                 <Activity className="w-3 h-3" />
                 {RU.ENTRIES.CALORIES}
               </label>
@@ -161,7 +166,20 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                 type="number" 
                 inputMode="numeric" 
                 placeholder="300"
-                className={`w-full bg-secondary/50 border ${errors.caloriesBurned ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`} 
+                className={`w-full bg-secondary/80 border ${errors.caloriesBurned ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-sm`} 
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-primary block flex items-center gap-1.5">
+                <Scale className="w-3 h-3" />
+                Вес (кг)
+              </label>
+              <input 
+                name="weight" 
+                type="number" 
+                step="0.1"
+                placeholder="75.0"
+                className="w-full bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-bold shadow-lg shadow-primary/5" 
               />
             </div>
           </div>
@@ -226,7 +244,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
 
           {showAdvanced && (
             <div className="space-y-6 pt-2 animate-in fade-in slide-in-from-top-2 duration-300 bg-secondary/20 p-5 rounded-3xl border border-white/5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
                     <Heart className="w-3 h-3" />
@@ -236,32 +254,22 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit }) => {
                     name="heartRate" 
                     type="number" 
                     placeholder="145"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors" 
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-all font-medium" 
                   />
                 </div>
+
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
-                    <Weight className="w-3 h-3" />
-                    Твой вес (кг)
+                    <Calendar className="w-3 h-3" />
+                    Дата и время
                   </label>
                   <input 
-                    name="weight" 
-                    type="number" 
-                    step="0.1" 
-                    placeholder="75.0"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors" 
+                    name="date" 
+                    type="datetime-local" 
+                    defaultValue={new Date().toISOString().slice(0, 16)} 
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-all font-medium" 
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground">Дата и время</label>
-                <input 
-                  name="date" 
-                  type="datetime-local" 
-                  defaultValue={new Date().toISOString().slice(0, 16)} 
-                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors" 
-                />
               </div>
             </div>
           )}

@@ -40,16 +40,31 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
 
     if (isMovingTowardsGoal) {
       const absVelocity = Math.abs(velocity);
-      const daysToGoal = Math.ceil(remainingValue / absVelocity);
-      estimatedCompletionDate = addDays(new Date(), daysToGoal).toISOString();
       
-      const deadline = new Date(goal.deadline);
-      const estimated = new Date(estimatedCompletionDate);
-      
-      if (estimated < deadline) {
-        status = 'AHEAD_OF_SCHEDULE';
-      } else if (differenceInDays(estimated, deadline) > 14) {
-        status = 'BEHIND_SCHEDULE';
+      // Sanity check: minimum velocity to calculate date (0.01 kg/day ~ 0.07 kg/week)
+      if (absVelocity > 0.01) {
+        const daysToGoal = Math.ceil(remainingValue / absVelocity);
+        
+        // Sanity check: max 2 years forecast
+        if (daysToGoal < 730) {
+          estimatedCompletionDate = addDays(new Date(), daysToGoal).toISOString();
+          
+          const deadline = new Date(goal.deadline);
+          const estimated = new Date(estimatedCompletionDate);
+          
+          if (estimated < deadline) {
+            status = 'AHEAD_OF_SCHEDULE';
+          } else if (differenceInDays(estimated, deadline) > 14) {
+            status = 'BEHIND_SCHEDULE';
+          }
+        } else {
+          // Progress is too slow for realistic date estimation
+          estimatedCompletionDate = null;
+        }
+      } else {
+        // Velocity is almost zero
+        status = 'STAGNANT';
+        estimatedCompletionDate = null;
       }
     } else {
       status = 'WRONG_DIRECTION';

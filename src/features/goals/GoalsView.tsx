@@ -10,10 +10,12 @@ import { RU } from '../../constants';
 import { GoalType } from '../../types';
 import { cn, formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
+import { WeightChart } from '../dashboard/components/WeightChart';
 
 export const GoalsView: React.FC = () => {
   const navigate = useNavigate();
   const goals = useGoals();
+  const weightHistory = useFitnessStore((state) => state.weightHistory);
   const removeGoal = useFitnessStore((state) => state.removeGoal);
   const addGoal = useFitnessStore((state) => state.addGoal);
   const state = useFitnessStore();
@@ -249,15 +251,25 @@ export const GoalsView: React.FC = () => {
 
             <div className="space-y-4">
                <div className="flex justify-between items-end">
-                  <h4 className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Прогресс выполнения</h4>
+                  <h4 className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Визуальный прогресс</h4>
                   <p className="text-2xl font-bold text-primary">{Math.round(currentProgress)}%</p>
                </div>
-               <div className="w-full h-4 bg-secondary rounded-full overflow-hidden">
+               <div className="h-[200px] w-full bg-secondary/20 rounded-3xl p-4 border border-white/5">
+                 <WeightChart 
+                   data={weightHistory} 
+                   goal={selectedGoal} 
+                   forecastedDate={summary?.goal.estimatedCompletionDate} 
+                 />
+               </div>
+               <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-primary shadow-[0_0_15px_rgba(223,255,0,0.5)] transition-all duration-1000"
                     style={{ width: `${currentProgress}%` }}
                   />
                </div>
+               <p className="text-[10px] text-center text-muted-foreground uppercase font-bold tracking-widest">
+                 Путь от {selectedGoal.startValue} кг до {selectedGoal.targetValue} кг
+               </p>
             </div>
 
             {summary?.goal.estimatedCompletionDate && (

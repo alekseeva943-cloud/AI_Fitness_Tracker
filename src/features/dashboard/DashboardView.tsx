@@ -214,7 +214,11 @@ export const DashboardView: React.FC = () => {
               </div>
               <div className="flex-1 mt-4">
                 {weightHistory.length > 1 ? (
-                  <WeightChart data={weightHistory} />
+                  <WeightChart 
+                    data={weightHistory} 
+                    goal={activeGoal} 
+                    forecastedDate={summary?.goal.estimatedCompletionDate}
+                  />
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-4">
                     <Scale className="w-12 h-12 text-muted-foreground" />

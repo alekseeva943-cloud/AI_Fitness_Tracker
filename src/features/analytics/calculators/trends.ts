@@ -36,9 +36,30 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
   // Plateau detection: if change is less than 0.1kg in either direction over a week
   const isPlateau = Math.abs(weeklyChange) < 0.1 && history.length > 5;
 
-  // Velocity: change per day over the entire history
+  // Velocity: weighted average change per day
+  // We'll give more weight to recent changes but filter out outliers
   const daysDiff = differenceInDays(new Date(sorted[0].date), new Date(sorted[sorted.length - 1].date)) || 1;
-  const velocity = (current - starting) / daysDiff;
+  
+  // Basic overall velocity
+  const overallVelocity = (current - starting) / daysDiff;
+  
+  // Short term velocity (last 3 entries or last 14 days)
+  const shortTermEntries = sorted.slice(0, 5);
+  let shortTermVelocity = overallVelocity;
+  if (shortTermEntries.length >= 2) {
+    const stDays = differenceInDays(new Date(shortTermEntries[0].date), new Date(shortTermEntries[shortTermEntries.length - 1].date)) || 1;
+    shortTermVelocity = (shortTermEntries[0].value - shortTermEntries[shortTermEntries.length - 1].value) / stDays;
+  }
+
+  // Smooth velocity: 70% long-term, 30% short-term
+  // This helps react to progress while staying stable
+  let velocity = (overallVelocity * 0.7) + (shortTermVelocity * 0.3);
+
+  // Sanity limit: max 0.3 kg/day (approx 2 kg/week)
+  const MAX_VELOCITY = 0.3; 
+  if (Math.abs(velocity) > MAX_VELOCITY) {
+    velocity = velocity > 0 ? MAX_VELOCITY : -MAX_VELOCITY;
+  }
 
   // Forecast for 30 days
   const forecastedWeight = current + (velocity * 30);

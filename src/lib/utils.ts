@@ -12,7 +12,9 @@ export function cn(...inputs: ClassValue[]) {
  * Formats dates for the fitness app.
  */
 export function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString('ru-RU', {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
@@ -23,17 +25,18 @@ export function formatDate(date: string | Date): string {
  * Formats weights with precision.
  */
 export function formatWeight(val: number): string {
-  if (val === undefined || isNaN(val)) return '--';
-  return val.toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' кг';
+  if (val === undefined || val === null || isNaN(val)) return '--';
+  return Number(val).toFixed(1) + ' кг';
 }
 
 /**
  * Formats trend velocity (kg/week).
  */
 export function formatVelocity(val: number): string {
-  if (val === undefined || isNaN(val)) return '--';
-  const sign = val > 0 ? '+' : '';
-  return sign + val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' кг/нед';
+  if (val === undefined || val === null || isNaN(val)) return '--';
+  const perWeek = val * 7;
+  const sign = perWeek > 0 ? '+' : '';
+  return sign + perWeek.toFixed(1) + ' кг/нед';
 }
 
 /**

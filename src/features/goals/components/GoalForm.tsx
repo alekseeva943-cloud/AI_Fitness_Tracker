@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { RU } from "../../../constants";
 import { GoalType } from "../../../types";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
+import { ChevronDown } from "lucide-react";
 
 interface GoalFormProps {
   onSubmit: (data: any) => void;
@@ -52,22 +53,31 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
           defaultValue={initialData?.title}
           required
           placeholder="Напр: Сбросить 5 кг"
-          className={`w-full bg-secondary/50 border ${errors.title ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`}
+          className={`w-full bg-secondary/80 border ${errors.title ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-lg backdrop-blur-sm`}
         />
-        {errors.title && <p className="text-[10px] text-red-400 font-medium">{errors.title}</p>}
+        {errors.title && <p className="text-[10px] text-red-400 font-medium px-1">{errors.title}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Тип</label>
-          <select name="type" defaultValue={initialData?.type || GoalType.WEIGHT_LOSS} className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors">
-            <option value={GoalType.WEIGHT_LOSS}>{RU.GOALS.TYPES.WEIGHT_LOSS}</option>
-            <option value={GoalType.MUSCLE_GAIN}>{RU.GOALS.TYPES.MUSCLE_GAIN}</option>
-            <option value={GoalType.STRENGTH}>{RU.GOALS.TYPES.STRENGTH}</option>
-          </select>
+          <div className="relative group">
+            <select 
+              name="type" 
+              defaultValue={initialData?.type || GoalType.WEIGHT_LOSS} 
+              className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all appearance-none cursor-pointer text-sm font-medium pr-10 shadow-lg backdrop-blur-sm"
+            >
+              <option value={GoalType.WEIGHT_LOSS}>📉 {RU.GOALS.TYPES.WEIGHT_LOSS}</option>
+              <option value={GoalType.MUSCLE_GAIN}>💪 {RU.GOALS.TYPES.MUSCLE_GAIN}</option>
+              <option value={GoalType.STRENGTH}>⚡ {RU.GOALS.TYPES.STRENGTH}</option>
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-hover:text-primary transition-colors">
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Целевое значение</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Цель (кг)</label>
           <input 
             name="targetValue" 
             type="number" 
@@ -75,38 +85,39 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData }) => 
             inputMode="decimal"
             defaultValue={initialData?.targetValue}
             required
-            className={`w-full bg-secondary/50 border ${errors.targetValue ? 'border-red-500/50' : 'border-border'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors`}
+            placeholder="70.0"
+            className={`w-full bg-secondary/80 border ${errors.targetValue ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-bold shadow-lg backdrop-blur-sm`}
           />
-          {errors.targetValue && <p className="text-[10px] text-red-400 font-medium">{errors.targetValue}</p>}
+          {errors.targetValue && <p className="text-[10px] text-red-400 font-medium px-1">{errors.targetValue}</p>}
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Срок</label>
+        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Срок достижения</label>
         <input 
           name="deadline" 
           type="date"
           defaultValue={initialData?.deadline?.split('T')[0]}
           required
-          className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors"
+          className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all text-sm font-medium shadow-lg backdrop-blur-sm"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Мотивация (опционально)</label>
+        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Мотивация (зачем вам это?)</label>
         <textarea 
           name="motivation" 
           defaultValue={initialData?.motivation}
           placeholder="Напр: Хочу вернуться в форму к отпуску..."
           rows={3}
-          className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors resize-none"
+          className="w-full bg-secondary/80 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary transition-all resize-none text-sm font-medium shadow-lg backdrop-blur-sm"
         />
       </div>
 
       <button 
         type="submit" 
         disabled={Object.keys(errors).length > 0}
-        className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-2xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-primary text-primary-foreground font-bold py-5 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(223,255,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-xs"
       >
         {initialData ? RU.COMMON.SAVE : RU.GOALS.ADD}
       </button>
