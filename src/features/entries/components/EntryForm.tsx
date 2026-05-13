@@ -79,11 +79,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
   };
 
   const categoryOptions = [
-    { value: 'STRENGTH', label: '💪 Силовая', icon: '💪' },
-    { value: 'CARDIO', label: '🏃 Кардио', icon: '🏃' },
-    { value: 'ENDURANCE', label: '🚴 Выносливость', icon: '🚴' },
-    { value: 'FLEXIBILITY', label: '🧘 Гибкость', icon: '🧘' },
-    { value: 'OTHER', label: '✨ Другое', icon: '✨' },
+    { value: 'STRENGTH', label: 'Силовая', icon: '💪' },
+    { value: 'CARDIO', label: 'Кардио', icon: '🏃' },
+    { value: 'ENDURANCE', label: 'Выносливость', icon: '🚴' },
+    { value: 'FLEXIBILITY', label: 'Йога и растяжка', icon: '🧘' },
+    { value: 'OTHER', label: 'Другое', icon: '✨' },
   ];
 
   return (

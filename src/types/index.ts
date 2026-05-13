@@ -8,6 +8,8 @@ export enum GoalType {
   MUSCLE_GAIN = 'MUSCLE_GAIN',
   MAINTENANCE = 'MAINTENANCE',
   STRENGTH = 'STRENGTH',
+  ENDURANCE = 'ENDURANCE',
+  FLEXIBILITY = 'FLEXIBILITY',
 }
 
 export enum ActivityLevel {

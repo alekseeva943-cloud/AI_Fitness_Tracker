@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useFitnessStore, useWorkouts } from '../../store/useFitnessStore';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -24,9 +25,20 @@ export const WorkoutsView: React.FC = () => {
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutEntry | null>(null);
   const [filter, setFilter] = useState<string>('all');
 
+  const categoryLabels: Record<string, string> = {
+    'STRENGTH': 'Силовая',
+    'CARDIO': 'Кардио',
+    'ENDURANCE': 'Выносливость',
+    'FLEXIBILITY': 'Йога и растяжка',
+    'OTHER': 'Другое'
+  };
+
+  const activeCategories = Array.from(new Set(workouts.map(w => w.category || 'OTHER')));
+  const filterOptions = ['all', ...activeCategories];
+
   const filteredWorkouts = workouts.filter(w => {
     if (filter === 'all') return true;
-    return w.type.toLowerCase().includes(filter.toLowerCase());
+    return w.category === filter;
   });
 
   const handleCreateWorkout = (data: any) => {
@@ -88,93 +100,105 @@ export const WorkoutsView: React.FC = () => {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {['all', 'Силовая', 'Кардио', 'Йога'].map((type) => (
+        {filterOptions.map((cat) => (
           <button
-            key={type}
-            onClick={() => setFilter(type)}
+            key={cat}
+            onClick={() => setFilter(cat)}
             className={cn(
-              "px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
-              filter === type 
-                ? "bg-primary text-black" 
-                : "bg-white/5 text-muted-foreground hover:bg-white/10"
+              "px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap shadow-sm border",
+              filter === cat 
+                ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(223,255,0,0.2)]" 
+                : "bg-white/5 text-muted-foreground border-white/5 hover:bg-white/10 hover:border-white/10"
             )}
           >
-            {type === 'all' ? 'Все' : type}
+            {cat === 'all' ? 'Все' : (categoryLabels[cat] || cat)}
           </button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {filteredWorkouts.map((workout) => (
-          <GlassCard 
-            key={workout.id} 
-            onClick={() => openWorkoutDetail(workout)}
-            className="p-5 hover:bg-white/5 transition-all group cursor-pointer border border-transparent hover:border-border/50"
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all group-hover:scale-105",
-                        workout.category === 'STRENGTH' ? "bg-orange-500/10 text-orange-400" :
-                        workout.category === 'CARDIO' ? "bg-blue-500/10 text-blue-400" :
-                        workout.category === 'ENDURANCE' ? "bg-green-500/10 text-green-400" :
-                        "bg-primary/10 text-primary"
-                      )}>
-                        {workout.category === 'STRENGTH' ? <Zap className="w-6 h-6" /> :
-                         workout.category === 'CARDIO' ? <Activity className="w-6 h-6" /> :
-                         <Dumbbell className="w-6 h-6" />}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold capitalize">{workout.type}</h3>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-primary/60" />
-                            {formatDate(workout.date)}
-                          </span>
-                          {workout.volume ? (
-                            <span className="flex items-center gap-1.5 text-primary/80 font-bold">
-                              <Zap className="w-3.5 h-3.5" />
-                              {Math.round(workout.volume)} кг
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-primary/60" />
-                              {workout.duration} мин
-                            </span>
-                          )}
-                          {workout.distance && (
-                            <span className="flex items-center gap-1.5 text-blue-400 font-bold">
-                              <Ruler className="w-3.5 h-3.5" />
-                              {workout.distance} км
-                            </span>
-                          )}
-                        </div>
-                      </div>
-              </div>
+        <AnimatePresence mode="popLayout">
+          {filteredWorkouts.map((workout, index) => (
+            <motion.div
+              key={workout.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              layout
+            >
+              <GlassCard 
+                onClick={() => openWorkoutDetail(workout)}
+                className="p-5 hover:bg-white/5 transition-all group cursor-pointer border border-transparent hover:border-border/50"
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "w-14 h-14 rounded-2xl flex items-center justify-center transition-all group-hover:scale-105 shadow-lg",
+                            workout.category === 'STRENGTH' ? "bg-orange-500/20 text-orange-400" :
+                            workout.category === 'CARDIO' ? "bg-blue-500/20 text-blue-400" :
+                            workout.category === 'ENDURANCE' ? "bg-green-500/20 text-green-400" :
+                            workout.category === 'FLEXIBILITY' ? "bg-purple-500/20 text-purple-400" :
+                            "bg-primary/20 text-primary"
+                          )}>
+                            {workout.category === 'STRENGTH' ? <Zap className="w-6 h-6" /> :
+                             workout.category === 'CARDIO' ? <Activity className="w-6 h-6" /> :
+                             workout.category === 'FLEXIBILITY' ? <span className="text-xl">🧘</span> :
+                             <Dumbbell className="w-6 h-6" />}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold capitalize">{workout.type}</h3>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                              <span className="flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-primary/60" />
+                                {formatDate(workout.date)}
+                              </span>
+                              {workout.volume ? (
+                                <span className="flex items-center gap-1.5 text-primary/80 font-bold">
+                                  <Zap className="w-3.5 h-3.5" />
+                                  {Math.round(workout.volume)} кг
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-primary/60" />
+                                  {workout.duration} мин
+                                </span>
+                              )}
+                              {workout.distance && (
+                                <span className="flex items-center gap-1.5 text-blue-400 font-bold">
+                                  <Ruler className="w-3.5 h-3.5" />
+                                  {workout.distance} км
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                  </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-8 border-t md:border-t-0 pt-4 md:pt-0">
-                <div className="text-right">
-                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Энергия</p>
-                  <p className="text-sm font-medium text-primary">{workout.caloriesBurned || 0} ккал</p>
-                </div>
-                <div className="flex items-center gap-2">
-                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm('Удалить эту тренировку?')) removeWorkout(workout.id);
-                    }}
-                    className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                   <div className="p-2 text-muted-foreground group-hover:text-primary transition-all">
-                    <ChevronRight className="w-4 h-4" />
+                  <div className="flex items-center justify-between md:justify-end gap-8 border-t md:border-t-0 pt-4 md:pt-0">
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Энергия</p>
+                      <p className="text-sm font-medium text-primary">{workout.caloriesBurned || 0} ккал</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('Удалить эту тренировку?')) removeWorkout(workout.id);
+                        }}
+                        className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                       <div className="p-2 text-muted-foreground group-hover:text-primary transition-all">
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </GlassCard>
-        ))}
+              </GlassCard>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {filteredWorkouts.length === 0 && (
           <div className="py-20 text-center glass rounded-[2.5rem] border-2 border-dashed border-white/5">

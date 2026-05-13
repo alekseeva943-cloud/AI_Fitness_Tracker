@@ -35,8 +35,22 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   // Get baseline from profile
   const getBaselineValue = () => {
     if (initialData?.startValue !== undefined) return initialData.startValue;
+    
+    // Exact match in baselines
     const baseline = profile?.baselines?.find(b => b.id === metric.id);
-    return baseline?.value || 0;
+    if (baseline && baseline.value > 0) return baseline.value;
+    
+    // Fallback for weight specifically
+    if (metric.id === 'weight' && profile?.startingWeight) return profile.startingWeight;
+    
+    // Look for similar named metric if id changed
+    const fuzzyBaseline = profile?.baselines?.find(b => 
+      b.name.toLowerCase().includes(metric.label.toLowerCase()) || 
+      metric.label.toLowerCase().includes(b.name.toLowerCase())
+    );
+    if (fuzzyBaseline && fuzzyBaseline.value > 0) return fuzzyBaseline.value;
+
+    return 0;
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -82,6 +96,8 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
     { value: GoalType.WEIGHT_LOSS, label: 'Похудение', icon: '📉' },
     { value: GoalType.MUSCLE_GAIN, label: 'Набор массы', icon: '💪' },
     { value: GoalType.STRENGTH, label: 'Сила и мощь', icon: '⚡' },
+    { value: GoalType.ENDURANCE, label: 'Выносливость', icon: '🏃' },
+    { value: GoalType.FLEXIBILITY, label: 'Растяжка', icon: '🧘' },
   ];
 
   return (
@@ -188,35 +204,44 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
 
         {/* Info Box about Baseline */}
         {!initialData && (
-          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center gap-3">
-             <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                <Target className="w-4 h-4" />
+          <div className="p-5 bg-primary/10 rounded-[2rem] border border-primary/20 flex items-center gap-4 shadow-[0_10px_30px_rgba(223,255,0,0.05)]">
+             <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-black shrink-0 shadow-lg shadow-primary/30">
+                <Target className="w-6 h-6 stroke-[2.5]" />
              </div>
-             <p className="text-[11px] text-muted-foreground/80 leading-relaxed font-medium">
-               Точка отсчета: <span className="text-primary font-bold">{getBaselineValue()} {metric.unit}</span> (из личных показателей). Прогноз будет строиться от этого значения.
-             </p>
+             <div className="space-y-0.5">
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Точка отсчета</p>
+               <p className="text-sm text-foreground leading-tight font-bold">
+                 Текущий показатель: <span className="text-primary text-lg">{getBaselineValue()} {metric.unit}</span>
+               </p>
+               <p className="text-[10px] text-muted-foreground font-medium">Прогноз будет строиться от этого значения</p>
+             </div>
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 border-t border-white/5">
         <div className="space-y-3">
-          <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
-            <Calendar className="w-3.5 h-3.5 text-primary" />
+          <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary px-1 flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5" />
             Желаемая дата
           </label>
-          <input 
-            name="deadline" 
-            type="date"
-            defaultValue={initialData?.deadline?.split('T')[0]}
-            required
-            className="w-full bg-secondary/30 border border-white/5 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all text-base font-bold text-center h-[60px]"
-          />
+          <div className="relative">
+            <input 
+              name="deadline" 
+              type="date"
+              defaultValue={initialData?.deadline?.split('T')[0]}
+              required
+              className="w-full bg-secondary/40 border border-white/10 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all text-lg font-black text-center h-[68px] appearance-none"
+            />
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-primary/40">
+              <Calendar className="w-5 h-5" />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">
-          <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 px-1 flex items-center gap-2">
-            <Heart className="w-3.5 h-3.5 text-primary" />
+          <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary px-1 flex items-center gap-2">
+            <Heart className="w-3.5 h-3.5" />
             Твоя мотивация
           </label>
           <textarea 
@@ -224,7 +249,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
             defaultValue={initialData?.motivation}
             placeholder="Зачем тебе это?"
             rows={1}
-            className="w-full bg-secondary/30 border border-white/5 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all resize-none text-base font-medium placeholder:text-muted-foreground/30 h-[60px] flex items-center"
+            className="w-full bg-secondary/40 border border-white/10 rounded-3xl px-6 py-5 outline-none focus:border-primary/50 transition-all resize-none text-base font-semibold placeholder:text-muted-foreground/40 h-[68px] flex items-center shadow-inner"
           />
         </div>
       </div>

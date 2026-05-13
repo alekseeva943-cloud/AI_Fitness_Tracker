@@ -77,8 +77,8 @@ export const BaselineParameters: React.FC = () => {
             <Settings2 className="w-7 h-7" />
           </div>
           <div className="text-left">
-            <h3 className="text-base font-bold uppercase tracking-[0.2em] leading-none">Базовые показатели</h3>
-            <p className="text-xs text-muted-foreground/60 mt-2 font-medium">Централизованный профиль твоей точки отсчета</p>
+            <h3 className="text-base font-black uppercase tracking-[0.2em] leading-none text-white">Базовые показатели</h3>
+            <p className="text-xs text-primary/80 mt-2 font-bold tracking-tight">Централизованный профиль твоей точки отсчета</p>
           </div>
         </div>
         <div className="p-2 rounded-full bg-white/5 group-hover:bg-primary/20 transition-colors">
@@ -110,8 +110,8 @@ export const BaselineParameters: React.FC = () => {
                   <div key={cat.id} className="space-y-6">
                     <div className="flex items-center justify-between px-2">
                        <div className="flex items-center gap-3">
-                        <span className="text-primary/70">{cat.icon}</span>
-                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">{cat.label}</h4>
+                        <span className="text-primary">{cat.icon}</span>
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-primary/80">{cat.label}</h4>
                       </div>
                       {cat.id === 'CUSTOM' && (
                         <button 
@@ -153,10 +153,13 @@ export const BaselineParameters: React.FC = () => {
                           .map(metric => {
                             const baseline = baselines.find(b => b.id === metric.id);
                             return (
-                              <div key={metric.id} className="space-y-2 group">
-                                <div className="flex justify-between items-center px-1">
-                                  <label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest group-focus-within:text-primary transition-colors">{metric.label}</label>
-                                  <span className="text-[9px] font-black text-primary/30 uppercase">{metric.unit}</span>
+                              <div key={metric.id} className="space-y-3 group">
+                                <div className="flex justify-between items-center px-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg group-hover:scale-125 transition-transform">{metric.icon}</span>
+                                    <label className="text-[10px] font-black text-foreground uppercase tracking-widest group-focus-within:text-primary transition-colors">{metric.label}</label>
+                                  </div>
+                                  <span className="text-[10px] font-black text-primary uppercase tracking-tighter">{metric.unit}</span>
                                 </div>
                                 <div className="relative">
                                   <input
@@ -165,7 +168,7 @@ export const BaselineParameters: React.FC = () => {
                                     value={baseline?.value || ''}
                                     onChange={(e) => handleUpdateMetric(metric.id, Number(e.target.value))}
                                     placeholder={metric.placeholder}
-                                    className="w-full bg-background/40 border border-white/5 rounded-2xl px-5 py-4 text-base font-bold outline-none focus:border-primary/50 focus:bg-background/60 transition-all shadow-inner"
+                                    className="w-full bg-background border border-white/10 rounded-2xl px-6 py-4 text-lg font-black outline-none focus:border-primary/50 focus:bg-background/80 transition-all shadow-2xl text-center placeholder:text-muted-foreground/20"
                                   />
                                 </div>
                               </div>

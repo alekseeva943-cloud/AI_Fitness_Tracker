@@ -1,6 +1,6 @@
 import { GoalType } from '../types';
 
-export type MetricCategory = 'BODY' | 'WORKOUT_BASIC' | 'STRENGTH' | 'CARDIO' | 'ENDURANCE' | 'OTHER';
+export type MetricCategory = 'BODY' | 'WORKOUT_BASIC' | 'STRENGTH' | 'CARDIO' | 'ENDURANCE' | 'FLEXIBILITY' | 'OTHER';
 
 export interface MetricDefinition {
   id: string;
@@ -16,6 +16,7 @@ export interface MetricDefinition {
   compatibleGoalTypes?: GoalType[];
   chartCompatible: boolean;
   aiCompatible: boolean;
+  icon?: string;
   description?: string;
 }
 
@@ -31,9 +32,10 @@ export const METRICS: Record<string, MetricDefinition> = {
     placeholder: '75.0',
     min: 30,
     max: 300,
-    compatibleGoalTypes: [GoalType.WEIGHT_LOSS, GoalType.MUSCLE_GAIN],
+    compatibleGoalTypes: [GoalType.WEIGHT_LOSS, GoalType.MUSCLE_GAIN, GoalType.MAINTENANCE],
     chartCompatible: true,
     aiCompatible: true,
+    icon: '⚖️',
     description: 'Масса тела пользователя для отслеживания динамики похудения или набора мышечной массы.'
   },
   duration: {
@@ -49,6 +51,7 @@ export const METRICS: Record<string, MetricDefinition> = {
     max: 360,
     chartCompatible: true,
     aiCompatible: true,
+    icon: '⏱️',
     description: 'Общее время тренировочной сессии.'
   },
   caloriesBurned: {
@@ -64,6 +67,7 @@ export const METRICS: Record<string, MetricDefinition> = {
     max: 5000,
     chartCompatible: true,
     aiCompatible: true,
+    icon: '🔥',
     description: 'Оценочное количество сожженных калорий во время активности.'
   },
   sets: {
@@ -110,6 +114,7 @@ export const METRICS: Record<string, MetricDefinition> = {
     compatibleGoalTypes: [GoalType.STRENGTH],
     chartCompatible: true,
     aiCompatible: true,
+    icon: '🏋️',
     description: 'Вес отягощения для тренировочного упражнения.'
   },
   volume: {
@@ -135,9 +140,26 @@ export const METRICS: Record<string, MetricDefinition> = {
     placeholder: '5.0',
     min: 0,
     max: 1000,
+    compatibleGoalTypes: [GoalType.ENDURANCE],
     chartCompatible: true,
     aiCompatible: true,
+    icon: '🛣️',
     description: 'Пройденное расстояние во время кардио-активности.'
+  },
+  pace: {
+    id: 'pace',
+    label: 'Темп',
+    unit: 'мин/км',
+    category: 'CARDIO',
+    primary: false,
+    priority: 8.5,
+    format: (val) => `${val} мин/км`,
+    placeholder: '5:30',
+    compatibleGoalTypes: [GoalType.ENDURANCE],
+    chartCompatible: true,
+    aiCompatible: true,
+    icon: '🏃',
+    description: 'Среднее время на преодоление одного километра.'
   },
   speed: {
     id: 'speed',
@@ -167,7 +189,40 @@ export const METRICS: Record<string, MetricDefinition> = {
     max: 250,
     chartCompatible: true,
     aiCompatible: true,
+    icon: '💓',
     description: 'Частота сердечных сокращений во время нагрузки.'
+  },
+  intensity: {
+    id: 'intensity',
+    label: 'Интенсивность',
+    unit: '%',
+    category: 'OTHER',
+    primary: false,
+    priority: 11,
+    format: (val) => `${val}%`,
+    placeholder: '80',
+    min: 0,
+    max: 100,
+    chartCompatible: true,
+    aiCompatible: true,
+    icon: '⚡',
+    description: 'Субъективная оценка сложности тренировки.'
+  },
+  flexibilityScale: {
+    id: 'flexibilityScale',
+    label: 'Уровень растяжки',
+    unit: '/10',
+    category: 'FLEXIBILITY',
+    primary: false,
+    priority: 12,
+    format: (val) => `${val}/10`,
+    placeholder: '5',
+    min: 1,
+    max: 10,
+    chartCompatible: true,
+    aiCompatible: true,
+    icon: '🧘',
+    description: 'Прогресс в гибкости и выполнении асан.'
   }
 };
 
