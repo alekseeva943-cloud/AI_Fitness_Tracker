@@ -111,6 +111,9 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
 
     const processed = [...sortedProcessed];
 
+    const hasStartValue = goal && !isNaN(goal.startValue);
+    const hasTargetValue = goal && !isNaN(goal.targetValue);
+
     if (processed.length === 0 && goal && isValidDate(goal.startDate)) {
       const startIso = new Date(goal.startDate).toISOString().split('T')[0];
       processed.push({
@@ -140,6 +143,15 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     }
 
     if (processed.length === 0) return [];
+
+    // Add a conceptual "Goal Line" point at the end if we have a target date or just to show the trend
+    if (processed.length > 0 && hasTargetValue) {
+        // If we don't have enough points, ensure we show the target as a possibility
+        const last = processed[processed.length - 1];
+        if (!last.isForecast && !forecastedDate) {
+            // Just for visual completeness if no forecast exists yet
+        }
+    }
 
     // If only one point, add a tiny offset point to make it visible in Recharts
     if (processed.length === 1) {
@@ -204,7 +216,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     
     if (values.length === 0) return 0;
     const min = Math.min(...values);
-    return Math.max(0, min - (min * 0.02));
+    return Math.max(0, min - Math.max(2, min * 0.05));
   }, [chartData, goal]);
 
   const maxVal = useMemo(() => {
@@ -216,7 +228,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
     
     if (values.length === 0) return 100;
     const max = Math.max(...values);
-    return max + (max * 0.02);
+    return max + Math.max(2, max * 0.05);
   }, [chartData, goal]);
 
   const showArrow = useMemo(() => {
@@ -287,7 +299,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.3 }}
           />
 
-          {goal && (
+           {goal && (
             <ReferenceLine 
               y={goal.targetValue} 
               stroke={color} 
@@ -303,6 +315,19 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
                 tracking: '0.1em',
                 dy: -10
               }} 
+            />
+          )}
+
+          {goal && chartData.length > 0 && chartData.filter(p => !p.isForecast).length < 3 && (
+            <ReferenceLine 
+              segment={[
+                { x: chartData[0].displayDate, y: goal.startValue },
+                { x: chartData[chartData.length - 1].displayDate, y: goal.targetValue }
+              ]}
+              stroke={color}
+              strokeWidth={1}
+              strokeDasharray="5 5"
+              strokeOpacity={0.1}
             />
           )}
 

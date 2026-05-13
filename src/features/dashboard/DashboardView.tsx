@@ -266,6 +266,17 @@ export const DashboardView: React.FC = () => {
                         >
                           Вес
                         </button>
+                        {activeGoal && activeGoal.metricId !== 'weight' && activeGoal.metricId !== 'caloriesBurned' && activeGoal.metricId !== 'duration' && (
+                          <button 
+                             onClick={() => setChartMetric(activeGoal.metricId)}
+                             className={cn(
+                               "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border border-primary/20",
+                               chartMetric === activeGoal.metricId ? "bg-primary text-black border-transparent" : "text-primary hover:bg-primary/10"
+                             )}
+                          >
+                             {METRICS[activeGoal.metricId]?.label || 'Цель'}
+                          </button>
+                        )}
                         <button 
                           onClick={() => setChartMetric('caloriesBurned')}
                           className={cn(
@@ -342,15 +353,32 @@ export const DashboardView: React.FC = () => {
                         chartData = weightHistory.map(w => ({ date: w.date, value: w.value }));
                       } else {
                         chartData = workouts
-                          .filter(w => w[chartMetric as keyof typeof w])
-                          .map(w => ({ date: w.date, value: Number(w[chartMetric as keyof typeof w] || 0) }));
+                          .filter(w => {
+                            if (chartMetric === 'caloriesBurned' || chartMetric === 'duration') return w[chartMetric as keyof typeof w];
+                            // For specific metrics like "workingWeight", look inside exercises if strength
+                            if (w.category === 'STRENGTH' && w.exercises) {
+                                return w.exercises.some((ex: any) => ex.weight && ex.name?.toLowerCase().includes(METRICS[chartMetric]?.label?.toLowerCase() || ''));
+                            }
+                            return w[chartMetric as keyof typeof w];
+                          })
+                          .map(w => {
+                             let val = Number(w[chartMetric as keyof typeof w] || 0);
+                             // If it's a specific exercise weight
+                             if (val === 0 && w.category === 'STRENGTH' && w.exercises) {
+                               const ex = w.exercises.find((e: any) => e.name?.toLowerCase().includes(METRICS[chartMetric]?.label?.toLowerCase() || ''));
+                               if (ex) val = ex.weight;
+                             }
+                             return { date: w.date, value: val };
+                          });
                       }
 
-                      return chartData.length > 0 || (chartMetric === 'weight' && activeGoal) ? (
+                      const isGoalMetric = activeGoal && chartMetric === activeGoal.metricId;
+
+                      return chartData.length > 0 || (isGoalMetric) ? (
                         <MetricChart 
                           data={chartData} 
-                          goal={chartMetric === 'weight' ? activeGoal : null} 
-                          forecastedDate={chartMetric === 'weight' ? summary?.goal.estimatedCompletionDate : null}
+                          goal={isGoalMetric ? activeGoal : null} 
+                          forecastedDate={isGoalMetric ? summary?.goal.estimatedCompletionDate : null}
                           workouts={workouts}
                           unit={METRICS[chartMetric]?.unit}
                           color={chartMetric === 'weight' ? THEME.colors.primary : chartMetric === 'caloriesBurned' ? THEME.colors.accent : THEME.colors.duration}
