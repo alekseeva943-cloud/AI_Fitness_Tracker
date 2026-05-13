@@ -1,21 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RU } from "../../../constants";
 import { VALIDATION_LIMITS, validateNumeric, isValidTitle } from "../../../lib/validation";
-import { ChevronDown, ChevronUp, Settings2, Activity, Timer, Heart, Scale, Calendar, Info } from "lucide-react";
+import { ChevronDown, ChevronUp, Settings2, Activity, Timer, Heart, Scale, Calendar, Info, Plus, Trash2, Dumbbell } from "lucide-react";
 import { METRICS, getMetricsByCategory } from "../../../constants/metrics";
 import { FitnessSelect } from "../../../components/ui/FitnessSelect";
 import { cn } from "../../../lib/utils";
+import { Exercise } from "../../../types";
 
 interface EntryFormProps {
   type: 'workout' | 'weight';
   onSubmit: (data: any) => void;
   initialData?: any;
+  onCancel?: () => void;
 }
 
-export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialData }) => {
+export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialData, onCancel }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAdvanced, setShowAdvanced] = useState(initialData ? true : false);
   const [category, setCategory] = useState<string>(initialData?.category || 'STRENGTH');
+  const [exercises, setExercises] = useState<Exercise[]>(
+    initialData?.exercises || (initialData?.category === 'STRENGTH' || !initialData ? [
+      { id: crypto.randomUUID(), name: initialData?.type || '', sets: initialData?.sets || 0, reps: initialData?.reps || 0, weight: initialData?.workingWeight || 0, totalWeight: initialData?.totalWeight || 0 }
+    ] : [])
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,22 +67,59 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
 
     const data: any = { 
       ...rawData, 
-      category: category,
-      id: initialData?.id
+      category: category
     };
+    if (initialData?.id) {
+      data.id = initialData.id;
+    }
     if (type === 'workout') {
       Object.keys(METRICS).forEach(metricId => {
         if (data[metricId]) data[metricId] = Number(data[metricId]);
       });
       
-      if (data.sets && data.reps && data.workingWeight) {
-        data.volume = data.sets * data.reps * data.workingWeight;
+      if (category === 'STRENGTH') {
+        data.exercises = exercises;
+        data.totalWeight = exercises.reduce((sum, ex) => sum + ex.totalWeight, 0);
+        // For backward compatibility/legacy display if needed
+        data.sets = exercises.reduce((sum, ex) => sum + Number(ex.sets), 0);
+        data.reps = exercises.length > 0 ? Math.round(exercises.reduce((sum, ex) => sum + Number(ex.reps), 0) / exercises.length) : 0;
+        data.workingWeight = exercises.length > 0 ? Math.max(...exercises.map(ex => Number(ex.weight))) : 0;
       }
     } else {
       data.value = Number(data.value);
     }
 
     onSubmit(data);
+  };
+
+  const addExercise = () => {
+    setExercises([...exercises, { 
+      id: crypto.randomUUID(), 
+      name: '', 
+      sets: 0, 
+      reps: 0, 
+      weight: 0, 
+      totalWeight: 0 
+    }]);
+  };
+
+  const removeExercise = (id: string) => {
+    if (exercises.length > 1) {
+      setExercises(exercises.filter(ex => ex.id !== id));
+    }
+  };
+
+  const updateExercise = (id: string, field: keyof Exercise, value: any) => {
+    setExercises(exercises.map(ex => {
+      if (ex.id === id) {
+        const updated = { ...ex, [field]: value };
+        if (field === 'sets' || field === 'reps' || field === 'weight') {
+          updated.totalWeight = Number(updated.sets || 0) * Number(updated.reps || 0) * Number(updated.weight || 0);
+        }
+        return updated;
+      }
+      return ex;
+    }));
   };
 
   const categoryOptions = [
@@ -190,41 +234,131 @@ export const EntryForm: React.FC<EntryFormProps> = ({ type, onSubmit, initialDat
                   onChange={setCategory}
                 />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {getMetricsByCategory(category as any).map(metric => (
-                    <div key={metric.id} className="space-y-2">
-                      <div className="flex justify-between items-center px-1">
-                        <label className="text-[10px] uppercase font-black text-muted-foreground/80 tracking-widest leading-tight">
-                          {metric.label}
-                        </label>
-                        {metric.unit && <span className="text-[8px] font-bold text-primary/40 uppercase">{metric.unit}</span>}
-                      </div>
-                      <input 
-                        name={metric.id} 
-                        type="number" 
-                        step={metric.id === 'workingWeight' || metric.id === 'distance' ? '0.1' : '1'}
-                        defaultValue={initialData?.[metric.id]}
-                        placeholder={metric.placeholder} 
-                        className="w-full bg-background/40 border border-white/5 rounded-2xl px-4 py-4 text-base outline-none focus:border-primary/40 focus:bg-background/60 transition-all font-bold" 
-                      />
-                      {metric.description && (
-                        <p className="text-[9px] text-muted-foreground/40 leading-tight px-1 italic">
-                          {metric.description}
-                        </p>
-                      )}
+                {category === 'STRENGTH' ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-primary">Список упражнений</label>
+                      <button 
+                        type="button"
+                        onClick={addExercise}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-xl text-[10px] font-black uppercase hover:bg-primary/20 transition-all"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Добавить
+                      </button>
                     </div>
-                  ))}
-                  
-                  <div className="space-y-2 col-span-full pt-4 border-t border-white/5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Дата свершения</label>
-                    <input 
-                      name="date" 
-                      type="datetime-local" 
-                      defaultValue={initialData?.date ? initialData.date.slice(0, 16) : new Date().toISOString().slice(0, 16)} 
-                      className="w-full bg-background/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
-                    />
+
+                    <div className="grid gap-4">
+                      {exercises.map((ex, idx) => (
+                        <div key={ex.id} className="relative p-5 bg-background/40 border border-white/5 rounded-3xl space-y-4 group">
+                          <button 
+                            type="button"
+                            onClick={() => removeExercise(ex.id)}
+                            className="absolute top-4 right-4 p-2 text-muted-foreground/40 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+
+                          <div className="space-y-2">
+                            <label className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">Упражнение {idx + 1}</label>
+                            <input 
+                              value={ex.name}
+                              onChange={(e) => updateExercise(ex.id, 'name', e.target.value)}
+                              placeholder="Напр. Жим лежа"
+                              className="w-full bg-secondary/20 border border-white/5 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-primary/40 transition-all"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                              <span className="text-[8px] font-bold uppercase text-muted-foreground px-1">Подходы</span>
+                              <input 
+                                type="number"
+                                value={ex.sets || ''}
+                                onChange={(e) => updateExercise(ex.id, 'sets', Number(e.target.value))}
+                                className="w-full bg-secondary/20 border border-white/5 rounded-xl px-3 py-2.5 text-sm font-bold text-center outline-none focus:border-primary/40"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <span className="text-[8px] font-bold uppercase text-muted-foreground px-1">Повт.</span>
+                              <input 
+                                type="number"
+                                value={ex.reps || ''}
+                                onChange={(e) => updateExercise(ex.id, 'reps', Number(e.target.value))}
+                                className="w-full bg-secondary/20 border border-white/5 rounded-xl px-3 py-2.5 text-sm font-bold text-center outline-none focus:border-primary/40"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <span className="text-[8px] font-bold uppercase text-muted-foreground px-1">Вес (кг)</span>
+                              <input 
+                                type="number"
+                                step="0.5"
+                                value={ex.weight || ''}
+                                onChange={(e) => updateExercise(ex.id, 'weight', Number(e.target.value))}
+                                className="w-full bg-secondary/20 border border-white/5 rounded-xl px-3 py-2.5 text-sm font-bold text-center outline-none focus:border-primary/40 text-primary"
+                              />
+                            </div>
+                          </div>
+
+                          {ex.totalWeight > 0 && (
+                            <div className="pt-2 flex justify-between items-center border-t border-white/5">
+                              <span className="text-[9px] font-bold uppercase text-muted-foreground/40">Итого в упр.</span>
+                              <span className="text-sm font-black text-primary">{ex.totalWeight} кг</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {exercises.length > 0 && (
+                      <div className="p-5 bg-primary/5 border border-primary/20 rounded-3xl flex justify-between items-center">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Общий поднятый вес</p>
+                          <p className="text-[8px] text-muted-foreground italic mt-0.5">Сумма всех упражнений</p>
+                        </div>
+                        <p className="text-2xl font-black text-primary tracking-tighter">
+                          {exercises.reduce((sum, ex) => sum + ex.totalWeight, 0)} <span className="text-xs font-bold opacity-60">кг</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {getMetricsByCategory(category as any).filter(m => m.id !== 'sets' && m.id !== 'reps' && m.id !== 'workingWeight' && m.id !== 'volume').map(metric => (
+                      <div key={metric.id} className="space-y-2">
+                        <div className="flex justify-between items-center px-1">
+                          <label className="text-[10px] uppercase font-black text-muted-foreground/80 tracking-widest leading-tight">
+                            {metric.label}
+                          </label>
+                          {metric.unit && <span className="text-[8px] font-bold text-primary/40 uppercase">{metric.unit}</span>}
+                        </div>
+                        <input 
+                          name={metric.id} 
+                          type="number" 
+                          step={metric.id === 'workingWeight' || metric.id === 'distance' ? '0.1' : '1'}
+                          defaultValue={initialData?.[metric.id]}
+                          placeholder={metric.placeholder} 
+                          className="w-full bg-background/40 border border-white/5 rounded-2xl px-4 py-4 text-base outline-none focus:border-primary/40 focus:bg-background/60 transition-all font-bold" 
+                        />
+                        {metric.description && (
+                          <p className="text-[9px] text-muted-foreground/40 leading-tight px-1 italic">
+                            {metric.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                    
+                    <div className="space-y-2 col-span-full pt-4 border-t border-white/5">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Дата свершения</label>
+                      <input 
+                        name="date" 
+                        type="datetime-local" 
+                        defaultValue={initialData?.date ? initialData.date.slice(0, 16) : new Date().toISOString().slice(0, 16)} 
+                        className="w-full bg-background/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-primary/40 transition-all font-medium" 
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

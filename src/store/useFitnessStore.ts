@@ -51,6 +51,42 @@ export const useFitnessStore = create<FitnessStore>()(
           logger.store('Initializing store state');
           const state = get();
           
+          // Cleanup step: Ensure all workouts and weight history have unique IDs
+          // This fixes a bug where new entries might have received 'undefined' as an ID
+          let needsIdCleanup = false;
+          const cleanedWorkouts = state.workouts.map(w => {
+            if (!w.id || w.id === 'undefined') {
+              needsIdCleanup = true;
+              return { ...w, id: crypto.randomUUID() };
+            }
+            return w;
+          });
+
+          const cleanedWeight = state.weightHistory.map(w => {
+            if (!w.id || w.id === 'undefined') {
+              needsIdCleanup = true;
+              return { ...w, id: crypto.randomUUID() };
+            }
+            return w;
+          });
+
+          const cleanedGoals = state.goals.map(g => {
+            if (!g.id || g.id === 'undefined') {
+              needsIdCleanup = true;
+              return { ...g, id: crypto.randomUUID() };
+            }
+            return g;
+          });
+
+          if (needsIdCleanup) {
+            logger.store('Cleaned up entries with missing or invalid IDs');
+            set({ 
+              workouts: cleanedWorkouts, 
+              weightHistory: cleanedWeight,
+              goals: cleanedGoals
+            });
+          }
+
           // If the user has already loaded some data (even 1 entry), don't auto-populate demo data
           if (state.goals.length > 0 || state.workouts.length > 0 || state.weightHistory.length > 0) {
             return;

@@ -36,6 +36,15 @@ export interface Goal {
   motivation?: string;
 }
 
+export interface Exercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps: number;
+  weight: number;
+  totalWeight: number;
+}
+
 export interface WorkoutEntry {
   id: string;
   date: string;
@@ -47,10 +56,11 @@ export interface WorkoutEntry {
   weight?: number; // optional weight check at workout time
   
   // Strength metrics
+  exercises?: Exercise[];
   sets?: number;
   reps?: number;
   workingWeight?: number;
-  volume?: number;
+  totalWeight?: number; // Sum of all exercises totalWeight
   
   // Cardio & Endurance metrics
   distance?: number; // km

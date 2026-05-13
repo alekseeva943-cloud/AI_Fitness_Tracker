@@ -33,7 +33,7 @@ export class AIService {
         type: w.type,
         category: w.category,
         duration: w.duration,
-        volume: w.volume,
+        totalWeight: w.totalWeight,
         distance: w.distance,
         heartRate: w.heartRate
       }))

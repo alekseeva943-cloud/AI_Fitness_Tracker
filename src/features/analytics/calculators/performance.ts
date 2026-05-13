@@ -25,7 +25,7 @@ export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats =>
   const sorted = [...sanitized].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const totalWorkouts = sanitized.length;
   const totalDuration = sanitized.reduce((sum, w) => sum + w.duration, 0);
-  const totalVolume = sanitized.reduce((sum, w) => sum + (w.volume || 0), 0);
+  const totalWeightLifted = sanitized.reduce((sum, w) => sum + (w.totalWeight || 0), 0);
   const totalDistance = sanitized.reduce((sum, w) => sum + (w.distance || 0), 0);
   
   const hrWeights = sanitized.filter(w => !!w.heartRate);
@@ -49,7 +49,7 @@ export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats =>
     totalDuration,
     consistencyScore,
     lastWorkoutDate: sorted[0].date,
-    totalVolume,
+    totalVolume: totalWeightLifted,
     totalDistance,
     avgHeartRate
   };

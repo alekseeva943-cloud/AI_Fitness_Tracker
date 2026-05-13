@@ -5,6 +5,7 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
 import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles } from "lucide-react";
 import { useFitnessStore, useGoals, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
+import { useNavigate } from "react-router-dom";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
 import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
 import { Modal } from "../../components/ui/Modal";
@@ -17,11 +18,13 @@ import { BaselineParameters } from "../profile/components/BaselineParameters";
 import { ModalFooter } from "../../components/ui/ModalFooter";
 
 export const DashboardView: React.FC = () => {
+  const navigate = useNavigate();
   const goals = useGoals();
   const workouts = useWorkouts();
   const weightHistory = useWeightHistory();
   const initialize = useFitnessStore((state) => state.initialize);
   const addGoal = useFitnessStore((state) => state.addGoal);
+  const updateGoal = useFitnessStore((state) => state.updateGoal);
   const addWorkout = useFitnessStore((state) => state.addWorkout);
   const updateWorkout = useFitnessStore((state) => state.updateWorkout);
   const addWeightEntry = useFitnessStore((state) => state.addWeightEntry);
@@ -51,17 +54,21 @@ export const DashboardView: React.FC = () => {
   }, [initialize]);
 
   const handleGoalSubmit = (data: any) => {
-    addGoal({
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      currentValue: summary?.weight?.currentWeight || 0,
-      startValue: summary?.weight?.currentWeight || 0,
-      status: 'ACTIVE',
-      unit: 'кг',
-      startDate: new Date().toISOString(),
-      ...data,
-      targetValue: Number(data.targetValue),
-    });
+    if (data.id) {
+      updateGoal(data.id, data);
+    } else {
+      addGoal({
+        ...data,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        currentValue: summary?.weight?.currentWeight || 0,
+        startValue: summary?.weight?.currentWeight || 0,
+        status: 'ACTIVE',
+        unit: 'кг',
+        startDate: new Date().toISOString(),
+        targetValue: Number(data.targetValue),
+      });
+    }
     setGoalModalOpen(false);
   };
 
@@ -69,8 +76,8 @@ export const DashboardView: React.FC = () => {
     if (entryType === 'workout') {
       const workoutId = crypto.randomUUID();
       addWorkout({
-        id: workoutId,
         ...data,
+        id: workoutId,
       });
 
       // If weight was also provided during workout
@@ -402,7 +409,7 @@ export const DashboardView: React.FC = () => {
                         <p className="text-sm font-medium">{workout.type}</p>
                         <div className="flex items-center gap-2">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(workout.date)}</p>
-                          {workout.volume && <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 rounded text-primary font-bold">{Math.round(workout.volume)}кг</span>}
+                          {workout.totalWeight && <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 rounded text-primary font-bold">{Math.round(workout.totalWeight)}кг</span>}
                           {workout.distance && <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/10 rounded text-blue-400 font-bold">{workout.distance}км</span>}
                         </div>
                       </div>
@@ -417,7 +424,7 @@ export const DashboardView: React.FC = () => {
                   </div>
                 )}
               </div>
-              <GradientButton variant="outline" className="w-full mt-6" onClick={() => { setEntryType('workout'); setEntryModalOpen(true); }}>
+              <GradientButton variant="outline" className="w-full mt-6" onClick={() => navigate('/workouts')}>
                 Все активности
               </GradientButton>
             </GlassCard>
@@ -461,15 +468,20 @@ export const DashboardView: React.FC = () => {
         onClose={() => setGoalModalOpen(false)} 
         title={activeGoal ? "Редактировать цель" : "Установить цель"}
       >
-        <GoalForm initialData={activeGoal} onSubmit={handleGoalSubmit} onCancel={() => setGoalModalOpen(false)} />
+        <GoalForm key={activeGoal?.id || 'new-goal'} initialData={activeGoal} onSubmit={handleGoalSubmit} onCancel={() => setGoalModalOpen(false)} />
       </Modal>
 
       <Modal isOpen={isEntryModalOpen} onClose={() => setEntryModalOpen(false)} title={entryType === 'workout' ? 'Добавить тренировку' : 'Новый замер веса'}>
-        <EntryForm type={entryType} onSubmit={handleEntrySubmit} />
+        <EntryForm 
+           key={`new-${entryType}`}
+           type={entryType} 
+           onSubmit={handleEntrySubmit} 
+        />
       </Modal>
 
       <Modal isOpen={isEditEntryModalOpen} onClose={() => setEditEntryModalOpen(false)} title={entryType === 'workout' ? 'Редактировать тренировку' : 'Редактировать замер'}>
         <EntryForm 
+           key={entryType === 'workout' ? selectedWorkout?.id : selectedWeightEntry?.id}
            type={entryType} 
            initialData={entryType === 'workout' ? selectedWorkout : selectedWeightEntry} 
            onSubmit={handleEditEntrySubmit} 
@@ -608,7 +620,42 @@ export const DashboardView: React.FC = () => {
               </div>
             </div>
 
-            {selectedWorkout.category === 'STRENGTH' && (
+            {selectedWorkout.category === 'STRENGTH' && selectedWorkout.exercises && selectedWorkout.exercises.length > 0 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between px-1">
+                  <h5 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Упражнения</h5>
+                  {selectedWorkout.totalWeight && (
+                    <span className="text-[10px] font-black text-primary uppercase">Всего: {selectedWorkout.totalWeight} кг</span>
+                  )}
+                </div>
+                <div className="grid gap-3">
+                  {selectedWorkout.exercises.map((ex: any, idx: number) => (
+                    <div key={ex.id} className="bg-secondary/20 p-4 rounded-2xl border border-white/5 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold">{ex.name || `Упражнение ${idx + 1}`}</span>
+                        <span className="text-xs font-black text-primary/60">{ex.totalWeight} кг</span>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="flex flex-col">
+                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Сеты</span>
+                          <span className="text-xs font-bold">{ex.sets}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Повт.</span>
+                          <span className="text-xs font-bold">{ex.reps}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Вес</span>
+                          <span className="text-xs font-bold text-primary">{ex.weight} кг</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedWorkout.category === 'STRENGTH' && (!selectedWorkout.exercises || selectedWorkout.exercises.length === 0) && (
               <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2">
                 <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Сеты</p>
@@ -622,10 +669,10 @@ export const DashboardView: React.FC = () => {
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Вес</p>
                   <p className="text-lg font-bold text-primary">{selectedWorkout.workingWeight || '-'}</p>
                 </div>
-                {selectedWorkout.volume && (
+                {selectedWorkout.totalWeight && (
                   <div className="col-span-3 bg-primary/10 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
                     <p className="text-xs uppercase font-bold text-primary tracking-widest">Тренировочный объем</p>
-                    <p className="text-xl font-bold text-primary">{selectedWorkout.volume} кг</p>
+                    <p className="text-xl font-bold text-primary">{selectedWorkout.totalWeight} кг</p>
                   </div>
                 )}
               </div>

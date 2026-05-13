@@ -68,7 +68,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
     const newErrors: Record<string, string> = {};
 
     const startVal = getBaselineValue();
-    const data = {
+    const data: any = {
       title: title,
       type: selectedType,
       targetValue: Number(formData.get('targetValue')),
@@ -79,8 +79,11 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
       startValue: startVal,
       status: initialData?.status || 'ACTIVE',
       createdAt: initialData?.createdAt || new Date().toISOString(),
-      id: initialData?.id
     };
+
+    if (initialData?.id) {
+      data.id = initialData.id;
+    }
 
     if (!isValidTitle(data.title)) {
       newErrors.title = "Введите корректное название цели (минимум 3 символа)";

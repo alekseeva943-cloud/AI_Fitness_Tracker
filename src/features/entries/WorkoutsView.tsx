@@ -24,6 +24,7 @@ export const WorkoutsView: React.FC = () => {
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutEntry | null>(null);
   const [filter, setFilter] = useState<string>('all');
+  const [viewMetric, setViewMetric] = useState<'calories' | 'weight' | 'duration'>('calories');
 
   const categoryLabels: Record<string, string> = {
     'STRENGTH': 'Силовая',
@@ -44,8 +45,8 @@ export const WorkoutsView: React.FC = () => {
   const handleCreateWorkout = (data: any) => {
     const workoutId = crypto.randomUUID();
     addWorkout({
-      id: workoutId,
       ...data,
+      id: workoutId,
     });
 
     if (data.weight) {
@@ -99,21 +100,53 @@ export const WorkoutsView: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {filterOptions.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setFilter(cat)}
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {filterOptions.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              className={cn(
+                "px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap shadow-sm border",
+                filter === cat 
+                  ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(223,255,0,0.2)]" 
+                  : "bg-white/5 text-muted-foreground border-white/5 hover:bg-white/10 hover:border-white/10"
+              )}
+            >
+              {cat === 'all' ? 'Все' : (categoryLabels[cat] || cat)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 p-1.5 bg-secondary/20 rounded-2xl border border-white/5 w-fit">
+          <button 
+            onClick={() => setViewMetric('calories')}
             className={cn(
-              "px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap shadow-sm border",
-              filter === cat 
-                ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(223,255,0,0.2)]" 
-                : "bg-white/5 text-muted-foreground border-white/5 hover:bg-white/10 hover:border-white/10"
+              "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              viewMetric === 'calories' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
             )}
           >
-            {cat === 'all' ? 'Все' : (categoryLabels[cat] || cat)}
+            Энергия
           </button>
-        ))}
+          <button 
+            onClick={() => setViewMetric('weight')}
+            className={cn(
+              "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              viewMetric === 'weight' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+            )}
+          >
+            Вес
+          </button>
+          <button 
+            onClick={() => setViewMetric('duration')}
+            className={cn(
+              "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              viewMetric === 'duration' ? "bg-primary text-black" : "text-muted-foreground hover:text-white"
+            )}
+          >
+            Время
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
@@ -149,35 +182,61 @@ export const WorkoutsView: React.FC = () => {
                           <div>
                             <h3 className="text-lg font-semibold capitalize">{workout.type}</h3>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                              <span className="flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-primary/60" />
+                              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
+                                <Calendar className="w-3 h-3 text-primary/60" />
                                 {formatDate(workout.date)}
                               </span>
-                              {workout.volume ? (
-                                <span className="flex items-center gap-1.5 text-primary/80 font-bold">
-                                  <Zap className="w-3.5 h-3.5" />
-                                  {Math.round(workout.volume)} кг
+                              {workout.totalWeight ? (
+                                <span className="flex items-center gap-1.5 text-primary font-black text-xs">
+                                  <Zap className="w-3 h-3" />
+                                  {Math.round(workout.totalWeight)} кг
                                 </span>
                               ) : (
-                                <span className="flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-primary/60" />
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
+                                  <Clock className="w-3 h-3 text-primary/60" />
                                   {workout.duration} мин
                                 </span>
                               )}
-                              {workout.distance && (
-                                <span className="flex items-center gap-1.5 text-blue-400 font-bold">
-                                  <Ruler className="w-3.5 h-3.5" />
-                                  {workout.distance} км
+                              {workout.exercises && workout.exercises.length > 0 && (
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                                  <Dumbbell className="w-3 h-3" />
+                                  {workout.exercises.length} упр.
                                 </span>
                               )}
                             </div>
                           </div>
                   </div>
 
-                  <div className="flex items-center justify-between md:justify-end gap-8 border-t md:border-t-0 pt-4 md:pt-0">
-                    <div className="text-right">
-                      <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Энергия</p>
-                      <p className="text-sm font-medium text-primary">{workout.caloriesBurned || 0} ккал</p>
+                  <div className="flex items-center justify-between md:justify-end gap-6 md:gap-8 border-t md:border-t-0 pt-4 md:pt-0">
+                    <div className="flex gap-6">
+                      {viewMetric === 'calories' && (
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Энергия</p>
+                          <p className="text-sm font-bold text-primary">{workout.caloriesBurned || 0} ккал</p>
+                        </div>
+                      )}
+                      
+                      {viewMetric === 'weight' && (
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Вес замера</p>
+                          <p className="text-sm font-bold text-primary">{workout.weight || '-'} кг</p>
+                        </div>
+                      )}
+
+                      {viewMetric === 'duration' && (
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Время</p>
+                          <p className="text-sm font-bold text-primary">{workout.duration} мин</p>
+                        </div>
+                      )}
+
+                      {/* Always show calories mini if not in main view */}
+                      {viewMetric !== 'calories' && (
+                        <div className="text-right hidden sm:block opacity-40">
+                          <p className="text-[10px] uppercase font-bold tracking-widest">ккал</p>
+                          <p className="text-xs font-medium">{workout.caloriesBurned || 0}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                        <button 
@@ -214,7 +273,11 @@ export const WorkoutsView: React.FC = () => {
         onClose={() => setModalOpen(false)} 
         title="Добавить тренировку"
       >
-        <EntryForm onSubmit={handleCreateWorkout} type="workout" />
+        <EntryForm 
+           key="new-workout"
+           onSubmit={handleCreateWorkout} 
+           type="workout" 
+        />
       </Modal>
 
       <Modal 
@@ -223,6 +286,7 @@ export const WorkoutsView: React.FC = () => {
         title="Редактировать тренировку"
       >
         <EntryForm 
+           key={selectedWorkout?.id || 'edit'}
            onSubmit={handleUpdateWorkout} 
            type="workout" 
            initialData={selectedWorkout}
@@ -267,9 +331,53 @@ export const WorkoutsView: React.FC = () => {
                 </div>
                 <p className="text-xl font-bold">{selectedWorkout.caloriesBurned || 0} ккал</p>
               </div>
+              {selectedWorkout.weight && (
+                <div className="bg-primary/5 p-4 rounded-2xl space-y-1 border border-primary/20 col-span-2">
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
+                    <Scale className="w-3 h-3" />
+                    Вес на момент тренировки
+                  </div>
+                  <p className="text-xl font-black text-primary">{selectedWorkout.weight} кг</p>
+                </div>
+              )}
             </div>
 
-            {selectedWorkout.category === 'STRENGTH' && (
+            {selectedWorkout.category === 'STRENGTH' && selectedWorkout.exercises && selectedWorkout.exercises.length > 0 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between px-1">
+                  <h5 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Упражнения</h5>
+                  {selectedWorkout.totalWeight && (
+                    <span className="text-[10px] font-black text-primary uppercase">Всего: {selectedWorkout.totalWeight} кг</span>
+                  )}
+                </div>
+                <div className="grid gap-3">
+                  {selectedWorkout.exercises.map((ex, idx) => (
+                    <div key={ex.id} className="bg-secondary/20 p-4 rounded-2xl border border-white/5 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold">{ex.name || `Упражнение ${idx + 1}`}</span>
+                        <span className="text-xs font-black text-primary/60">{ex.totalWeight} кг</span>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="flex flex-col">
+                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Сеты</span>
+                          <span className="text-xs font-bold">{ex.sets}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Повт.</span>
+                          <span className="text-xs font-bold">{ex.reps}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] uppercase font-bold text-muted-foreground/60">Вес</span>
+                          <span className="text-xs font-bold text-primary">{ex.weight} кг</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedWorkout.category === 'STRENGTH' && (!selectedWorkout.exercises || selectedWorkout.exercises.length === 0) && (
               <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2">
                 <div className="bg-secondary/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Сеты</p>
@@ -283,10 +391,10 @@ export const WorkoutsView: React.FC = () => {
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Вес</p>
                   <p className="text-lg font-bold text-primary">{selectedWorkout.workingWeight || '-'}</p>
                 </div>
-                {selectedWorkout.volume && (
+                {selectedWorkout.totalWeight && (
                   <div className="col-span-3 bg-primary/10 p-4 rounded-2xl border border-primary/20 flex justify-between items-center">
                     <p className="text-xs uppercase font-bold text-primary tracking-widest">Тренировочный объем</p>
-                    <p className="text-xl font-bold text-primary">{selectedWorkout.volume} кг</p>
+                    <p className="text-xl font-bold text-primary">{selectedWorkout.totalWeight} кг</p>
                   </div>
                 )}
               </div>
