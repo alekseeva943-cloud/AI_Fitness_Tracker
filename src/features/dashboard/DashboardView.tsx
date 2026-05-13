@@ -54,6 +54,7 @@ export const DashboardView: React.FC = () => {
   const [isWeightEditModalOpen, setWeightEditModalOpen] = useState(false);
   const [selectedWeightEntry, setSelectedWeightEntry] = useState<any>(null);
   const [isInsightModalOpen, setInsightModalOpen] = useState(false);
+  const [isGoalHistoryModalOpen, setGoalHistoryModalOpen] = useState(false);
   const [insightType, setInsightType] = useState<'progress' | 'regression' | 'plateau' | 'ahead'>('progress');
 
   const openInsight = (type: any) => {
@@ -232,10 +233,14 @@ export const DashboardView: React.FC = () => {
               <div className="lg:col-span-2 space-y-8">
                 <GlassCard className="min-h-[400px] flex flex-col p-8">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <div>
-                      <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <div 
+                      className="cursor-pointer group/title" 
+                      onClick={() => setGoalHistoryModalOpen(true)}
+                    >
+                      <h2 className="text-xl font-semibold flex items-center gap-2 group-hover/title:text-primary transition-colors">
                         <TrendingUp className="w-5 h-5 text-primary" />
                         {activeGoal.title || RU.DASHBOARD.WEIGHT_TREND}
+                        <ChevronRight className="w-4 h-4 opacity-0 group-hover/title:opacity-100 transition-all -ml-1" />
                       </h2>
                       <div className="flex gap-2 text-xs font-bold uppercase tracking-widest text-primary/60 mt-1">
                         <span>Старт: {formatWeight(activeGoal.startValue)}</span>
@@ -382,6 +387,14 @@ export const DashboardView: React.FC = () => {
                           workouts={workouts}
                           unit={METRICS[chartMetric]?.unit}
                           color={chartMetric === 'weight' ? THEME.colors.primary : chartMetric === 'caloriesBurned' ? THEME.colors.accent : THEME.colors.duration}
+                          onPointClick={(type, id, original) => {
+                            if (type === 'workout') {
+                              openWorkoutDetail(original);
+                            } else {
+                              setSelectedWeightEntry(original);
+                              setWeightDetailModalOpen(true);
+                            }
+                          }}
                         />
                       ) : (
                         <div className="h-full flex flex-col items-center justify-center opacity-40 space-y-4">
@@ -652,6 +665,121 @@ export const DashboardView: React.FC = () => {
           </div>
         )}
       </div>
+
+      <Modal isOpen={isGoalHistoryModalOpen} onClose={() => setGoalHistoryModalOpen(false)} title={`История: ${activeGoal?.title}`}>
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin text-foreground">
+          {(() => {
+            if (!activeGoal) return null;
+            
+            // Merge measurements and relevant workouts
+            const measurements = weightHistory.map(w => ({
+              id: w.id,
+              date: w.date,
+              value: w.value,
+              unit: w.unit,
+              type: 'MEASUREMENT',
+              notes: w.notes,
+              original: w
+            }));
+
+            const relevantWorkouts = workouts
+              .filter(w => {
+                 if (activeGoal.metricId === 'weight') return true; // Show all if goal is weight? Or only weight entries?
+                 // Actually user said "all workouts on which it's based"
+                 if (activeGoal.metricId === 'caloriesBurned' || activeGoal.metricId === 'duration') return true;
+                 
+                 // For specific exercise goals
+                 if (w.category === 'STRENGTH' && w.exercises) {
+                    return w.exercises.some((ex: any) => ex.weight && ex.name?.toLowerCase().includes(METRICS[activeGoal.metricId]?.label?.toLowerCase() || ''));
+                 }
+                 return w[activeGoal.metricId as keyof typeof w];
+              })
+              .map(w => {
+                let val = Number(w[activeGoal.metricId as keyof typeof w] || 0);
+                if (val === 0 && w.category === 'STRENGTH' && w.exercises) {
+                  const ex = w.exercises.find((e: any) => e.name?.toLowerCase().includes(METRICS[activeGoal.metricId]?.label?.toLowerCase() || ''));
+                  if (ex) val = ex.weight;
+                }
+                
+                return {
+                  id: w.id,
+                  date: w.date,
+                  value: val,
+                  unit: METRICS[activeGoal.metricId]?.unit || '',
+                  type: 'WORKOUT',
+                  workoutType: w.type,
+                  workoutCategory: w.category,
+                  notes: w.notes,
+                  original: w
+                };
+              });
+
+            const allPoints = [...measurements, ...relevantWorkouts].sort((a, b) => 
+               new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+
+            if (allPoints.length === 0) {
+              return (
+                <div className="text-center py-12 opacity-40">
+                  <Activity className="w-12 h-12 mx-auto mb-3" />
+                  <p>Данных пока нет</p>
+                </div>
+              );
+            }
+
+            return allPoints.map((point) => (
+              <div 
+                key={`${point.type}-${point.id}`}
+                onClick={() => {
+                  setGoalHistoryModalOpen(false);
+                  if (point.type === 'WORKOUT') {
+                    openWorkoutDetail(point.original);
+                  } else {
+                    setSelectedWeightEntry(point.original);
+                    setWeightDetailModalOpen(true);
+                  }
+                }}
+                className={cn(
+                  "flex flex-col p-4 bg-secondary/30 rounded-2xl border border-white/5 hover:bg-white/5 cursor-pointer transition-all",
+                  point.type === 'WORKOUT' ? "border-l-4 border-l-primary/40" : "border-l-4 border-l-blue-400/40"
+                )}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center",
+                      point.type === 'WORKOUT' ? "bg-primary/20 text-primary" : "bg-blue-500/20 text-blue-400"
+                    )}>
+                      {point.type === 'WORKOUT' ? <Dumbbell className="w-5 h-5" /> : <Scale className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">
+                        {point.value} {point.unit}
+                        <span className="ml-2 text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
+                          {point.type === 'WORKOUT' ? (point as any).workoutType : 'Замер'}
+                        </span>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(point.date)}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+                {point.notes && (
+                  <p className="text-xs text-muted-foreground line-clamp-1 mt-2 pl-12 border-l border-white/5 italic">
+                    {point.notes}
+                  </p>
+                )}
+              </div>
+            ));
+          })()}
+        </div>
+        <GradientButton 
+          className="w-full mt-6" 
+          onClick={() => { setGoalHistoryModalOpen(false); setEntryModalOpen(true); }}
+        >
+          Добавить запись
+        </GradientButton>
+      </Modal>
 
       <Modal isOpen={isInsightModalOpen} onClose={() => setInsightModalOpen(false)} title="Анализ динамики">
         <div className="space-y-6 text-foreground">

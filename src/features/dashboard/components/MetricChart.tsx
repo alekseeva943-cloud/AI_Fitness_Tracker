@@ -17,15 +17,16 @@ interface MetricChartProps {
   forecastedDate?: string | null;
   unit?: string;
   color?: string;
-  workouts?: { date: string; intensity?: number }[];
+  workouts?: any[]; // Full workout objects
+  onPointClick?: (type: 'workout' | 'measurement', id: string, original: any) => void;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const unit = payload[0].payload.unit || '';
-    const workout = payload[0].payload.workout;
+    const workoutsAtDate = payload[0].payload.workoutsAtDate || [];
     return (
-      <div className="bg-zinc-900/90 border border-white/10 p-3 rounded-2xl shadow-2xl backdrop-blur-xl">
+      <div className="bg-zinc-900/90 border border-white/10 p-3 rounded-2xl shadow-2xl backdrop-blur-xl max-w-[200px]">
         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-2">{label}</p>
         <div className="space-y-1.5">
           {payload.map((p: any, i: number) => {
@@ -47,11 +48,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               </div>
             );
           })}
-          {workout && (
+          {workoutsAtDate.length > 0 && (
             <div className="pt-2 mt-2 border-t border-white/5">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <p className="text-[10px] font-bold uppercase text-primary">Тренировка!</p>
+                <p className="text-[10px] font-bold uppercase text-primary">Тренировки:</p>
+              </div>
+              <div className="space-y-1">
+                {workoutsAtDate.map((w: any) => (
+                  <p key={w.id} className="text-[9px] text-muted-foreground truncate">• {w.type}</p>
+                ))}
               </div>
             </div>
           )}
@@ -68,42 +74,55 @@ const isValidDate = (d: any) => {
   return date instanceof Date && !isNaN(date.getTime());
 };
 
-export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecastedDate, unit: propUnit, color = THEME.colors.primary, workouts = [] }) => {
+export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecastedDate, unit: propUnit, color = THEME.colors.primary, workouts = [], onPointClick }) => {
   const chartData = useMemo(() => {
-    if (!data.length && !goal) return [];
-
     const unit = propUnit || goal?.unit || '';
 
-    // Process real measurements (average per day)
-    const dailyMap = new Map<string, number[]>();
-    data.forEach(e => {
+    // Process real measurements
+    const dailyMap = new Map<string, { avg: number, entries: any[] }>();
+    data.forEach((e: any) => {
       if (!isValidDate(e.date)) return;
       const d = new Date(e.date);
       const dayKey = d.toISOString().split('T')[0];
-      const vals = dailyMap.get(dayKey) || [];
-      vals.push(e.value);
-      dailyMap.set(dayKey, vals);
+      const existing = dailyMap.get(dayKey) || { avg: 0, entries: [] };
+      existing.entries.push(e);
+      dailyMap.set(dayKey, existing);
+    });
+
+    // Collect all dates from data and workouts
+    const allDates = new Set<string>();
+    dailyMap.forEach((_, key) => allDates.add(key));
+    workouts.forEach(w => {
+      if (isValidDate(w.date)) {
+        allDates.add(new Date(w.date).toISOString().split('T')[0]);
+      }
     });
 
     // Workout Map
-    const workoutMap = new Map<string, boolean>();
+    const workoutMap = new Map<string, any[]>();
     workouts.forEach(w => {
       if (!isValidDate(w.date)) return;
       const dayKey = new Date(w.date).toISOString().split('T')[0];
-      workoutMap.set(dayKey, true);
+      const list = workoutMap.get(dayKey) || [];
+      list.push(w);
+      workoutMap.set(dayKey, list);
     });
 
-    const sortedProcessed = Array.from(dailyMap.entries())
-      .map(([dateKey, vals]) => {
-        const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+    const sortedProcessed = Array.from(allDates)
+      .map((dateKey) => {
+        const measurement = dailyMap.get(dateKey);
+        const avg = measurement ? measurement.entries.reduce((s, v) => s + (v.value || v.current || 0), 0) / measurement.entries.length : null;
+        
         return {
           dateKey,
           displayDate: formatDate(new Date(dateKey)),
-          current: Number(avg.toFixed(1)),
+          current: avg !== null ? Number(avg.toFixed(1)) : null,
           forecast: null as number | null,
           goal: goal?.targetValue,
           unit,
           workout: workoutMap.has(dateKey),
+          workoutsAtDate: workoutMap.get(dateKey) || [],
+          measurementEntries: measurement?.entries || [],
           isForecast: false
         };
       })
@@ -111,7 +130,41 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
 
     const processed = [...sortedProcessed];
 
-    const hasStartValue = goal && !isNaN(goal.startValue);
+    // Linear interpolation for missing measurements
+    for (let i = 0; i < processed.length; i++) {
+      if (processed[i].current === null) {
+        // Find previous non-null
+        let prev = null;
+        for (let j = i - 1; j >= 0; j--) {
+          if (processed[j].current !== null) {
+            prev = processed[j];
+            break;
+          }
+        }
+        
+        // Find next non-null
+        let next = null;
+        for (let j = i + 1; j < processed.length; j++) {
+          if (processed[j].current !== null) {
+            next = processed[j];
+            break;
+          }
+        }
+        
+        if (prev && next) {
+          const t1 = new Date(prev.dateKey).getTime();
+          const t2 = new Date(next.dateKey).getTime();
+          const t = new Date(processed[i].dateKey).getTime();
+          const ratio = (t - t1) / (t2 - t1);
+          processed[i].current = prev.current + (next.current - prev.current) * ratio;
+        } else if (prev) {
+          processed[i].current = prev.current;
+        } else if (next) {
+          processed[i].current = next.current;
+        }
+      }
+    }
+
     const hasTargetValue = goal && !isNaN(goal.targetValue);
 
     if (processed.length === 0 && goal && isValidDate(goal.startDate)) {
@@ -124,6 +177,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
         goal: goal.targetValue,
         unit,
         workout: workoutMap.has(startIso),
+        workoutsAtDate: workoutMap.get(startIso) || [],
+        measurementEntries: [],
         isForecast: false
       });
     } else if (goal && processed.length > 0 && isValidDate(goal.startDate)) {
@@ -137,21 +192,14 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
           goal: goal.targetValue,
           unit,
           workout: workoutMap.has(startIso),
+          workoutsAtDate: workoutMap.get(startIso) || [],
+          measurementEntries: [],
           isForecast: false
         });
       }
     }
 
     if (processed.length === 0) return [];
-
-    // Add a conceptual "Goal Line" point at the end if we have a target date or just to show the trend
-    if (processed.length > 0 && hasTargetValue) {
-        // If we don't have enough points, ensure we show the target as a possibility
-        const last = processed[processed.length - 1];
-        if (!last.isForecast && !forecastedDate) {
-            // Just for visual completeness if no forecast exists yet
-        }
-    }
 
     // If only one point, add a tiny offset point to make it visible in Recharts
     if (processed.length === 1) {
@@ -172,7 +220,6 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
       const forecastIso = fDate.toISOString().split('T')[0];
       
       if (forecastIso >= lastRealPoint.dateKey) {
-          // Add intermediate forecast point if the gap is large (> 30 days)
           const daysGap = Math.abs(new Date(forecastIso).getTime() - new Date(lastRealPoint.dateKey).getTime()) / (1000 * 60 * 60 * 24);
           
           if (daysGap > 30) {
@@ -185,6 +232,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
               goal: goal.targetValue,
               unit,
               workout: false,
+              workoutsAtDate: [],
+              measurementEntries: [],
               isForecast: true
             });
           }
@@ -199,6 +248,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
             goal: goal.targetValue,
             unit,
             workout: false,
+            workoutsAtDate: [],
+            measurementEntries: [],
             isForecast: true
           });
         }
@@ -304,16 +355,16 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
               y={goal.targetValue} 
               stroke={color} 
               strokeDasharray="10 5" 
-              strokeOpacity={0.15}
+              strokeOpacity={0.4}
               label={{ 
                 position: 'insideTopRight', 
-                value: `К ЦЕЛИ: ${goal.targetValue}`, 
+                value: `ЦЕЛЬ: ${goal.targetValue}`, 
                 fill: color, 
-                fontSize: 9, 
-                fontWeight: 800,
-                opacity: 0.4,
+                fontSize: 10, 
+                fontWeight: 900,
+                opacity: 0.6,
                 tracking: '0.1em',
-                dy: -10
+                dy: -12
               }} 
             />
           )}
@@ -345,9 +396,20 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
               const { cx, cy, payload, index } = props;
               const isStart = index === 0;
               
+              const handleClick = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (onPointClick) {
+                  if (payload.workoutsAtDate.length > 0) {
+                    onPointClick('workout', payload.workoutsAtDate[0].id, payload.workoutsAtDate[0]);
+                  } else if (payload.measurementEntries.length > 0) {
+                    onPointClick('measurement', payload.measurementEntries[0].id, payload.measurementEntries[0]);
+                  }
+                }
+              };
+
               if (payload.workout) {
                 return (
-                  <g key={`dot-${payload.dateKey}`}>
+                  <g key={`dot-${payload.dateKey}`} className="cursor-pointer" onClick={handleClick}>
                     <circle cx={cx} cy={cy} r={5} fill={color} stroke="#000" strokeWidth={1.5} />
                     <circle cx={cx} cy={cy} r={10} fill={color} fillOpacity={0.1} className="animate-pulse" />
                   </g>
@@ -364,7 +426,16 @@ export const MetricChart: React.FC<MetricChartProps> = ({ data, goal, forecasted
                 );
               }
               
-              return null;
+              // Standard interactive point
+              return (
+                <circle 
+                  key={`dot-${index}`}
+                  cx={cx} cy={cy} r={4} 
+                  fill={color} 
+                  className="opacity-0 hover:opacity-100 cursor-pointer transition-opacity" 
+                  onClick={handleClick}
+                />
+              );
             }}
             activeDot={{ r: 6, fill: color, stroke: '#000', strokeWidth: 2 }}
             connectNulls={true}

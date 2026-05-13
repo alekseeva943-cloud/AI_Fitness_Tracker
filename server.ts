@@ -22,8 +22,7 @@ async function startServer() {
       }
 
       const { goal, analytics, semanticContext } = req.body;
-      const genAI = new GoogleGenAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+      const ai = new GoogleGenAI({ apiKey });
 
       const prompt = `
         Ты – профессиональный фитнес-аналитик и коуч. Твоя задача – проанализировать прогресс пользователя относительно его КОНКРЕТНОЙ ЦЕЛИ.
@@ -44,15 +43,16 @@ async function startServer() {
         }
       `;
 
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
             responseMimeType: "application/json",
         }
       });
 
-      const responseText = result.response.text();
-      res.json(JSON.parse(responseText));
+      const responseText = result.text;
+      res.json(JSON.parse(responseText || "{}"));
     } catch (error: any) {
       console.error("AI Analysis Error:", error);
       res.status(500).json({ error: error.message || "Failed to analyze progress" });
