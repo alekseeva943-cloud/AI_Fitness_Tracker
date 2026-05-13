@@ -11,7 +11,7 @@ import { logger } from "../../../lib/logger";
  */
 export const selectAnalyticsSummary = (state: FitnessState): AnalyticsSummary | null => {
   try {
-    const activeGoal = state.goals[0] || null; 
+    const activeGoal = state.goals.find(g => g.id === state.activeGoalId) || null; 
     
     const weightTrend = calculateWeightTrend(state.weightHistory, activeGoal);
     const workoutStats = calculateWorkoutStats(state.workouts);

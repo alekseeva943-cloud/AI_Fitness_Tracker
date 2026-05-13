@@ -32,7 +32,7 @@ export interface Goal {
   startDate: string;
   deadline: string;
   createdAt: string;
-  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+  status: 'ACTIVE' | 'SECONDARY' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
   motivation?: string;
 }
 
@@ -118,6 +118,7 @@ export interface UserProfile {
 export interface FitnessState {
   profile: UserProfile | null;
   goals: Goal[];
+  activeGoalId: string | null;
   workouts: WorkoutEntry[];
   weightHistory: WeightEntry[];
   analyses: AIAnalysis[];

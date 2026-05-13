@@ -32,6 +32,7 @@ export const INITIAL_DEMO_STATE: FitnessState = {
       status: 'ACTIVE',
     }
   ],
+  activeGoalId: MOCK_GOAL_ID,
   weightHistory: [
     { id: 'w1', date: '2026-05-10T10:00:00Z', value: 82.3, unit: 'кг' },
     { id: 'w2', date: '2026-05-03T10:00:00Z', value: 83.1, unit: 'кг' },

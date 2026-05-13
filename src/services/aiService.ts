@@ -13,7 +13,7 @@ export class AIService {
   static async analyzeProgress(state: FitnessState, analytics: any): Promise<AIAnalysis> {
     const ai = this.getClient();
     
-    const goal = state.goals[0];
+    const goal = state.goals.find(g => g.id === state.activeGoalId) || null;
     const weightTrend = analytics.weight;
 
     // Enhanced semantic context for smarter AI insights

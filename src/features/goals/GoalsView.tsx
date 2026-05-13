@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFitnessStore, useGoals } from '../../store/useFitnessStore';
+import { useFitnessStore, useGoals, useActiveGoalId } from '../../store/useFitnessStore';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { GoalForm } from './components/GoalForm';
-import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles } from 'lucide-react';
+import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles, Star } from 'lucide-react';
 import { GoalType, Goal } from '../../types';
 import { cn, formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
@@ -15,10 +15,12 @@ import { ModalFooter } from '../../components/ui/ModalFooter';
 export const GoalsView: React.FC = () => {
   const navigate = useNavigate();
   const goals = useGoals();
+  const activeGoalId = useActiveGoalId();
   const weightHistory = useFitnessStore((state) => state.weightHistory);
   const removeGoal = useFitnessStore((state) => state.removeGoal);
   const addGoal = useFitnessStore((state) => state.addGoal);
   const updateGoal = useFitnessStore((state) => state.updateGoal);
+  const setActiveGoal = useFitnessStore((state) => state.setActiveGoal);
   const state = useFitnessStore();
   const summary = selectAnalyticsSummary(state);
 
@@ -62,12 +64,20 @@ export const GoalsView: React.FC = () => {
     setDetailOpen(true);
   };
 
-  const getStatusBadge = (status: Goal['status']) => {
-    switch (status) {
+  const getStatusBadge = (goal: Goal) => {
+    const isActive = goal.id === activeGoalId;
+    
+    if (isActive) {
+      return <span className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/20 text-primary text-[8px] font-black uppercase tracking-widest rounded-full border border-primary/40 shadow-[0_0_10px_rgba(223,255,0,0.2)]"><Star className="w-2 h-2 fill-primary" /> Основная</span>;
+    }
+
+    switch (goal.status) {
       case 'ACTIVE':
-        return <span className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest rounded-full border border-primary/20"><Play className="w-2 h-2 fill-primary" /> Активна</span>;
+        return <span className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase tracking-widest rounded-full border border-blue-500/20"><Play className="w-2 h-2 fill-blue-400" /> Активна</span>;
+      case 'SECONDARY':
+        return <span className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase tracking-widest rounded-full border border-blue-500/20"><Play className="w-2 h-2 fill-blue-400" /> Второстепенная</span>;
       case 'PAUSED':
-        return <span className="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-500/10 text-yellow-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-yellow-500/20"><Pause className="w-2 h-2 fill-yellow-500" /> На паузе</span>;
+        return <span className="flex items-center gap-1.5 px-2 py-0.5 bg-muted/20 text-muted-foreground text-[8px] font-black uppercase tracking-widest rounded-full border border-white/10"><Pause className="w-2 h-2 fill-muted-foreground" /> На паузе</span>;
       case 'COMPLETED':
         return <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 text-green-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-green-500/20"><CheckCircle2 className="w-2 h-2" /> Завершена</span>;
       default:
@@ -98,8 +108,9 @@ export const GoalsView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {goals.map((goal, index) => {
+        {goals.map((goal) => {
           const currentWeight = summary?.weight?.currentWeight ?? goal.currentValue;
+          const isActive = goal.id === activeGoalId;
           
           // Semantic progress calculation
           let progress = 0;
@@ -111,9 +122,8 @@ export const GoalsView: React.FC = () => {
             progress = Math.max(0, Math.min(100, (actualChange / totalNeeded) * 100));
           }
 
-          // Use summary status only for the primary (first) goal
-          const isPrimaryGoal = index === 0;
-          const goalTrendStatus = isPrimaryGoal ? summary?.goal.status : 'ON_TRACK';
+          // Use summary status only for the primary goal
+          const goalTrendStatus = isActive ? summary?.goal.status : 'ON_TRACK';
 
           return (
             <GlassCard 
@@ -121,19 +131,23 @@ export const GoalsView: React.FC = () => {
               onClick={() => openGoalDetail(goal)}
               className={cn(
                 "p-6 space-y-6 flex flex-col group cursor-pointer hover:bg-white/5 active:scale-[0.99] transition-all relative overflow-hidden",
-                goal.status === 'PAUSED' && "opacity-60 grayscale-[0.5]"
+                isActive ? "ring-2 ring-primary/40 bg-primary/5 shadow-[0_0_30px_rgba(223,255,0,0.1)]" : "opacity-90 hover:opacity-100",
+                (goal.status === 'PAUSED' || goal.status === 'CANCELLED') && "opacity-40 grayscale-[0.8]",
+                goal.status === 'COMPLETED' && "border-green-500/20 bg-green-500/5"
               )}
             >
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <div className={cn(
-                    "p-3 rounded-2xl transition-colors",
+                    "p-3 rounded-2xl transition-all duration-500",
+                    isActive ? "bg-primary shadow-[0_0_15px_rgba(223,255,0,0.4)] text-black scale-110" : 
                     goalTrendStatus === 'WRONG_DIRECTION' ? "bg-red-500/10 text-red-400" : "bg-primary/10 text-primary"
                   )}>
                     <Target className="w-6 h-6" />
                   </div>
-                  {getStatusBadge(goal.status)}
+                  {getStatusBadge(goal)}
                 </div>
+                {isActive && <Sparkles className="w-5 h-5 text-primary animate-pulse" />}
               </div>
 
               <div className="space-y-2">
@@ -248,21 +262,41 @@ export const GoalsView: React.FC = () => {
           
           return (
           <div className="space-y-8 text-foreground min-h-[400px] flex flex-col">
-            <div className="flex items-center gap-4 p-5 bg-primary/10 rounded-3xl border border-primary/20 relative overflow-hidden group">
+            <div className={cn(
+              "flex items-center gap-4 p-5 rounded-3xl border relative overflow-hidden group transition-all duration-500",
+              selectedGoal.id === activeGoalId ? "bg-primary/20 border-primary/40 shadow-[0_0_20px_rgba(223,255,0,0.1)]" : "bg-secondary/30 border-white/5"
+            )}>
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                  <Target className="w-20 h-20 text-primary" />
               </div>
-              <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary shadow-[0_0_20px_rgba(223,255,0,0.2)] z-10">
+              <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg z-10 transition-all duration-500",
+                selectedGoal.id === activeGoalId ? "bg-primary text-black scale-110 shadow-[0_0_20px_rgba(223,255,0,0.3)]" : "bg-primary/20 text-primary"
+              )}>
                 <Target className="w-10 h-10" />
               </div>
               <div className="flex-1 z-10">
                 <div className="flex items-center gap-2 mb-0.5">
                    <h3 className="text-2xl font-bold font-display">{selectedGoal.title || 'Моя цель'}</h3>
-                   {getStatusBadge(selectedGoal.status)}
+                   {getStatusBadge(selectedGoal)}
                 </div>
                 <p className="text-sm text-muted-foreground">{selectedGoal.type === 'WEIGHT_LOSS' ? 'Снижение веса' : 'Набор массы'}</p>
               </div>
             </div>
+
+            {selectedGoal.id !== activeGoalId && (selectedGoal.status === 'ACTIVE' || selectedGoal.status === 'SECONDARY') && (
+              <GradientButton 
+                variant="outline" 
+                className="w-full h-12 flex items-center justify-center gap-2 border-primary/30 hover:border-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveGoal(selectedGoal.id);
+                }}
+              >
+                <Star className="w-4 h-4 text-primary" />
+                Сделать основной целью
+              </GradientButton>
+            )}
 
             {selectedGoal.motivation && (
               <div className="space-y-4">
@@ -334,18 +368,34 @@ export const GoalsView: React.FC = () => {
                 setDetailOpen(false);
                 setEditModalOpen(true);
               }}
-              onDelete={selectedGoal.status === 'PAUSED' || selectedGoal.status === 'COMPLETED' ? () => {
+              onDelete={selectedGoal.status === 'PAUSED' || selectedGoal.status === 'COMPLETED' || (selectedGoal.id !== activeGoalId) ? () => {
                 if (window.confirm('Вы уверены, что хотите окончательно удалить эту цель?')) {
                   removeGoal(selectedGoal.id);
                   setDetailOpen(false);
                 }
               } : undefined}
-              primaryAction={{
-                label: selectedGoal.status === 'ACTIVE' ? 'Приостановить' : 'Возобновить',
-                icon: selectedGoal.status === 'ACTIVE' ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />,
+              primaryAction={selectedGoal.status === 'COMPLETED' ? {
+                label: 'Возобновить',
+                icon: <Play className="w-4 h-4" />,
+                onClick: () => updateGoal(selectedGoal.id, { status: 'ACTIVE' })
+              } : {
+                label: selectedGoal.status === 'PAUSED' ? 'Возобновить' : 'На паузу',
+                icon: selectedGoal.status === 'PAUSED' ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />,
                 onClick: () => toggleGoalStatus(selectedGoal)
               }}
             />
+            {selectedGoal.status !== 'COMPLETED' && (
+              <button 
+                onClick={() => {
+                  updateGoal(selectedGoal.id, { status: 'COMPLETED' });
+                  setDetailOpen(false);
+                }}
+                className="w-full py-3 text-[10px] uppercase font-bold tracking-widest text-green-400 hover:text-green-300 transition-colors flex items-center justify-center gap-2 mt-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Отметить как достигнутую
+              </button>
+            )}
           </div>
           )})()}
       </Modal>

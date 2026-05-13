@@ -33,6 +33,7 @@ export const useFitnessStore = create<FitnessStore>()(
         set({
           profile: null,
           goals: [],
+          activeGoalId: null,
           workouts: [],
           weightHistory: [],
           analyses: [],
@@ -78,12 +79,24 @@ export const useFitnessStore = create<FitnessStore>()(
             return g;
           });
 
+          // Ensure activeGoalId is valid
+          let activeGoalId = state.activeGoalId;
+          const activeGoalExists = state.goals.find(g => g.id === activeGoalId);
+          if (!activeGoalId || !activeGoalExists) {
+            const firstActive = state.goals.find(g => g.status === 'ACTIVE' || g.status === 'SECONDARY');
+            if (firstActive) {
+              activeGoalId = firstActive.id;
+              needsIdCleanup = true;
+            }
+          }
+
           if (needsIdCleanup) {
             logger.store('Cleaned up entries with missing or invalid IDs');
             set({ 
               workouts: cleanedWorkouts, 
               weightHistory: cleanedWeight,
-              goals: cleanedGoals
+              goals: cleanedGoals,
+              activeGoalId: activeGoalId
             });
           }
 
@@ -126,6 +139,7 @@ export const useFitnessStore = create<FitnessStore>()(
 export const useTheme = () => useFitnessStore((state) => state.theme);
 export const useProfile = () => useFitnessStore((state) => state.profile);
 export const useGoals = () => useFitnessStore((state) => state.goals);
+export const useActiveGoalId = () => useFitnessStore((state) => state.activeGoalId);
 export const useWorkouts = () => useFitnessStore((state) => state.workouts);
 export const useWeightHistory = () => useFitnessStore((state) => state.weightHistory);
 export const useAnalyses = () => useFitnessStore((state) => state.analyses);
