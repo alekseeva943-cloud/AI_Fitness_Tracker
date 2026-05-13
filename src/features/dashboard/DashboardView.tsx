@@ -36,6 +36,8 @@ export const DashboardView: React.FC = () => {
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutEntry | null>(null);
   const [entryType, setEntryType] = useState<'workout' | 'weight'>('workout');
 
+  const [isWeightHistoryModalOpen, setWeightHistoryModalOpen] = useState(false);
+
   useEffect(() => {
     initialize();
   }, [initialize]);
@@ -63,6 +65,7 @@ export const DashboardView: React.FC = () => {
         ...data,
         duration: Number(data.duration),
         caloriesBurned: Number(data.caloriesBurned),
+        weight: data.weight ? Number(data.weight) : undefined,
       });
 
       // If weight was also provided during workout
@@ -91,9 +94,15 @@ export const DashboardView: React.FC = () => {
   };
 
   const handleDeleteWorkout = (id: string) => {
-    if (confirm('Вы уверены, что хотите удалить эту тренировку?')) {
+    if (window.confirm('Вы уверены, что хотите удалить эту тренировку?')) {
       removeWorkout(id);
       setDetailModalOpen(false);
+    }
+  };
+
+  const handleResetData = () => {
+    if (window.confirm('ВНИМАНИЕ! Это действие удалит ВСЕ ваши данные, включая цели и историю. Это невозможно отменить. Вы уверены?')) {
+      resetData();
     }
   };
 
@@ -130,7 +139,7 @@ export const DashboardView: React.FC = () => {
               {RU.ENTRIES.ADD_WEIGHT}
             </GradientButton>
             <button 
-              onClick={() => { if(confirm('Сбросить все данные?')) resetData(); }}
+              onClick={handleResetData}
               className="p-3 bg-secondary/50 hover:bg-red-500/10 text-muted-foreground hover:text-red-400 rounded-2xl transition-all"
               title="Сбросить прогресс"
             >
@@ -145,22 +154,30 @@ export const DashboardView: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <GlassCard className="min-h-[400px] flex flex-col justify-between p-8">
+            <GlassCard className="min-h-[400px] flex flex-col p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-primary" />
                   {RU.DASHBOARD.WEIGHT_TREND}
                 </h2>
-                {summary && (
-                  <div className="flex gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                    <span className="text-primary border-b border-primary/20 pb-1 flex items-center gap-2">
-                      {getTrendIcon(summary.weight.isPlateau ? 'STAGNATING' : (summary.weight.weeklyChange < 0 ? 'IMPROVING' : 'DECLINING'))}
-                      ИИ Анализ: {summary.weight.isPlateau ? 'Плато' : (summary.weight.weeklyChange < 0 ? 'Снижение' : 'Стабильно')}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center gap-4">
+                  {summary && (
+                    <div className="flex gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                      <span className="text-primary border-b border-primary/20 pb-1 flex items-center gap-2">
+                        {getTrendIcon(summary.weight.isPlateau ? 'STAGNATING' : (summary.weight.weeklyChange < 0 ? 'IMPROVING' : 'DECLINING'))}
+                        ИИ Анализ: {summary.weight.isPlateau ? 'Плато' : (summary.weight.weeklyChange < 0 ? 'Снижение' : 'Стабильно')}
+                      </span>
+                    </div>
+                  )}
+                  <button 
+                    onClick={() => setWeightHistoryModalOpen(true)}
+                    className="text-[10px] uppercase font-bold tracking-widest text-primary hover:text-primary/80 transition-colors bg-primary/10 px-2 py-1 rounded-md"
+                  >
+                    История
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 border-t border-border mt-4 pt-6">
+              <div className="flex-1 mt-4">
                 {weightHistory.length > 1 ? (
                   <WeightChart data={weightHistory} />
                 ) : (
@@ -171,6 +188,55 @@ export const DashboardView: React.FC = () => {
                 )}
               </div>
             </GlassCard>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <GlassCard className="p-6 bg-primary/5 border border-primary/10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                    <Scale className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Текущий вес</p>
+                    <p className="text-2xl font-bold">{summary?.weight.currentWeight ?? '--'} кг</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {summary?.weight.totalChange !== undefined 
+                    ? `Всего ${summary.weight.totalChange < 0 ? 'сброшено' : 'набрано'} ${Math.abs(summary.weight.totalChange).toFixed(1)} кг с начала отслеживания.`
+                    : 'Начните регулярно взвешиваться для точного анализа.'}
+                </p>
+              </GlassCard>
+
+              <GlassCard className="p-6 bg-secondary/30">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Последние замеры</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {weightHistory.slice(0, 3).map((w) => (
+                    <div key={w.id} className="flex justify-between items-center text-sm py-1 border-b border-white/5 last:border-0">
+                      <span className="text-muted-foreground">{formatDate(w.date)}</span>
+                      <span className="font-bold">{w.value} кг</span>
+                    </div>
+                  ))}
+                  {weightHistory.length === 0 && (
+                    <p className="text-sm text-muted-foreground italic">Данных о весе пока нет</p>
+                  )}
+                  {weightHistory.length > 3 && (
+                    <button 
+                      onClick={() => setWeightHistoryModalOpen(true)}
+                      className="text-[10px] text-primary hover:underline w-full text-center mt-2"
+                    >
+                      Смотреть всё
+                    </button>
+                  )}
+                </div>
+              </GlassCard>
+            </div>
 
             <AIRecommendationsSection />
           </div>
@@ -271,6 +337,38 @@ export const DashboardView: React.FC = () => {
         <EntryForm type={entryType} onSubmit={handleEntrySubmit} />
       </Modal>
 
+      <Modal isOpen={isWeightHistoryModalOpen} onClose={() => setWeightHistoryModalOpen(false)} title="История взвешиваний">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
+          {weightHistory.length > 0 ? (
+            weightHistory.map((entry) => (
+              <div key={entry.id} className="flex justify-between items-center p-4 bg-secondary/30 rounded-2xl border border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Scale className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg">{entry.value} {entry.unit}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDate(entry.date)}</p>
+                  </div>
+                </div>
+                {/* Optional: Add delete button for weight too if needed */}
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-12 opacity-40">
+              <Scale className="w-12 h-12 mx-auto mb-3" />
+              <p>История замеров пуста</p>
+            </div>
+          )}
+        </div>
+        <GradientButton 
+          className="w-full mt-6" 
+          onClick={() => { setWeightHistoryModalOpen(false); setEntryType('weight'); setEntryModalOpen(true); }}
+        >
+          Добавить замер
+        </GradientButton>
+      </Modal>
+
       <Modal isOpen={isDetailModalOpen} onClose={() => setDetailModalOpen(false)} title="Детали активности">
         {selectedWorkout && (
           <div className="space-y-6 p-2">
@@ -303,6 +401,16 @@ export const DashboardView: React.FC = () => {
                 <p className="text-lg font-medium">{selectedWorkout.caloriesBurned} ккал</p>
               </div>
             </div>
+
+            {selectedWorkout.weight && (
+              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
+                  <Scale className="w-3 h-3" />
+                  Вес при замере
+                </div>
+                <p className="text-lg font-medium">{selectedWorkout.weight} кг</p>
+              </div>
+            )}
 
             {selectedWorkout.notes && (
               <div className="space-y-2">

@@ -4,7 +4,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { EntryForm } from '../entries/components/EntryForm';
-import { Plus, Dumbbell, Trash2, Clock, Calendar, ExternalLink, Filter, ChevronRight, Flame, FileText } from 'lucide-react';
+import { Plus, Dumbbell, Trash2, Clock, Calendar, ExternalLink, Filter, ChevronRight, Flame, FileText, Scale } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import { cn } from '../../lib/utils';
 import { WorkoutEntry } from '../../types';
@@ -32,6 +32,7 @@ export const WorkoutsView: React.FC = () => {
       ...data,
       duration: Number(data.duration),
       caloriesBurned: Number(data.caloriesBurned),
+      weight: data.weight ? Number(data.weight) : undefined,
     });
 
     if (data.weight) {
@@ -184,6 +185,16 @@ export const WorkoutsView: React.FC = () => {
                 <p className="text-lg font-medium">{selectedWorkout.caloriesBurned} ккал</p>
               </div>
             </div>
+
+            {selectedWorkout.weight && (
+              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
+                  <Scale className="w-3 h-3" />
+                  Вес при замере
+                </div>
+                <p className="text-lg font-medium">{selectedWorkout.weight} кг</p>
+              </div>
+            )}
 
             {selectedWorkout.notes && (
               <div className="space-y-2">

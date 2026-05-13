@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "../../lib/utils";
 import { motion } from "motion/react";
 
-interface GlassCardProps {
+interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   animate?: boolean;
@@ -11,7 +11,8 @@ interface GlassCardProps {
 export const GlassCard: React.FC<GlassCardProps> = ({ 
   children, 
   className,
-  animate = true 
+  animate = true,
+  ...props
 }) => {
   const Component = animate ? motion.div : 'div';
   
@@ -25,6 +26,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         "glass dashboard-card overflow-hidden",
         className
       )}
+      {...props}
     >
       {children}
     </Component>

@@ -37,7 +37,7 @@ export const useFitnessStore = create<FitnessStore>()(
           analyses: [],
           isDemoMode: false
         });
-        localStorage.removeItem('fitness-tracker-storage-v2');
+        // set() triggers persist write automatically.
       },
 
       initialize: () => {

@@ -25,7 +25,7 @@ export const DemoModeBanner: React.FC = () => {
         variant="outline" 
         size="sm" 
         onClick={() => {
-          if (confirm('Вы уверены, что хотите очистить демонстрационные данные и сбросить прогресс?')) {
+          if (window.confirm('Вы уверены, что хотите очистить демонстрационные данные и сбросить прогресс?')) {
             resetData();
           }
         }}
