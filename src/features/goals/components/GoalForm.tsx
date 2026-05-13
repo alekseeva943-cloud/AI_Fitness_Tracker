@@ -24,7 +24,7 @@ interface GoalFormProps {
 }
 
 export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCancel }) => {
-  const profile = useFitnessStore(state => state.profile);
+  const { profile, weightHistory } = useFitnessStore();
   const [selectedType, setSelectedType] = useState<GoalType>(initialData?.type || GoalType.WEIGHT_LOSS);
   const [title, setTitle] = useState(initialData?.title || '');
   const [showPresets, setShowPresets] = useState(false);
@@ -32,18 +32,27 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
 
   const metric = Object.values(METRICS).find(m => m.compatibleGoalTypes?.includes(selectedType)) || METRICS.weight;
 
-  // Get baseline from profile
+  // Get baseline from profile or latest entry
   const getBaselineValue = () => {
     if (initialData?.startValue !== undefined) return initialData.startValue;
     
-    // Exact match in baselines
+    // 1. Check latest weight history if it's a weight metric
+    if (metric.id === 'weight' && weightHistory && weightHistory.length > 0) {
+      // Sort by date to get the absolute latest
+      const latest = [...weightHistory].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0];
+      if (latest && latest.value > 0) return latest.value;
+    }
+
+    // 2. Exact match in baselines
     const baseline = profile?.baselines?.find(b => b.id === metric.id);
     if (baseline && baseline.value > 0) return baseline.value;
     
-    // Fallback for weight specifically
+    // 3. Fallback for weight specifically from profile
     if (metric.id === 'weight' && profile?.startingWeight) return profile.startingWeight;
     
-    // Look for similar named metric if id changed
+    // 4. Look for similar named metric
     const fuzzyBaseline = profile?.baselines?.find(b => 
       b.name.toLowerCase().includes(metric.label.toLowerCase()) || 
       metric.label.toLowerCase().includes(b.name.toLowerCase())

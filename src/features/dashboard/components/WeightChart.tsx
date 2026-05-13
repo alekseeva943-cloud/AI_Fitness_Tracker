@@ -68,7 +68,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
         const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
         return {
           dateKey,
-          displayDate: formatDate(dateKey),
+          displayDate: formatDate(new Date(dateKey)),
           current: Number(avg.toFixed(1)),
           forecast: null as number | null,
           goal: goal?.targetValue
@@ -195,7 +195,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
             fill="url(#colorValue)" 
             animationDuration={1500}
             activeDot={{ r: 8, fill: '#DFFF00', stroke: '#000', strokeWidth: 3 }}
-            connectNulls
+            connectNulls={true}
           />
 
           <Area 
@@ -208,7 +208,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({ data, goal, forecasted
             fillOpacity={1} 
             fill="url(#colorForecast)" 
             animationDuration={2500}
-            connectNulls
+            connectNulls={true}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -456,8 +456,12 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      <Modal isOpen={isGoalModalOpen} onClose={() => setGoalModalOpen(false)} title="Установить цель">
-        <GoalForm onSubmit={handleGoalSubmit} />
+      <Modal 
+        isOpen={isGoalModalOpen} 
+        onClose={() => setGoalModalOpen(false)} 
+        title={activeGoal ? "Редактировать цель" : "Установить цель"}
+      >
+        <GoalForm initialData={activeGoal} onSubmit={handleGoalSubmit} onCancel={() => setGoalModalOpen(false)} />
       </Modal>
 
       <Modal isOpen={isEntryModalOpen} onClose={() => setEntryModalOpen(false)} title={entryType === 'workout' ? 'Добавить тренировку' : 'Новый замер веса'}>
