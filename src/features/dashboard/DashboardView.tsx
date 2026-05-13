@@ -234,7 +234,7 @@ export const DashboardView: React.FC = () => {
                 </div>
               </div>
               <div className="flex-1 mt-4">
-                {weightHistory.length > 1 ? (
+                {weightHistory.length > 0 ? (
                   <WeightChart 
                     data={weightHistory} 
                     goal={activeGoal} 
@@ -243,7 +243,7 @@ export const DashboardView: React.FC = () => {
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-4">
                     <Scale className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">Добавьте хотя бы два замера веса для анализа динамики</p>
+                    <p className="text-muted-foreground">Добавьте первый замер веса для начала анализа</p>
                   </div>
                 )}
               </div>

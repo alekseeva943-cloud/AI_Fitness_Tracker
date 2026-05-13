@@ -22,11 +22,10 @@ export const createEntriesSlice: StateCreator<
   weightHistory: [],
   addWorkout: (workout) => set((state: any) => {
     if (state.isDemoMode) {
+      // Transition out of demo mode but keep context if possible, 
+      // or at least don't wipe goals/profile
       return { 
-        workouts: [workout], 
-        weightHistory: [], 
-        goals: [], 
-        analyses: [], 
+        workouts: [workout, ...state.workouts], 
         isDemoMode: false 
       };
     }
@@ -35,10 +34,7 @@ export const createEntriesSlice: StateCreator<
   addWeightEntry: (entry) => set((state: any) => {
     if (state.isDemoMode) {
       return { 
-        workouts: [], 
-        weightHistory: [entry], 
-        goals: [], 
-        analyses: [], 
+        weightHistory: [entry, ...state.weightHistory], 
         isDemoMode: false 
       };
     }

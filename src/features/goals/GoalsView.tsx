@@ -300,7 +300,7 @@ export const GoalsView: React.FC = () => {
                   <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60">Визуальный прогресс</h4>
                   <p className="text-2xl font-bold text-primary">{Math.round(currentProgress)}%</p>
                </div>
-               <div className="h-[200px] w-full bg-secondary/20 rounded-3xl p-4 border border-white/5">
+               <div className="h-[300px] w-full bg-secondary/20 rounded-3xl p-4 border border-white/5">
                  <WeightChart 
                    data={weightHistory} 
                    goal={selectedGoal} 
