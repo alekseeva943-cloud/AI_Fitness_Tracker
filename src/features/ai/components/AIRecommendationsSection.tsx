@@ -5,6 +5,7 @@ import { GradientButton } from "../../../components/ui/GradientButton";
 import { useFitnessStore, useAnalysisRequest } from "../../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../../analytics/selectors/fitnessSelectors";
 import { AIRequestManager } from "../../../services/requests/aiRequests";
+import { cn } from "../../../lib/utils";
 
 export const AIRecommendationsSection: React.FC = () => {
   const [localResult, setLocalResult] = useState<any>(null);

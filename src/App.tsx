@@ -29,6 +29,10 @@ const PlaceholderView = ({ title }: { title: string }) => (
 );
 
 export default function App() {
+  useEffect(() => {
+    logger.log('system', 'App root component mounted');
+  }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>

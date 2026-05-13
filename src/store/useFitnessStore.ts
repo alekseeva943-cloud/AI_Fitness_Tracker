@@ -28,10 +28,24 @@ export const useFitnessStore = create<FitnessStore>()(
       ...createThemeSlice(set as any, get as any, api as any),
 
       initialize: () => {
-        logger.store('Initializing store state');
-        const state = get();
-        if (state.goals.length === 0 && state.weightHistory.length === 0) {
-          logger.store('Populating with initial demo data');
+        try {
+          logger.store('Initializing store state');
+          const state = get();
+          
+          // Safety check for critical properties
+          if (!state.goals || !state.workouts || !state.weightHistory) {
+            logger.warn('Corrupted state detected, resetting to demo data');
+            set({ ...INITIAL_DEMO_STATE });
+            return;
+          }
+
+          if (state.goals.length === 0 && state.weightHistory.length === 0) {
+            logger.store('Populating empty store with initial demo data');
+            set({ ...INITIAL_DEMO_STATE });
+          }
+        } catch (err) {
+          logger.error('Store initialization failed', err);
+          // Fallback to demo data on total failure
           set({ ...INITIAL_DEMO_STATE });
         }
       },
@@ -39,9 +53,14 @@ export const useFitnessStore = create<FitnessStore>()(
     {
       name: 'fitness-tracker-storage-v2',
       storage: createJSONStorage(() => localStorage),
-      onRehydrateStorage: () => (state) => {
-        logger.store('Store rehydrated from localStorage', { hasState: !!state });
-      }
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          logger.error('Store hydration failed', error);
+        } else {
+          logger.store('Store rehydrated successfully', { hasState: !!state });
+        }
+      },
+      version: 1,
     }
   )
 );
