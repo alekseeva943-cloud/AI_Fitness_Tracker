@@ -11,11 +11,15 @@ import { logger } from "../../../lib/logger";
  */
 export const selectAnalyticsSummary = (state: FitnessState): AnalyticsSummary | null => {
   try {
-    const activeGoal = state.goals[0] || null; // Use first goal for primary analytics
+    const activeGoal = state.goals[0] || null; 
     
     const weightTrend = calculateWeightTrend(state.weightHistory, activeGoal);
     const workoutStats = calculateWorkoutStats(state.workouts);
     const goalProgress = calculateGoalProgress(activeGoal, weightTrend);
+
+    if (weightTrend) {
+      logger.log('analytics', `Weight: curr=${weightTrend.currentWeight}, totalDelta=${weightTrend.totalChange.toFixed(1)}kg, weeklyDelta=${weightTrend.weeklyChange.toFixed(1)}kg`);
+    }
 
     if (!weightTrend) return null;
 

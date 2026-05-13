@@ -12,6 +12,7 @@ interface StatCardProps {
   };
   icon?: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -20,10 +21,18 @@ export const StatCard: React.FC<StatCardProps> = ({
   unit,
   trend,
   icon,
-  className
+  className,
+  onClick
 }) => {
   return (
-    <GlassCard className={cn("p-7 flex flex-col gap-1 group", className)}>
+    <GlassCard 
+      onClick={onClick}
+      className={cn(
+        "p-7 flex flex-col gap-1 group transition-all duration-300",
+        onClick && "cursor-pointer hover:bg-white/5 active:scale-[0.98]",
+        className
+      )}
+    >
       <div className="flex justify-between items-start text-muted-foreground/60 mb-4">
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
         {icon && (

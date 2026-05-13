@@ -81,4 +81,5 @@ export interface FitnessState {
   workouts: WorkoutEntry[];
   weightHistory: WeightEntry[];
   analyses: AIAnalysis[];
+  isDemoMode?: boolean;
 }

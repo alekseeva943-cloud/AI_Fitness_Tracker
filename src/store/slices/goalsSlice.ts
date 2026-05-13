@@ -15,9 +15,18 @@ export const createGoalsSlice: StateCreator<
   GoalsSlice
 > = (set) => ({
   goals: [],
-  addGoal: (goal) => set((state: any) => ({ 
-    goals: [...state.goals, goal] 
-  })),
+  addGoal: (goal) => set((state: any) => {
+    if (state.isDemoMode) {
+      return {
+        goals: [goal],
+        workouts: [],
+        weightHistory: [],
+        analyses: [],
+        isDemoMode: false
+      };
+    }
+    return { goals: [...state.goals, goal] };
+  }),
   updateGoal: (id, updates) => set((state: any) => ({
     goals: state.goals.map((g: Goal) => g.id === id ? { ...g, ...updates } : g)
   })),

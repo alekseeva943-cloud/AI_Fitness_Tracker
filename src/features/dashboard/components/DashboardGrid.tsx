@@ -4,12 +4,15 @@ import { StatCard } from "../../../components/ui/StatCard";
 import { RU } from "../../../constants";
 import { Activity, Target, TrendingUp, Clock } from "lucide-react";
 import { AnalyticsSummary } from "../../analytics/types";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardGridProps {
   summary: AnalyticsSummary | null;
 }
 
 export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatCard 
@@ -17,6 +20,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
         value={summary?.goal.completionPercentage ?? 0}
         unit="%"
         icon={<Target className="w-4 h-4" />}
+        onClick={() => navigate('/goals')}
         trend={summary ? { 
           value: `${Math.abs(summary.weight.weeklyChange).toFixed(1)}кг`, 
           isPositive: summary.weight.weeklyChange < 0 
@@ -27,6 +31,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
         value={summary?.workouts.avgWorkoutsPerWeek ?? 0}
         unit="тр/нед"
         icon={<Activity className="w-4 h-4" />}
+        onClick={() => navigate('/workouts')}
         trend={summary ? { 
           value: `${summary.workouts.consistencyScore}%`, 
           isPositive: summary.workouts.consistencyScore > 70 
@@ -37,12 +42,14 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary }) => {
         value={summary?.workouts.avgDuration ?? 0}
         unit="мин"
         icon={<Clock className="w-4 h-4" />}
+        onClick={() => navigate('/workouts')}
       />
       <StatCard 
         label="Прогноз веса"
         value={summary?.weight.currentWeight ?? '--'}
         unit="кг"
         icon={<TrendingUp className="w-4 h-4" />}
+        onClick={() => navigate('/analytics')}
       />
     </div>
   );

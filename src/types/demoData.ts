@@ -18,10 +18,12 @@ export const INITIAL_DEMO_STATE: FitnessState = {
       type: GoalType.WEIGHT_LOSS,
       targetValue: 80,
       currentValue: 82.3,
+      startValue: 85.5,
       unit: 'кг',
       startDate: '2026-04-01T00:00:00.000Z',
       deadline: '2026-07-01T00:00:00.000Z',
       createdAt: '2026-04-01T00:00:00.000Z',
+      status: 'ACTIVE',
     }
   ],
   weightHistory: [
@@ -39,5 +41,6 @@ export const INITIAL_DEMO_STATE: FitnessState = {
     { id: 'ex4', date: '2026-05-05T08:00:00Z', type: 'Йога', duration: 45, caloriesBurned: 150 },
     { id: 'ex5', date: '2026-05-02T08:00:00Z', type: 'Силовая: Грудь', duration: 60, caloriesBurned: 480 },
   ],
-  analyses: []
+  analyses: [],
+  isDemoMode: true
 };

@@ -18,14 +18,34 @@ export const createEntriesSlice: StateCreator<
 > = (set) => ({
   workouts: [],
   weightHistory: [],
-  addWorkout: (workout) => set((state: any) => ({
-    workouts: [workout, ...state.workouts]
-  })),
-  addWeightEntry: (entry) => set((state: any) => ({
-    weightHistory: [entry, ...state.weightHistory].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-  })),
+  addWorkout: (workout) => set((state: any) => {
+    if (state.isDemoMode) {
+      return { 
+        workouts: [workout], 
+        weightHistory: [], 
+        goals: [], 
+        analyses: [], 
+        isDemoMode: false 
+      };
+    }
+    return { workouts: [workout, ...state.workouts] };
+  }),
+  addWeightEntry: (entry) => set((state: any) => {
+    if (state.isDemoMode) {
+      return { 
+        workouts: [], 
+        weightHistory: [entry], 
+        goals: [], 
+        analyses: [], 
+        isDemoMode: false 
+      };
+    }
+    return {
+      weightHistory: [entry, ...state.weightHistory].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+    };
+  }),
   removeWorkout: (id) => set((state: any) => ({
     workouts: state.workouts.filter((w: any) => w.id !== id)
   })),

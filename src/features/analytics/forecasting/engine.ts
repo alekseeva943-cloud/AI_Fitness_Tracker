@@ -5,20 +5,20 @@ import { addDays, differenceInDays } from "date-fns";
 export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | null): GoalProgress | null => {
   if (!goal) return null;
 
-  const current = goal.currentValue;
+  const current = trend ? trend.currentWeight : goal.currentValue;
   const target = goal.targetValue;
-  const initial = goal.type === GoalType.WEIGHT_LOSS ? trend?.startingWeight || current : current; // Simplified
+  const initial = goal.startValue; 
 
   // Completion Percentage
   let completionPercentage = 0;
   if (goal.type === GoalType.WEIGHT_LOSS) {
-    const totalToLose = Math.abs(initial - target);
-    const lostSoFar = Math.abs(initial - current);
-    completionPercentage = totalToLose > 0 ? (lostSoFar / totalToLose) * 100 : 100;
+    const totalToLose = initial - target;
+    const lostSoFar = initial - current;
+    completionPercentage = totalToLose > 0 ? (lostSoFar / totalToLose) * 100 : 0;
   } else if (goal.type === GoalType.MUSCLE_GAIN) {
     const totalToGain = target - initial;
     const gainedSoFar = current - initial;
-    completionPercentage = totalToGain > 0 ? (gainedSoFar / totalToGain) * 100 : 100;
+    completionPercentage = totalToGain > 0 ? (gainedSoFar / totalToGain) * 100 : 0;
   }
   
   completionPercentage = Math.max(0, Math.min(100, completionPercentage));
