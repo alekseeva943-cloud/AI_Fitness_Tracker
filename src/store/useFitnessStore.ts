@@ -20,6 +20,8 @@ export type FitnessStore = FitnessState &
     resetData: () => void;
   };
 
+const generateId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11);
+
 export const useFitnessStore = create<FitnessStore>()(
   persist(
     (set, get, api) => ({
@@ -52,14 +54,63 @@ export const useFitnessStore = create<FitnessStore>()(
 
       initialize: () => {
         try {
-          logger.store('Initializing store state (Auto-init disabled for diagnostics)');
-          // For diagnostics, we temporarily disable the cleanup and demo population logic
-          // to see if it contributes to the React crash loop.
-          
-          /* 
+          logger.store('Initializing store state');
           const state = get();
-          // ... cleanup logic ...
-          */
+          
+          // Cleanup step: Ensure all workouts and weight history have unique IDs
+          let needsIdCleanup = false;
+          const cleanedWorkouts = (state.workouts || []).map(w => {
+            if (!w.id || w.id === 'undefined') {
+              needsIdCleanup = true;
+              return { ...w, id: generateId() };
+            }
+            return w;
+          });
+
+          const cleanedWeight = (state.weightHistory || []).map(w => {
+            if (!w.id || w.id === 'undefined') {
+              needsIdCleanup = true;
+              return { ...w, id: generateId() };
+            }
+            return w;
+          });
+
+          const cleanedGoals = (state.goals || []).map(g => {
+            if (!g.id || g.id === 'undefined') {
+              needsIdCleanup = true;
+              return { ...g, id: generateId() };
+            }
+            return g;
+          });
+
+          // Ensure activeGoalId is valid
+          let activeGoalId = state.activeGoalId;
+          const activeGoalExists = (state.goals || []).find(g => g.id === activeGoalId);
+          if (!activeGoalId || !activeGoalExists) {
+            const firstActive = (state.goals || []).find(g => g.status === 'ACTIVE' || g.status === 'SECONDARY');
+            if (firstActive) {
+              activeGoalId = firstActive.id;
+              needsIdCleanup = true;
+            }
+          }
+
+          if (needsIdCleanup) {
+            logger.store('Cleaned up entries with missing or invalid IDs');
+            set({ 
+              workouts: cleanedWorkouts, 
+              weightHistory: cleanedWeight,
+              goals: cleanedGoals,
+              activeGoalId: activeGoalId
+            });
+          }
+
+          // If the user has already loaded some data (even 1 entry), don't auto-populate demo data
+          const hasData = (state.goals?.length > 0) || (state.workouts?.length > 0) || (state.weightHistory?.length > 0);
+          
+          if (!hasData && state.isDemoMode !== false) {
+             logger.store('Populating empty store with initial demo data');
+             set({ ...INITIAL_DEMO_STATE, isDemoMode: true });
+          }
         } catch (err) {
           logger.error('Store initialization failed', err);
         }

@@ -42,9 +42,12 @@ const PlaceholderView = ({ title }: { title: string }) => (
 );
 
 export default function App() {
+  const initialize = useFitnessStore(state => state.initialize);
+
   useEffect(() => {
+    initialize();
     logger.log('system', 'App root component mounted');
-  }, []);
+  }, [initialize]);
 
   return (
     <ErrorBoundary>

@@ -1,7 +1,7 @@
 import { UserProfile } from "../types";
 
 export const createDefaultProfile = (): UserProfile => ({
-  id: crypto.randomUUID(),
+  id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
   name: 'Пользователь',
   displayName: 'Пользователь',
   avatarUrl: undefined,

@@ -74,9 +74,11 @@ export const ProfileView: React.FC = () => {
   });
 
   const handleAddMeasurement = (metricId: string) => {
+    const generateId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11);
+    
     if (metricId === 'custom') {
       const newBaseline: MetricBaseline = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         name: 'Новый замер',
         value: 0,
         unit: 'ед.',
