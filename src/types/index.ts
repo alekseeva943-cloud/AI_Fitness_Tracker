@@ -115,13 +115,13 @@ export interface MetricBaseline {
 export interface UserProfile {
   id: string;
   name: string;
-  age: number;
-  gender: Gender;
-  height: number;
-  weight?: number;
-  bodyType?: BodyType;
-  activityLevel: ActivityLevel;
-  fitnessLevel?: FitnessLevel;
+  age: number | null;
+  gender: Gender | null;
+  height: number | null;
+  weight?: number | null;
+  bodyType?: BodyType | null;
+  activityLevel: ActivityLevel | null;
+  fitnessLevel?: FitnessLevel | null;
   
   // Health & Context
   injuries?: string[];
@@ -129,8 +129,8 @@ export interface UserProfile {
   limitations?: string[];
   
   // Daily & Lifestyle
-  sleepAverage?: number; // hours
-  stressLevel?: number; // 1-10
+  sleepAverage?: number | null; // hours
+  stressLevel?: number | null; // 1-10
   
   // Subjective / Textual data
   nutritionNotes?: string;

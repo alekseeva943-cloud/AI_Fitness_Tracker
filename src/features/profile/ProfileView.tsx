@@ -12,9 +12,50 @@ import { METRICS, getMetricsByCategory } from '../../constants/metrics';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const ProfileView: React.FC = () => {
+  const [isHydrated, setIsHydrated] = useState(false);
   const profile = useProfile();
   
-  if (!profile) return null;
+  useEffect(() => {
+    const checkHydration = () => {
+      if (useFitnessStore.persist.hasHydrated()) {
+        setIsHydrated(true);
+      } else {
+        const unsub = useFitnessStore.persist.onFinishHydration(() => {
+          setIsHydrated(true);
+        });
+        return unsub;
+      }
+    };
+    return checkHydration();
+  }, []);
+
+  if (!isHydrated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Загрузка профиля...</p>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="max-w-md mx-auto mt-20 text-center space-y-6">
+        <div className="p-8 bg-red-500/10 border border-red-500/20 rounded-3xl">
+          <h2 className="text-2xl font-black uppercase text-red-500 mb-2 tracking-tighter italic">Ошибка загрузки</h2>
+          <p className="text-muted-foreground text-sm uppercase font-black tracking-widest leading-relaxed">
+            Не удалось загрузить данные профиля. Пожалуйста, перезагрузите страницу или обратитесь в поддержку.
+          </p>
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+        >
+          Обновить страницу
+        </button>
+      </div>
+    );
+  }
 
   const updateProfile = useFitnessStore(state => state.updateProfile);
   const updateBaseline = useFitnessStore(state => state.updateBaseline);

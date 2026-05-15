@@ -8,6 +8,7 @@ import { createEntriesSlice, EntriesSlice } from './slices/entriesSlice';
 import { createAISlice, AISlice } from './slices/aiSlice';
 import { createThemeSlice, ThemeSlice } from './slices/themeSlice';
 import { logger } from '../lib/logger';
+import { createDefaultProfile } from '../factories/createDefaultProfile';
 
 export type FitnessStore = FitnessState & 
   ProfileSlice & 
@@ -28,10 +29,12 @@ export const useFitnessStore = create<FitnessStore>()(
       ...createAISlice(set as any, get as any, api as any),
       ...createThemeSlice(set as any, get as any, api as any),
 
+      profile: createDefaultProfile(), // Initial state before hydration
+
       resetData: () => {
         logger.store('Resetting all data to empty state');
         set({
-          profile: null,
+          profile: createDefaultProfile(),
           goals: [],
           activeGoalId: null,
           workouts: [],
@@ -41,7 +44,7 @@ export const useFitnessStore = create<FitnessStore>()(
         });
         // Clear explicitly to be safe as well
         try {
-          localStorage.removeItem('fitness-tracker-storage-v2');
+          localStorage.removeItem('fitness-tracker-storage-v3');
         } catch (e) {
           logger.error('Failed to clear localStorage', e);
         }
@@ -55,7 +58,7 @@ export const useFitnessStore = create<FitnessStore>()(
           // Cleanup step: Ensure all workouts and weight history have unique IDs
           // This fixes a bug where new entries might have received 'undefined' as an ID
           let needsIdCleanup = false;
-          const cleanedWorkouts = state.workouts.map(w => {
+          const cleanedWorkouts = (state.workouts || []).map(w => {
             if (!w.id || w.id === 'undefined') {
               needsIdCleanup = true;
               return { ...w, id: crypto.randomUUID() };
@@ -63,7 +66,7 @@ export const useFitnessStore = create<FitnessStore>()(
             return w;
           });
 
-          const cleanedWeight = state.weightHistory.map(w => {
+          const cleanedWeight = (state.weightHistory || []).map(w => {
             if (!w.id || w.id === 'undefined') {
               needsIdCleanup = true;
               return { ...w, id: crypto.randomUUID() };
@@ -71,7 +74,7 @@ export const useFitnessStore = create<FitnessStore>()(
             return w;
           });
 
-          const cleanedGoals = state.goals.map(g => {
+          const cleanedGoals = (state.goals || []).map(g => {
             if (!g.id || g.id === 'undefined') {
               needsIdCleanup = true;
               return { ...g, id: crypto.randomUUID() };
@@ -81,9 +84,9 @@ export const useFitnessStore = create<FitnessStore>()(
 
           // Ensure activeGoalId is valid
           let activeGoalId = state.activeGoalId;
-          const activeGoalExists = state.goals.find(g => g.id === activeGoalId);
+          const activeGoalExists = (state.goals || []).find(g => g.id === activeGoalId);
           if (!activeGoalId || !activeGoalExists) {
-            const firstActive = state.goals.find(g => g.status === 'ACTIVE' || g.status === 'SECONDARY');
+            const firstActive = (state.goals || []).find(g => g.status === 'ACTIVE' || g.status === 'SECONDARY');
             if (firstActive) {
               activeGoalId = firstActive.id;
               needsIdCleanup = true;
@@ -101,14 +104,10 @@ export const useFitnessStore = create<FitnessStore>()(
           }
 
           // If the user has already loaded some data (even 1 entry), don't auto-populate demo data
-          if (state.goals.length > 0 || state.workouts.length > 0 || state.weightHistory.length > 0) {
+          if ((state.goals && state.goals.length > 0) || (state.workouts && state.workouts.length > 0) || (state.weightHistory && state.weightHistory.length > 0)) {
             return;
           }
 
-          // If we are strictly empty and not explicitly marked as NOT demo, we can show demo data
-          // But according to user request: "Users do not understand where demo data comes from"
-          // Let's populate demo data only if they haven't "cleaned" the state yet.
-          // Since resetData sets isDemoMode to false, we can use that.
           if (state.isDemoMode !== false) {
              logger.store('Populating empty store with initial demo data');
              set({ ...INITIAL_DEMO_STATE, isDemoMode: true });
@@ -121,16 +120,38 @@ export const useFitnessStore = create<FitnessStore>()(
       },
     }),
     {
-      name: 'fitness-tracker-storage-v2',
+      name: 'fitness-tracker-storage-v3',
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state, error) => {
+        console.group('[STORE HYDRATION]');
+        console.log('hydrated state:', state);
+        console.log('profile:', state?.profile);
+        console.log('error:', error);
+        console.groupEnd();
+
         if (error) {
           logger.error('Store hydration failed', error);
         } else {
           logger.store('Store rehydrated successfully', { hasState: !!state });
+          // Explicitly call initialize after hydration to ensure consistency
+          state?.initialize();
         }
       },
-      version: 1,
+      version: 3,
+      migrate: (persistedState, version) => {
+        const state = persistedState as any;
+        if (version < 3) {
+          logger.store(`Migrating store from version ${version} to 3`);
+          return {
+            ...state,
+            profile: {
+              ...createDefaultProfile(),
+              ...(state?.profile || {}),
+            },
+          };
+        }
+        return state;
+      },
     }
   )
 );
