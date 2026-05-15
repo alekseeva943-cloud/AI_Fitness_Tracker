@@ -15,9 +15,9 @@ export interface AIActionOptions {
 
 export interface AIResponse {
   summary: string;
-  trend?: 'IMPROVING' | 'STAGNATING' | 'DECLINING';
+  trend?: 'IMPROVING' | 'STAGNATING' | 'DECLINING' | 'STABLE';
   explanation?: string;
-  mainRisk?: string;
+  mainRisk?: string | null;
   forecast?: string;
   recommendations: {
     type: string;
@@ -27,4 +27,10 @@ export interface AIResponse {
   }[];
   confidence?: number;
   reasoning?: string;
+  insights?: string[];
+  trends?: string[];
+  warnings?: string[];
+  overallProgress?: number;
+  date?: string;
+  success?: boolean;
 }

@@ -80,16 +80,37 @@ async function startServer() {
         // Try to return as JSON if it looks like JSON, otherwise return as text object
         try {
           const parsed = JSON.parse(rawContent);
+          
+          // Ensure structure compatibility
+          const response = {
+            success: true,
+            summary: parsed.summary || parsed.text || "Анализ завершен",
+            recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+            insights: Array.isArray(parsed.insights) ? parsed.insights : [],
+            trends: Array.isArray(parsed.trends) ? parsed.trends : [],
+            warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+            overallProgress: typeof parsed.overallProgress === 'number' ? parsed.overallProgress : 0,
+            trend: parsed.trend || "STABLE",
+            mainRisk: parsed.mainRisk || null
+          };
+
           console.log('[AI ROUTE SUCCESS RESPONSE (JSON)]');
           console.groupEnd();
-          return res.status(200).json(parsed);
+          return res.status(200).json(response);
         } catch (e) {
-          console.warn("[AI WARNING] Response was not valid JSON, returning as text object");
-          console.log('[AI ROUTE SUCCESS RESPONSE (TEXT)]');
+          console.warn("[AI WARNING] Response was not valid JSON, returning normalized structure");
+          console.log('[AI ROUTE SUCCESS RESPONSE (NORMALIZED TEXT)]');
           console.groupEnd();
           return res.status(200).json({ 
             success: true, 
-            text: rawContent,
+            summary: rawContent,
+            recommendations: [],
+            insights: [],
+            trends: [],
+            warnings: [],
+            overallProgress: 0,
+            trend: "STABLE",
+            mainRisk: null,
             isRawText: true 
           });
         }

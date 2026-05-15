@@ -84,13 +84,15 @@ export class AIOrchestrator {
       }
 
       try {
-        const parsedResponse = JSON.parse(rawText) as AIResponse;
-        logger.log('ai', '[AI RESPONSE] Success');
+        const rawJson = JSON.parse(rawText);
+        const parsedResponse = this.normalizeResponse(rawJson);
+        logger.log('ai', '[AI RESPONSE] Success Normalized');
         console.groupEnd();
         return parsedResponse;
       } catch (parseError) {
         console.error('[AI RESPONSE PARSE ERROR]', parseError);
-        throw new Error('Failed to parse AI response as JSON');
+        // Fallback to minimal valid structure
+        return this.normalizeResponse({ text: rawText });
       }
     } catch (error: any) {
       console.error('[AI ERROR DETAILS]', {
@@ -101,6 +103,23 @@ export class AIOrchestrator {
       console.groupEnd();
       throw error;
     }
+  }
+
+  private static normalizeResponse(data: any): AIResponse {
+    const isSuccess = data.success !== false;
+    
+    return {
+      success: isSuccess,
+      summary: data.summary || data.text || (typeof data === 'string' ? data : "Анализ завершен"),
+      recommendations: Array.isArray(data.recommendations) ? data.recommendations : [],
+      insights: Array.isArray(data.insights) ? data.insights : [],
+      trends: Array.isArray(data.trends) ? data.trends : [],
+      warnings: Array.isArray(data.warnings) ? data.warnings : [],
+      overallProgress: typeof data.overallProgress === 'number' ? data.overallProgress : (data.completionPercentage || 0),
+      trend: data.trend || "STABLE",
+      mainRisk: data.mainRisk || null,
+      date: data.date || new Date().toISOString()
+    };
   }
 
   private static getSystemPrompt(type: AIActionType): string {

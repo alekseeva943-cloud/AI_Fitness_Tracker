@@ -263,7 +263,7 @@ export const AnalyticsView: React.FC = () => {
 
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
             <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground px-1">Последние 10 записей</p>
-            {workouts.slice(0, 10).map(workout => (
+            {(workouts || []).slice(0, 10).map(workout => (
               <div key={workout.id} className="flex justify-between items-center p-3 border border-white/5 bg-white/5 rounded-xl">
                 <div className="flex items-center gap-3">
                   <Dumbbell className="w-4 h-4 text-primary" />

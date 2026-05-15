@@ -153,7 +153,7 @@ export const AIChat: React.FC = () => {
               {/* Metadata / Suggestions from AI */}
               {msg.role === 'assistant' && msg.metadata?.recommendations && (
                 <div className="grid grid-cols-1 gap-2 mt-3">
-                   {msg.metadata.recommendations.slice(0, 1).map((rec: any, rIdx: number) => (
+                   {(msg.metadata.recommendations || []).slice(0, 1).map((rec: any, rIdx: number) => (
                      <div key={rIdx} className="p-3 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-3">
                         <Zap className="w-3 h-3 text-primary" />
                         <p className="text-[10px] font-bold italic">{rec.text}</p>

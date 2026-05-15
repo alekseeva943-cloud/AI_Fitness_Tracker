@@ -139,7 +139,7 @@ export const AIRecommendationsSection: React.FC = () => {
             </GlassCard>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {latestAnalysis.recommendations.slice(0, 4).map((rec: any, idx: number) => (
+              {(latestAnalysis.recommendations || []).slice(0, 4).map((rec: any, idx: number) => (
                 <GlassCard 
                   key={rec.id} 
                   delay={idx * 0.1}

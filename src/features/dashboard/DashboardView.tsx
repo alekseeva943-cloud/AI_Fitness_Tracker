@@ -442,7 +442,7 @@ export const DashboardView: React.FC = () => {
                            Последние замеры
                         </p>
                         <div className="space-y-2">
-                          {weightHistory.slice(0, 3).map((w) => (
+                          {(weightHistory || []).slice(0, 3).map((w) => (
                             <div 
                               key={w.id} 
                               onClick={(e) => {
@@ -567,11 +567,11 @@ export const DashboardView: React.FC = () => {
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-semibold">{RU.ENTRIES.TITLE}</h3>
                     <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
-                      Последние {workouts.slice(0, 4).length}
+                      Последние {(workouts || []).slice(0, 4).length}
                     </span>
                   </div>
                   <div className="space-y-3">
-                    {workouts.slice(0, 5).map(workout => (
+                    {(workouts || []).slice(0, 5).map(workout => (
                       <div 
                         key={workout.id} 
                         onClick={() => openWorkoutDetail(workout)}
