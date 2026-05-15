@@ -1,6 +1,7 @@
 import { FitnessState, UserProfile } from '../../types';
 import { METRICS } from '../../constants/metrics';
 import { AIMemoryManager } from '../memory/memory-manager';
+import { logger } from '../../lib/logger';
 
 export interface AIUserContext {
   profile: UserProfile | null;
@@ -33,71 +34,160 @@ export interface AIUserContext {
 
 export class AIContextBuilder {
   static async buildUserContext(state: FitnessState, analytics: any): Promise<AIUserContext> {
-    const memory = await AIMemoryManager.updateMemory(state.analyses || []);
-    const goal = state.goals.find(g => g.id === state.activeGoalId) || null;
-    const currentMetric = goal ? METRICS[goal.metricId] || METRICS.weight : METRICS.weight;
+    console.group('[AI CONTEXT TRACE]');
+    logger.log('ai', '[AI CONTEXT START] Initializing context assembly...');
 
-    const workoutDiversity = state.workouts.reduce((acc: Record<string, number>, w) => {
-      const cat = w.category || 'OTHER';
-      acc[cat] = (acc[cat] || 0) + 1;
-      return acc;
-    }, {});
-
-    const recentWorkouts = state.workouts.slice(0, 5).map(w => ({
-      type: w.type,
-      category: w.category,
-      duration: w.duration,
-      intensity: w.heartRate ? (w.heartRate > 150 ? 'HIGH' : 'MODERATE') : 'UNKNOWN',
-      calories: w.caloriesBurned,
-      date: w.date
-    }));
-
-    return {
-      profile: state.profile,
-      activeGoals: state.goals.filter(g => g.status === 'ACTIVE'),
-      currentGoal: goal ? {
-        title: goal.title,
-        type: goal.type,
-        metricLabel: currentMetric.label,
-        targetValue: goal.targetValue,
-        unit: currentMetric.unit,
-        startValue: goal.startValue,
-        description: goal.motivation,
-        progress: analytics.goal.completionPercentage / 100,
-      } : null,
+    const context: any = {
+      profile: null,
+      activeGoals: [],
+      currentGoal: null,
       analytics: {
-        goal: analytics.goal,
-        trends: {
-          velocity: analytics.goal.velocity,
-          actualDirection: analytics.goal.velocity < 0 ? 'down' : (analytics.goal.velocity > 0 ? 'up' : 'stable'),
-          isTrendMatchingGoal: analytics.goal.status !== 'WRONG_DIRECTION' && analytics.goal.status !== 'STAGNANT',
-        },
-        overallProgress: analytics.summary.overallProgress
+        goal: { status: 'UNKNOWN', velocity: 0 },
+        trends: { velocity: 0, actualDirection: 'stable', isTrendMatchingGoal: true },
+        overallProgress: 0
       },
       activity: {
+        workoutDiversity: {},
+        recentWorkouts: [],
+        totalWorkouts: 0,
+        weeklyFrequency: 0
+      },
+      metrics: {
+        weightHistory: [],
+        latestBaselines: []
+      },
+      memory: {
+        recentAnalyses: []
+      },
+      systemMemory: null
+    };
+
+    // SECTION: PROFILE
+    try {
+      context.profile = state.profile || null;
+      logger.log('ai', '[STEP SUCCESS] Profile mapped');
+    } catch (e) {
+      console.error('[CONTEXT SECTION FAILED] profile', e);
+    }
+
+    // SECTION: GOALS
+    try {
+      context.activeGoals = state.goals?.filter(g => g.status === 'ACTIVE') || [];
+      const goal = state.goals?.find(g => g.id === state.activeGoalId) || null;
+      
+      if (goal) {
+        const currentMetric = METRICS[goal.metricId] || METRICS.weight;
+        context.currentGoal = {
+          title: goal.title,
+          type: goal.type,
+          metricLabel: currentMetric.label,
+          targetValue: goal.targetValue,
+          unit: currentMetric.unit,
+          startValue: goal.startValue,
+          description: goal.motivation,
+          progress: (analytics?.goal?.completionPercentage ?? 0) / 100,
+        };
+      }
+      logger.log('ai', '[STEP SUCCESS] Goals mapped');
+    } catch (e) {
+      console.error('[CONTEXT SECTION FAILED] goals', e);
+    }
+
+    // SECTION: ANALYTICS
+    try {
+      console.log('[AI SAFE CHECK] Analytics raw input:', analytics);
+      
+      const safeAnalytics = analytics || {};
+      const safeGoal = safeAnalytics.goal || {};
+      const safeSummary = safeAnalytics.summary || {};
+
+      context.analytics.goal = safeGoal;
+      
+      if (safeGoal) {
+        const vel = safeGoal.velocity ?? 0;
+        context.analytics.trends = {
+          velocity: vel,
+          actualDirection: vel < 0 ? 'down' : (vel > 0 ? 'up' : 'stable'),
+          isTrendMatchingGoal: safeGoal.status !== 'WRONG_DIRECTION' && safeGoal.status !== 'STAGNANT',
+        };
+      }
+      
+      // EXTREMELY SAFE ACCESS for overallProgress
+      context.analytics.overallProgress = safeSummary.overallProgress ?? 0;
+      
+      console.log('[AI SAFE CHECK] Context Analytics mapped:', context.analytics);
+      
+      logger.log('ai', '[STEP SUCCESS] Analytics mapped');
+    } catch (e) {
+      console.error('[CONTEXT SECTION FAILED] analytics critical error:', e);
+    }
+
+    // SECTION: ACTIVITY
+    try {
+      const workoutDiversity = (state.workouts || []).reduce((acc: Record<string, number>, w) => {
+        const cat = w.category || 'OTHER';
+        acc[cat] = (acc[cat] || 0) + 1;
+        return acc;
+      }, {});
+
+      const recentWorkouts = (state.workouts || []).slice(0, 5).map(w => ({
+        type: w.type,
+        category: w.category,
+        duration: w.duration,
+        intensity: w.heartRate ? (w.heartRate > 150 ? 'HIGH' : 'MODERATE') : 'UNKNOWN',
+        calories: w.caloriesBurned,
+        date: w.date
+      }));
+
+      context.activity = {
         workoutDiversity,
         recentWorkouts,
-        totalWorkouts: state.workouts.length,
-        weeklyFrequency: state.workouts.filter(w => {
+        totalWorkouts: state.workouts?.length || 0,
+        weeklyFrequency: (state.workouts || []).filter(w => {
           const d = new Date(w.date);
           const weekAgo = new Date();
           weekAgo.setDate(weekAgo.getDate() - 7);
           return d > weekAgo;
         }).length
-      },
-      metrics: {
-        weightHistory: state.weightHistory.slice(-5).map(w => ({ date: w.date, value: w.value })),
+      };
+      logger.log('ai', '[STEP SUCCESS] Activity mapped');
+    } catch (e) {
+      console.error('[CONTEXT SECTION FAILED] activity', e);
+    }
+
+    // SECTION: METRICS
+    try {
+      context.metrics = {
+        weightHistory: (state.weightHistory || []).slice(-5).map(w => ({ date: w.date, value: w.value })),
         latestBaselines: state.profile?.baselines?.slice(-5) || []
-      },
-      memory: {
-        recentAnalyses: state.analyses.slice(0, 3).map(a => ({
+      };
+      logger.log('ai', '[STEP SUCCESS] Metrics mapped');
+    } catch (e) {
+      console.error('[CONTEXT SECTION FAILED] metrics', e);
+    }
+
+    // SECTION: MEMORY
+    try {
+      context.memory = {
+        recentAnalyses: (state.analyses || []).slice(0, 3).map(a => ({
           date: a.date,
           summary: a.summary,
           trend: a.trend
         }))
-      },
-      systemMemory: memory
-    };
+      };
+      context.systemMemory = await AIMemoryManager.updateMemory(state.analyses || []).catch(e => {
+        console.error('[MEMORY UPDATE FAILED]', e);
+        return null;
+      });
+      logger.log('ai', '[STEP SUCCESS] Memory mapped');
+    } catch (e) {
+      console.error('[CONTEXT SECTION FAILED] memory', e);
+    }
+
+    console.log('[CONTEXT SHAPE]', JSON.stringify(context, null, 2));
+    console.groupEnd();
+
+    return context as AIUserContext;
   }
 
   static formatContextForPrompt(context: AIUserContext): string {
@@ -118,30 +208,44 @@ export class AIContextBuilder {
     prompt += `\n--- ACTIVE GOAL ---\n`;
     if (currentGoal) {
       prompt += `Goal: "${currentGoal.title}"\n`;
-      prompt += `Target: ${currentGoal.targetValue} ${currentGoal.unit} (Start: ${currentGoal.startValue}, Progress: ${Math.round(currentGoal.progress * 100)}%)\n`;
+      prompt += `Target: ${currentGoal.targetValue} ${currentGoal.unit} (Start: ${currentGoal.startValue}, Progress: ${Math.round((currentGoal.progress ?? 0) * 100)}%)\n`;
     } else {
       prompt += `No active goal.\n`;
     }
 
     prompt += `\n--- ANALYTICS ---\n`;
-    prompt += `Status: ${analytics.goal.status}\n`;
-    prompt += `Velocity: ${analytics.goal.velocity} ${currentGoal?.unit || ''}/week\n`;
-    prompt += `Trend: ${analytics.trends.actualDirection} (Matching target: ${analytics.trends.isTrendMatchingGoal ? 'YES' : 'NO'})\n`;
+    if (analytics && analytics.goal) {
+      prompt += `Status: ${analytics.goal.status || 'UNKNOWN'}\n`;
+      prompt += `Velocity: ${analytics.goal.velocity ?? 0} ${currentGoal?.unit || ''}/week\n`;
+      if (analytics.trends) {
+        prompt += `Trend: ${analytics.trends.actualDirection || 'stable'} (Matching target: ${analytics.trends.isTrendMatchingGoal ? 'YES' : 'NO'})\n`;
+      }
+    } else {
+      prompt += `Analytics data currently unavailable.\n`;
+    }
 
     prompt += `\n--- RECENT ACTIVITY ---\n`;
-    prompt += `Workouts/week: ${activity.weeklyFrequency}, Total: ${activity.totalWorkouts}\n`;
-    prompt += `Types: ${Object.entries(activity.workoutDiversity).map(([k, v]) => `${k}:${v}`).join(', ')}\n`;
-    prompt += `Last 3 sessions: ${activity.recentWorkouts.slice(0, 3).map(w => `${w.type}(${w.duration}min)`).join(', ')}\n`;
+    if (activity) {
+      prompt += `Workouts/week: ${activity.weeklyFrequency ?? 0}, Total: ${activity.totalWorkouts ?? 0}\n`;
+      if (activity.workoutDiversity) {
+        prompt += `Types: ${Object.entries(activity.workoutDiversity).map(([k, v]) => `${k}:${v}`).join(', ')}\n`;
+      }
+      if (activity.recentWorkouts?.length) {
+        prompt += `Last 3 sessions: ${activity.recentWorkouts.slice(0, 3).map(w => `${w.type}(${w.duration}min)`).join(', ')}\n`;
+      }
+    }
 
     prompt += `\n--- RECENT METRICS ---\n`;
-    if (metrics.weightHistory.length) {
-      prompt += `Weight: ${metrics.weightHistory.map(w => w.value).join(' -> ')}\n`;
-    }
-    if (metrics.latestBaselines.length) {
-      prompt += `Baselines: ${metrics.latestBaselines.map(b => `${b.name}:${b.value}${b.unit}`).join(', ')}\n`;
+    if (metrics) {
+      if (metrics.weightHistory?.length) {
+        prompt += `Weight: ${metrics.weightHistory.map(w => w.value).join(' -> ')}\n`;
+      }
+      if (metrics.latestBaselines?.length) {
+        prompt += `Baselines: ${metrics.latestBaselines.map(b => `${b.name}:${b.value}${b.unit}`).join(', ')}\n`;
+      }
     }
 
-    if (memory.recentAnalyses.length) {
+    if (memory?.recentAnalyses?.length) {
       prompt += `\n--- PREVIOUS AI INSIGHTS ---\n`;
       prompt += memory.recentAnalyses.map(a => `- ${a.date}: ${a.summary} (Trend: ${a.trend})`).join('\n');
     }

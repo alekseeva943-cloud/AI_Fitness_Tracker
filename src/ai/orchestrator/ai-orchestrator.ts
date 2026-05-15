@@ -2,6 +2,7 @@ import { AIActionType, AIActionOptions, AIResponse } from './types';
 import { FitnessState } from '../../types';
 import { AIContextBuilder } from '../context/context-builder';
 import { MINIMAL_ANALYST_PROMPT } from '../prompts/minimal';
+import { validateAIContext } from '../validation/context-validator';
 import { logger } from '../../lib/logger';
 
 export class AIOrchestrator {
@@ -14,7 +15,11 @@ export class AIOrchestrator {
 
     try {
       logger.log('ai', '[AI CONTEXT BUILT] Starting context assembly...');
-      const context = await AIContextBuilder.buildUserContext(state, analytics);
+      let context = await AIContextBuilder.buildUserContext(state, analytics);
+      
+      logger.log('ai', '[AI CONTEXT VALIDATION] Validating context shape...');
+      context = validateAIContext(context);
+
       const contextStr = AIContextBuilder.formatContextForPrompt(context);
       logger.log('ai', `[AI CONTEXT BUILT] Success. Length: ${contextStr.length} chars`);
 
