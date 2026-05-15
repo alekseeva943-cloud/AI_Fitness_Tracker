@@ -4,7 +4,7 @@ import { Sparkles, TrendingUp, Apple, Dumbbell, AlertTriangle, Zap, CheckCircle2
 import { GradientButton } from "../../../components/ui/GradientButton";
 import { useFitnessStore } from "../../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../../analytics/selectors/fitnessSelectors";
-import { AIRequestManager } from "../../../services/requests/aiRequests";
+import { AIActions } from "../../../ai/orchestrator/ai-actions";
 import { cn, formatDate } from "../../../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { AI_RECOMMENDATION_TYPE, AI_PRIORITY, AI_TREND } from "../../../constants/ai";
@@ -28,8 +28,11 @@ export const AIRecommendationsSection: React.FC = () => {
   };
 
   const handleDeepAnalysis = async () => {
-    if (!summary) return;
-    await AIRequestManager.performDeepAnalysis(summary);
+    try {
+      await AIActions.startDeepAnalysis();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const latestAnalysis = analyses[0];

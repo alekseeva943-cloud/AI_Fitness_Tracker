@@ -4,6 +4,8 @@ import { AIAnalyst } from '../analytics/components/AIAnalyst';
 import { Sparkles, Brain, ShieldCheck, TrendingUp } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 
+import { AIChat } from './components/AIChat';
+
 export const AIInsightsView: React.FC = () => {
   return (
     <div className="space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -32,10 +34,16 @@ export const AIInsightsView: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-12">
-        <AIAnalyst />
-        
-        {/* Methodology Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+        <div className="lg:col-span-3 space-y-12">
+          <AIAnalyst />
+        </div>
+        <div className="lg:col-span-2">
+          <AIChat />
+        </div>
+      </div>
+
+      {/* Methodology Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 border-t border-white/5">
            <div className="space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-primary">
@@ -66,6 +74,5 @@ export const AIInsightsView: React.FC = () => {
            </div>
         </div>
       </div>
-    </div>
   );
 };

@@ -1,13 +1,83 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
+import OpenAI from "openai";
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
+
+  // AI Endpoint
+  app.post("/api/ai", async (req, res) => {
+    const startTime = Date.now();
+    const { actionType, systemPrompt, userPrompt, provider = 'openai' } = req.body;
+
+    console.log(`[AI REQUEST START] ${new Date().toISOString()}`);
+    console.log(`[AI REQUEST INFO] Action: ${actionType}, Provider: ${provider}`);
+    console.log(`[AI REQUEST INFO] Payload Size: ${JSON.stringify(req.body).length} chars`);
+
+    try {
+      if (provider === 'openai') {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+          console.error("[AI ERROR] OPENAI_API_KEY is missing in environment");
+          return res.status(500).json({ error: "OpenAI API key not configured on server" });
+        }
+
+        const openai = new OpenAI({ apiKey });
+        console.log("[OPENAI REQUEST] Initializing chat completion...");
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.3,
+        });
+
+        const duration = Date.now() - startTime;
+        const rawContent = response.choices[0].message.content;
+        
+        console.log(`[OPENAI RAW RESPONSE] Received in ${duration}ms`);
+        console.log(`[OPENAI RAW RESPONSE] Length: ${rawContent?.length} chars`);
+
+        if (!rawContent) {
+          throw new Error("Empty response from OpenAI");
+        }
+
+        console.log("[JSON PARSE START] Attempting to parse response...");
+        try {
+          const parsed = JSON.parse(rawContent);
+          console.log("[JSON PARSE SUCCESS]");
+          return res.json(parsed);
+        } catch (parseError) {
+          console.error("[JSON PARSE ERROR] Malformed JSON from AI", rawContent);
+          return res.status(502).json({ 
+            error: "Malformed JSON from AI", 
+            rawResponse: rawContent,
+            details: parseError instanceof Error ? parseError.message : String(parseError)
+          });
+        }
+      } else {
+        return res.status(400).json({ error: "Unsupported provider" });
+      }
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error(`[AI ERROR] Failed after ${duration}ms:`, error);
+      
+      return res.status(error.status || 500).json({
+        error: error.message || "Internal AI Pipeline Error",
+        status: error.status,
+        code: error.code,
+        type: error.type,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
+  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

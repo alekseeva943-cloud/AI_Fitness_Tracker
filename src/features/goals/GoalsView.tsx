@@ -16,6 +16,7 @@ import { WorkoutDetailModal } from '../entries/components/WorkoutDetailModal';
 import { ModalFooter } from '../../components/ui/ModalFooter';
 import { METRICS } from '../../constants/metrics';
 import { AIRecommendationsSection } from '../ai/components/AIRecommendationsSection';
+import { AIGoalInsights } from './components/AIGoalInsights';
 import { GoalAchievementReport } from './components/GoalAchievementReport';
 
 export const GoalsView: React.FC = () => {
@@ -447,6 +448,9 @@ export const GoalsView: React.FC = () => {
                    </div>
                 </GlassCard>
               )}
+
+              {/* AI Goal Actions */}
+              <AIGoalInsights goalId={selectedGoal.id} />
 
               {/* Chart Section */}
               <div className="space-y-4">

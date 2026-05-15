@@ -1,5 +1,6 @@
 import { FitnessState, UserProfile } from '../../types';
 import { METRICS } from '../../constants/metrics';
+import { AIMemoryManager } from '../memory/memory-manager';
 
 export interface AIUserContext {
   profile: UserProfile | null;
@@ -27,10 +28,12 @@ export interface AIUserContext {
   memory: {
     recentAnalyses: any[];
   };
+  systemMemory?: any;
 }
 
 export class AIContextBuilder {
-  static buildUserContext(state: FitnessState, analytics: any): AIUserContext {
+  static async buildUserContext(state: FitnessState, analytics: any): Promise<AIUserContext> {
+    const memory = await AIMemoryManager.updateMemory(state.analyses || []);
     const goal = state.goals.find(g => g.id === state.activeGoalId) || null;
     const currentMetric = goal ? METRICS[goal.metricId] || METRICS.weight : METRICS.weight;
 
@@ -92,12 +95,13 @@ export class AIContextBuilder {
           summary: a.summary,
           trend: a.trend
         }))
-      }
+      },
+      systemMemory: memory
     };
   }
 
   static formatContextForPrompt(context: AIUserContext): string {
-    const { profile, currentGoal, analytics, activity, metrics, memory } = context;
+    const { profile, currentGoal, analytics, activity, metrics, memory, systemMemory } = context;
 
     let prompt = `--- PROFILE ---\n`;
     if (profile) {
@@ -140,6 +144,16 @@ export class AIContextBuilder {
     if (memory.recentAnalyses.length) {
       prompt += `\n--- PREVIOUS AI INSIGHTS ---\n`;
       prompt += memory.recentAnalyses.map(a => `- ${a.date}: ${a.summary} (Trend: ${a.trend})`).join('\n');
+    }
+
+    if (systemMemory) {
+      prompt += `\n--- LONG-TERM AI MEMORY ---\n`;
+      if (systemMemory.longTermInsights?.length) {
+        prompt += `Key Insights: ${systemMemory.longTermInsights.join('; ')}\n`;
+      }
+      if (systemMemory.recurringIssues?.length) {
+        prompt += `Recurring Patterns/Issues: ${systemMemory.recurringIssues.join('; ')}\n`;
+      }
     }
 
     return prompt;

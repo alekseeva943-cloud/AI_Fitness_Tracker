@@ -618,12 +618,12 @@ export const DashboardView: React.FC = () => {
 
                 <GlassCard 
                   className="p-6 bg-linear-to-br from-primary/5 to-transparent border border-primary/10 cursor-pointer hover:bg-primary/10 transition-all group"
-                  onClick={() => navigate('/analytics')}
+                  onClick={() => navigate('/ai-chat')}
                 >
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-primary" />
-                      ИИ Ассистент
+                      AI Coach / Ассистент
                     </h3>
                     {latestAnalysis && (
                       <span className="text-[8px] font-black uppercase tracking-widest bg-primary/20 text-primary px-1.5 py-0.5 rounded">Active</span>

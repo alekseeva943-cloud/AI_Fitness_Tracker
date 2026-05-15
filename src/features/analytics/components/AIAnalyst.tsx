@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFitnessStore } from '../../../store/useFitnessStore';
-import { AIService } from '../../../services/aiService';
+import { AIActions } from '../../../ai/orchestrator/ai-actions';
 import { selectAnalyticsSummary } from '../selectors/fitnessSelectors';
 import { GlassCard } from '../../../components/ui/GlassCard';
 import { GradientButton } from '../../../components/ui/GradientButton';
@@ -13,24 +13,15 @@ import { AI_TREND, AI_PRIORITY, AI_RECOMMENDATION_TYPE } from '../../../constant
 export const AIAnalyst: React.FC = () => {
   const state = useFitnessStore();
   const summary = selectAnalyticsSummary(state);
-  const { analyses, addAIAnalysis, analysisRequest, setAnalysisRequestState } = state;
+  const { analyses, analysisRequest } = state;
   const [selectedAnalysis, setSelectedAnalysis] = useState<AIAnalysis | null>(analyses[0] || null);
 
   const runAnalysis = async () => {
-    if (!summary) return;
-    
-    setAnalysisRequestState({ status: 'loading', error: null });
-    
     try {
-      const result = await AIService.analyzeProgress(state, summary);
-      addAIAnalysis(result);
+      const result = await AIActions.startDeepAnalysis();
       setSelectedAnalysis(result);
-      setAnalysisRequestState({ status: 'success' });
     } catch (error) {
-      setAnalysisRequestState({ 
-        status: 'error', 
-        error: error instanceof Error ? error.message : 'Произошла ошибка при анализе' 
-      });
+      console.error('Analysis failed', error);
     }
   };
 
