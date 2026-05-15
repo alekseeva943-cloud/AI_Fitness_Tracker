@@ -52,70 +52,16 @@ export const useFitnessStore = create<FitnessStore>()(
 
       initialize: () => {
         try {
-          logger.store('Initializing store state');
-          const state = get();
+          logger.store('Initializing store state (Auto-init disabled for diagnostics)');
+          // For diagnostics, we temporarily disable the cleanup and demo population logic
+          // to see if it contributes to the React crash loop.
           
-          // Cleanup step: Ensure all workouts and weight history have unique IDs
-          // This fixes a bug where new entries might have received 'undefined' as an ID
-          let needsIdCleanup = false;
-          const cleanedWorkouts = (state.workouts || []).map(w => {
-            if (!w.id || w.id === 'undefined') {
-              needsIdCleanup = true;
-              return { ...w, id: crypto.randomUUID() };
-            }
-            return w;
-          });
-
-          const cleanedWeight = (state.weightHistory || []).map(w => {
-            if (!w.id || w.id === 'undefined') {
-              needsIdCleanup = true;
-              return { ...w, id: crypto.randomUUID() };
-            }
-            return w;
-          });
-
-          const cleanedGoals = (state.goals || []).map(g => {
-            if (!g.id || g.id === 'undefined') {
-              needsIdCleanup = true;
-              return { ...g, id: crypto.randomUUID() };
-            }
-            return g;
-          });
-
-          // Ensure activeGoalId is valid
-          let activeGoalId = state.activeGoalId;
-          const activeGoalExists = (state.goals || []).find(g => g.id === activeGoalId);
-          if (!activeGoalId || !activeGoalExists) {
-            const firstActive = (state.goals || []).find(g => g.status === 'ACTIVE' || g.status === 'SECONDARY');
-            if (firstActive) {
-              activeGoalId = firstActive.id;
-              needsIdCleanup = true;
-            }
-          }
-
-          if (needsIdCleanup) {
-            logger.store('Cleaned up entries with missing or invalid IDs');
-            set({ 
-              workouts: cleanedWorkouts, 
-              weightHistory: cleanedWeight,
-              goals: cleanedGoals,
-              activeGoalId: activeGoalId
-            });
-          }
-
-          // If the user has already loaded some data (even 1 entry), don't auto-populate demo data
-          if ((state.goals && state.goals.length > 0) || (state.workouts && state.workouts.length > 0) || (state.weightHistory && state.weightHistory.length > 0)) {
-            return;
-          }
-
-          if (state.isDemoMode !== false) {
-             logger.store('Populating empty store with initial demo data');
-             set({ ...INITIAL_DEMO_STATE, isDemoMode: true });
-          }
+          /* 
+          const state = get();
+          // ... cleanup logic ...
+          */
         } catch (err) {
           logger.error('Store initialization failed', err);
-          // Fallback to demo data on total failure
-          set({ ...INITIAL_DEMO_STATE });
         }
       },
     }),
@@ -133,23 +79,32 @@ export const useFitnessStore = create<FitnessStore>()(
           logger.error('Store hydration failed', error);
         } else {
           logger.store('Store rehydrated successfully', { hasState: !!state });
-          // Explicitly call initialize after hydration to ensure consistency
-          state?.initialize();
         }
       },
       version: 3,
       migrate: (persistedState, version) => {
         const state = persistedState as any;
+        
+        // Initial migration logic
         if (version < 3) {
           logger.store(`Migrating store from version ${version} to 3`);
+          
+          // Ensure we preserve the whole state structure
           return {
             ...state,
             profile: {
               ...createDefaultProfile(),
               ...(state?.profile || {}),
             },
+            // Explicitly ensure critical arrays exist to prevent map errors
+            goals: state?.goals || [],
+            workouts: state?.workouts || [],
+            weightHistory: state?.weightHistory || [],
+            analyses: state?.analyses || [],
+            activeGoalId: state?.activeGoalId || null,
           };
         }
+        
         return state;
       },
     }

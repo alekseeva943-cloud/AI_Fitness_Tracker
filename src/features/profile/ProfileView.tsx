@@ -15,6 +15,12 @@ export const ProfileView: React.FC = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const profile = useProfile();
   
+  const updateProfile = useFitnessStore(state => state.updateProfile);
+  const updateBaseline = useFitnessStore(state => state.updateBaseline);
+  const [showAdditional, setShowAdditional] = useState(false);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [selectedMetricId, setSelectedMetricId] = useState('chest');
+
   useEffect(() => {
     const checkHydration = () => {
       if (useFitnessStore.persist.hasHydrated()) {
@@ -56,12 +62,6 @@ export const ProfileView: React.FC = () => {
       </div>
     );
   }
-
-  const updateProfile = useFitnessStore(state => state.updateProfile);
-  const updateBaseline = useFitnessStore(state => state.updateBaseline);
-  const [showAdditional, setShowAdditional] = useState(false);
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
-  const [selectedMetricId, setSelectedMetricId] = useState('chest');
 
   const bodyMetrics = getMetricsByCategory('BODY').filter(m => m.id !== 'weight');
   const strengthMetrics = getMetricsByCategory('STRENGTH').filter(m => m.primary);

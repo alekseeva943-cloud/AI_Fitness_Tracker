@@ -23,6 +23,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.group('[REACT CRASH]');
+    console.error('Error:', error);
+    console.error('ErrorInfo:', errorInfo);
+    console.groupEnd();
+
     logger.error('Uncaught error:', { error, errorInfo });
   }
 
