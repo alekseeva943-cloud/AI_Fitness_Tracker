@@ -115,6 +115,8 @@ export interface MetricBaseline {
 export interface UserProfile {
   id: string;
   name: string;
+  displayName: string;
+  avatarUrl?: string;
   age: number | null;
   gender: Gender | null;
   height: number | null;

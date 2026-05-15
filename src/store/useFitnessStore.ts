@@ -81,22 +81,22 @@ export const useFitnessStore = create<FitnessStore>()(
           logger.store('Store rehydrated successfully', { hasState: !!state });
         }
       },
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         const state = persistedState as any;
         
-        // Initial migration logic
-        if (version < 3) {
-          logger.store(`Migrating store from version ${version} to 3`);
+        if (version < 4) {
+          logger.store(`Migrating store from version ${version} to 4`);
           
-          // Ensure we preserve the whole state structure
           return {
             ...state,
             profile: {
               ...createDefaultProfile(),
               ...(state?.profile || {}),
+              // Ensure critical new fields exist
+              displayName: state?.profile?.displayName || state?.profile?.name || 'Пользователь',
+              avatarUrl: state?.profile?.avatarUrl || undefined,
             },
-            // Explicitly ensure critical arrays exist to prevent map errors
             goals: state?.goals || [],
             workouts: state?.workouts || [],
             weightHistory: state?.weightHistory || [],

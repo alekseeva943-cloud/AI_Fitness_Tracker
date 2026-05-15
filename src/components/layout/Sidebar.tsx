@@ -7,6 +7,7 @@ import { Dumbbell, Sun, Moon } from "lucide-react";
 
 export const Sidebar: React.FC = () => {
   const { theme, toggleTheme } = useFitnessStore();
+  const profile = useFitnessStore(state => state.profile);
 
   return (
     <aside className="w-64 border-r border-white/5 flex flex-col h-screen sticky top-0 bg-background/50 backdrop-blur-md">
@@ -49,6 +50,24 @@ export const Sidebar: React.FC = () => {
             <span className="text-[10px] font-mono opacity-70">AI Engine Online</span>
           </div>
         </div>
+
+        {/* User Mini Profile */}
+        <Link 
+          to="/profile" 
+          className="flex items-center gap-3 p-3 mt-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group"
+        >
+          <div className="w-10 h-10 rounded-xl overflow-hidden bg-primary/20 border border-primary/20 flex items-center justify-center shrink-0">
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} className="w-full h-full object-cover" alt="Avatar" />
+            ) : (
+              <Dumbbell className="w-5 h-5 text-primary opacity-50" />
+            )}
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-xs font-bold text-foreground truncate">{profile?.displayName || 'Пользователь'}</p>
+            <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground truncate">Открыть профиль</p>
+          </div>
+        </Link>
       </div>
     </aside>
   );

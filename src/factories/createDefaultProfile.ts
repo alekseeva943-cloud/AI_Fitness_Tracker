@@ -2,7 +2,9 @@ import { UserProfile } from "../types";
 
 export const createDefaultProfile = (): UserProfile => ({
   id: crypto.randomUUID(),
-  name: 'Новый пользователь',
+  name: 'Пользователь',
+  displayName: 'Пользователь',
+  avatarUrl: undefined,
   age: null,
   gender: null,
   height: null,

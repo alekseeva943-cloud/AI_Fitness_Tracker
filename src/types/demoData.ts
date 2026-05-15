@@ -6,6 +6,7 @@ export const INITIAL_DEMO_STATE: FitnessState = {
   profile: {
     id: 'demo-user',
     name: 'Алексей',
+    displayName: 'Алексей',
     age: 28,
     gender: 'MALE',
     height: 182,

@@ -108,12 +108,22 @@ export const ProfileView: React.FC = () => {
     <div className="max-w-5xl mx-auto space-y-10 pb-20 px-4 pt-10">
       {/* Header / Identity */}
       <div className="flex flex-col md:flex-row items-center gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <ProfileAvatar profile={profile} />
-        <div className="text-center md:text-left space-y-2">
-          <h1 className="text-5xl font-display font-black italic uppercase tracking-tighter text-white">
-            {profile.name || 'Фитнес-профиль'}
-          </h1>
-          <div className="flex flex-wrap justify-center md:justify-start gap-3">
+        <ProfileAvatar 
+          profile={profile} 
+          onAvatarChange={(url) => updateProfile({ avatarUrl: url })} 
+        />
+        <div className="text-center md:text-left space-y-2 flex-1">
+          <div className="relative group/name inline-block w-full md:w-auto">
+            <input 
+              type="text"
+              value={profile.displayName}
+              onChange={(e) => updateProfile({ displayName: e.target.value })}
+              className="text-5xl font-display font-black italic uppercase tracking-tighter text-white bg-transparent border-none focus:outline-hidden w-full md:w-auto"
+              placeholder="Ваше имя"
+            />
+            <div className="absolute -bottom-1 left-0 w-0 h-1 bg-primary group-hover/name:w-full transition-all duration-300" />
+          </div>
+          <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
              <div className="bg-primary/20 text-primary border border-primary/20 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
                {profile.fitnessLevel === 'BEGINNER' ? 'Новичок' : 
                 profile.fitnessLevel === 'INTERMEDIATE' ? 'Средний уровень' : 

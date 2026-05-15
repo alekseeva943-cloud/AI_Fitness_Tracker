@@ -85,7 +85,7 @@ export class AIContextBuilder {
 
     let prompt = `--- ЛИЧНЫЙ ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ---\n`;
     if (profile) {
-      prompt += `- Имя: ${profile.name || 'Не указано'}\n`;
+      prompt += `- Имя: ${profile.displayName || profile.name || 'Не указано'}\n`;
       prompt += `- Возраст: ${profile.age} лет, Пол: ${profile.gender}, Рост: ${profile.height} см, Текущий вес: ${profile.weight || 'Не указан'} кг\n`;
       prompt += `- Телосложение: ${profile.bodyType}, Уровень подготовки: ${profile.fitnessLevel}\n`;
       prompt += `- Уровень активности: ${profile.activityLevel}\n`;
