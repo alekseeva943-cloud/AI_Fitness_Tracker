@@ -20,6 +20,16 @@ async function startServer() {
     });
   });
 
+  // Test endpoint for architecture verification
+  app.get("/api/test", (req, res) => {
+    console.log('[TEST API HIT] server diagnostics check');
+    return res.status(200).json({
+      success: true,
+      message: 'Server diagnostics: Route is reachable',
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // AI Endpoint
   app.post("/api/ai", async (req, res) => {
     // 1. ENTRY LOGS
@@ -29,25 +39,22 @@ async function startServer() {
     const startTime = Date.now();
     
     try {
-      // 2. WRAP ENTIRE LOGIC
+      // Set explicit headers
+      res.setHeader('Content-Type', 'application/json');
+
       if (!req.body || typeof req.body !== 'object') {
-        console.error('[AI API ERROR] No body received');
+        console.error('[AI API ERROR] No body received or not JSON');
         return res.status(400).json({ 
           success: false, 
           error: "Invalid request body (empty or not JSON)" 
         });
       }
 
-      const { userPrompt, actionType } = req.body;
-      console.log('[AI API REQUEST DATA]', { actionType, prompt: userPrompt?.slice(0, 30) });
-
-      // 3. ZERO-OPENAI TEST MODE (Phase 1: confirm transport)
-      // Мы временно отключаем OpenAI, чтобы гарантировать, что backend ВООБЩЕ отвечает
-      console.log('[AI API STATUS] STABILITY_TEST_MODE: Bypassing real AI call');
+      console.log('[AI API STATUS] STABILITY_TEST_MODE: Returning test payload');
 
       const testResponse = {
         success: true,
-        summary: "Бэкенд диагностика: Канал связи активен. Serverless runtime работает корректно. AI временно в режиме теста.",
+        summary: "Бэкенд диагностика: Канал связи активен. AI временно в режиме теста для проверки транспорта.",
         recommendations: [
           { type: 'system', text: 'Backend transport layer is OK', priority: 'high', icon: 'check-circle' }
         ],
@@ -62,23 +69,22 @@ async function startServer() {
       };
 
       const duration = Date.now() - startTime;
-      console.log(`[AI API SUCCESS RESPONSE] Sent test payload. Total time: ${duration}ms`);
+      console.log(`[AI API SUCCESS] Sending response. Time: ${duration}ms`);
       
-      // 4. HARD RETURN GUARANTEE (Explicit res.json)
+      // Explicitly end the response with the JSON
       return res.status(200).json(testResponse);
 
     } catch (error: any) {
       console.error('[AI API FATAL CRASH]', error);
       
-      return res.status(error.status || 500).json({
+      return res.status(500).json({
         success: false,
         error: {
-          message: error instanceof Error ? error.message : "Fatal serverless error",
+          message: error instanceof Error ? error.message : "Fatal server error",
           type: error.constructor.name || 'UnknownError'
         }
       });
     } finally {
-      // 5. EXIT LOGS
       console.log('[AI API EXIT] Cycle finished');
       console.groupEnd();
     }
