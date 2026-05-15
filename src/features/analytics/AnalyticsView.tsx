@@ -11,6 +11,8 @@ import { RU } from '../../constants';
 import { cn, formatWeight, formatVelocity, formatPercent, formatDate } from '../../lib/utils';
 import { METRICS } from '../../constants/metrics';
 
+import { AIAnalyst } from './components/AIAnalyst';
+
 export const AnalyticsView: React.FC = () => {
   const navigate = useNavigate();
   const state = useFitnessStore();
@@ -34,7 +36,7 @@ export const AnalyticsView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <div className="space-y-4">
         <button 
           onClick={() => navigate(-1)}
@@ -78,6 +80,11 @@ export const AnalyticsView: React.FC = () => {
           onClick={() => setActiveModal('goal')}
         />
       </div>
+
+      {/* AI Analyst Section */}
+      <section className="pt-4 border-t border-white/5">
+        <AIAnalyst />
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <GlassCard className="lg:col-span-2 p-8 flex flex-col min-h-[450px]">

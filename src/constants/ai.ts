@@ -1,14 +1,16 @@
 export const AI_CONFIG = {
-  MODEL: "gemini-3-flash-preview",
-  TEMPERATURE: 0.7,
-  MAX_TOKENS: 2048,
+  MODEL: "gemini-1.5-flash", // Using high-speed stable model
+  TEMPERATURE: 0.2, // Lower temperature for more deterministic analysis
+  MAX_TOKENS: 4096,
+  RETRY_COUNT: 2,
+  TIMEOUT: 30000,
 };
 
 export enum AI_RECOMMENDATION_TYPE {
-  EXERCISE = "EXERCISE",
-  DIET = "DIET",
-  REST = "REST",
-  MOTIVATION = "MOTIVATION",
+  TRAINING = "EXERCISE",
+  NUTRITION = "DIET",
+  RECOVERY = "REST",
+  CONSISTENCY = "MOTIVATION",
 }
 
 export enum AI_TREND {

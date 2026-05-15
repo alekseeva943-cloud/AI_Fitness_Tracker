@@ -3,7 +3,7 @@ import { RU } from "../../constants";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
-import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles, CheckCircle2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles, CheckCircle2, Brain } from "lucide-react";
 import { useFitnessStore, useGoals, useActiveGoalId, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { METRICS } from "../../constants/metrics";
 import { THEME } from "../../constants/theme";
@@ -41,6 +41,7 @@ export const DashboardView: React.FC = () => {
 
   const stateForSummary = useFitnessStore();
   const summary = selectAnalyticsSummary(stateForSummary);
+  const latestAnalysis = stateForSummary.analyses[0];
   const activeGoal = goals.find(g => g.id === activeGoalId);
 
   const [isGoalModalOpen, setGoalModalOpen] = useState(false);
@@ -615,34 +616,44 @@ export const DashboardView: React.FC = () => {
                   </GradientButton>
                 </GlassCard>
 
-                <GlassCard className="p-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/10">
-                  <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    ИИ Помощник
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                    {summary ? (
-                      summary.goal.status === 'WRONG_DIRECTION'
-                        ? "Динамика противоречит цели. Обратите внимание на баланс питания и интенсивность тренировок."
-                        : summary.goal.status === 'AHEAD_OF_SCHEDULE' 
-                          ? "Опережаете график! Ваш прогресс идет быстрее, чем планировалось изначально."
-                          : summary.weight.isPlateau 
-                            ? "Замечено замедление прогресса. Попробуйте изменить тип нагрузки или пересмотреть калорийность рациона для преодоления плато."
-                            : summary.weight.weeklyChange < 0 
-                              ? (activeGoal.type === 'WEIGHT_LOSS' ? "Отличная динамика! Вы теряете вес в здоровом темпе." : "Вес снижается, что противоречит цели набора массы.")
-                              : (activeGoal.type === 'MUSCLE_GAIN' ? "Хороший рост! Вы уверенно прибавляете в весе." : "Вес немного вырос. Если ваша цель — похудение, проверьте дневник питания.")
-                    ) : "Добавьте больше данных, чтобы ИИ смог составить рекомендации для вас."}
-                  </p>
-                  <div className={cn(
-                    "flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest",
-                    summary?.goal.status === 'WRONG_DIRECTION' ? "text-red-400" : "text-primary"
-                  )}>
-                    <Target className="w-3 h-3" />
-                    {summary?.goal.status === 'WRONG_DIRECTION' 
-                      ? "Требуется корректировка" 
-                      : summary?.goal.status === 'AHEAD_OF_SCHEDULE' 
-                        ? "Опережение графика" 
-                        : "План соблюдается"}
+                <GlassCard 
+                  className="p-6 bg-linear-to-br from-primary/5 to-transparent border border-primary/10 cursor-pointer hover:bg-primary/10 transition-all group"
+                  onClick={() => navigate('/analytics')}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      ИИ Ассистент
+                    </h3>
+                    {latestAnalysis && (
+                      <span className="text-[8px] font-black uppercase tracking-widest bg-primary/20 text-primary px-1.5 py-0.5 rounded">Active</span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <p className="text-xs text-muted-foreground leading-relaxed italic border-l border-primary/30 pl-3">
+                      {latestAnalysis ? (
+                        latestAnalysis.summary
+                      ) : summary ? (
+                        summary.goal.status === 'WRONG_DIRECTION'
+                          ? "Внимание! Вы отклоняетесь от графика. Запустите глубокий анализ для поиска причин."
+                          : "Система готова к анализу ваших тренировок. Перейдите в раздел аналитики."
+                      ) : "Добавьте данные (минимум 3 записи), чтобы ИИ смог составить рекомендации."}
+                    </p>
+                    
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <div className={cn(
+                        "flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest",
+                        latestAnalysis?.trend === 'DECLINING' ? "text-red-400" : "text-primary"
+                      )}>
+                        <Brain className="w-3 h-3" />
+                        {latestAnalysis ? (
+                          latestAnalysis.trend === 'IMPROVING' ? 'Оптимально' : 
+                          latestAnalysis.trend === 'DECLINING' ? 'Внимание' : 'Стабильно'
+                        ) : 'Ожидание'}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-primary/40 group-hover:text-primary transition-colors" />
+                    </div>
                   </div>
                 </GlassCard>
               </div>

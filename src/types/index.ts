@@ -88,7 +88,7 @@ export interface WeightEntry {
 
 export interface AIRecommendation {
   id: string;
-  type: 'EXERCISE' | 'DIET' | 'REST' | 'MOTIVATION';
+  type: 'EXERCISE' | 'DIET' | 'REST' | 'MOTIVATION' | 'TRAINING' | 'NUTRITION' | 'RECOVERY' | 'CONSISTENCY';
   text: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
 }
@@ -98,9 +98,10 @@ export interface AIAnalysis {
   date: string;
   summary: string;
   trend: 'IMPROVING' | 'STAGNATING' | 'DECLINING';
-  forecastDate?: string;
-  forecastValue?: number;
-  recommendations: AIRecommendation[];
+  explanation?: string;
+  mainRisk?: string;
+  forecast?: string;
+  recommendations: (AIRecommendation & { reason?: string })[];
 }
 
 export interface MetricBaseline {

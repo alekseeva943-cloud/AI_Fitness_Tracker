@@ -3,15 +3,8 @@ import { METRICS } from '../../constants/metrics';
 
 export interface AIUserContext {
   profile: UserProfile | null;
-  goal: {
-    title: string;
-    type: string;
-    metricLabel: string;
-    targetValue: number;
-    unit: string;
-    startValue: number;
-    expectedDirection: 'up' | 'down';
-  } | null;
+  activeGoals: any[];
+  currentGoal: any | null;
   analytics: {
     goal: any;
     trends: {
@@ -19,13 +12,20 @@ export interface AIUserContext {
       actualDirection: 'up' | 'down' | 'stable';
       isTrendMatchingGoal: boolean;
     };
+    overallProgress: number;
   };
   activity: {
     workoutDiversity: Record<string, number>;
-    recentIntensity: any[];
+    recentWorkouts: any[];
+    totalWorkouts: number;
+    weeklyFrequency: number;
   };
-  history: {
-    weightEntries: any[];
+  metrics: {
+    weightHistory: any[];
+    latestBaselines: any[];
+  };
+  memory: {
+    recentAnalyses: any[];
   };
 }
 
@@ -40,27 +40,27 @@ export class AIContextBuilder {
       return acc;
     }, {});
 
-    const recentIntensity = state.workouts.slice(0, 10).map(w => ({
+    const recentWorkouts = state.workouts.slice(0, 5).map(w => ({
       type: w.type,
       category: w.category,
       duration: w.duration,
-      totalWeight: w.totalWeight,
-      distance: w.distance,
-      heartRate: w.heartRate,
+      intensity: w.heartRate ? (w.heartRate > 150 ? 'HIGH' : 'MODERATE') : 'UNKNOWN',
       calories: w.caloriesBurned,
       date: w.date
     }));
 
     return {
       profile: state.profile,
-      goal: goal ? {
+      activeGoals: state.goals.filter(g => g.status === 'ACTIVE'),
+      currentGoal: goal ? {
         title: goal.title,
         type: goal.type,
         metricLabel: currentMetric.label,
         targetValue: goal.targetValue,
         unit: currentMetric.unit,
         startValue: goal.startValue,
-        expectedDirection: goal.targetValue > goal.startValue ? 'up' : 'down',
+        description: goal.motivation,
+        progress: analytics.goal.completionPercentage / 100,
       } : null,
       analytics: {
         goal: analytics.goal,
@@ -68,61 +68,78 @@ export class AIContextBuilder {
           velocity: analytics.goal.velocity,
           actualDirection: analytics.goal.velocity < 0 ? 'down' : (analytics.goal.velocity > 0 ? 'up' : 'stable'),
           isTrendMatchingGoal: analytics.goal.status !== 'WRONG_DIRECTION' && analytics.goal.status !== 'STAGNANT',
-        }
+        },
+        overallProgress: analytics.summary.overallProgress
       },
       activity: {
         workoutDiversity,
-        recentIntensity
+        recentWorkouts,
+        totalWorkouts: state.workouts.length,
+        weeklyFrequency: state.workouts.filter(w => {
+          const d = new Date(w.date);
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return d > weekAgo;
+        }).length
       },
-      history: {
-        weightEntries: state.weightHistory.slice(-10).map(w => ({ date: w.date, value: w.value }))
+      metrics: {
+        weightHistory: state.weightHistory.slice(-5).map(w => ({ date: w.date, value: w.value })),
+        latestBaselines: state.profile?.baselines?.slice(-5) || []
+      },
+      memory: {
+        recentAnalyses: state.analyses.slice(0, 3).map(a => ({
+          date: a.date,
+          summary: a.summary,
+          trend: a.trend
+        }))
       }
     };
   }
 
   static formatContextForPrompt(context: AIUserContext): string {
-    const { goal, analytics, activity, profile } = context;
+    const { profile, currentGoal, analytics, activity, metrics, memory } = context;
 
-    let prompt = `--- ЛИЧНЫЙ ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ---\n`;
+    let prompt = `--- PROFILE ---\n`;
     if (profile) {
-      prompt += `- Имя: ${profile.displayName || profile.name || 'Не указано'}\n`;
-      prompt += `- Возраст: ${profile.age} лет, Пол: ${profile.gender}, Рост: ${profile.height} см, Текущий вес: ${profile.weight || 'Не указан'} кг\n`;
-      prompt += `- Телосложение: ${profile.bodyType}, Уровень подготовки: ${profile.fitnessLevel}\n`;
-      prompt += `- Уровень активности: ${profile.activityLevel}\n`;
-      
-      if (profile.baselines?.length) {
-        prompt += `- Исходные замеры (Baselines):\n`;
-        profile.baselines.forEach(b => {
-          prompt += `  * ${b.name}: ${b.value} ${b.unit} (Дата: ${new Date(b.date).toLocaleDateString('ru-RU')})\n`;
-        });
-      }
-
-      if (profile.injuries?.length) prompt += `- Травмы/Ограничения: ${profile.injuries.join(', ')}\n`;
-      if (profile.lifestyleNotes) prompt += `- Стиль жизни: ${profile.lifestyleNotes}\n`;
-      if (profile.nutritionNotes) prompt += `- Питание: ${profile.nutritionNotes}\n`;
-      prompt += `- Сон: ~${profile.sleepAverage}ч, Стресс: ${profile.stressLevel}/10\n\n`;
-    } else {
-      prompt += `Профиль не заполнен.\n\n`;
+      prompt += `User: ${profile.displayName} (${profile.age}y, ${profile.gender}, ${profile.height}cm, Body: ${profile.bodyType})\n`;
+      prompt += `Fitness Level: ${profile.fitnessLevel}, Activity Level: ${profile.activityLevel}\n`;
+      if (profile.injuries?.length) prompt += `Injuries: ${profile.injuries.join(', ')}\n`;
+      prompt += `Sleep: ${profile.sleepAverage}h, Stress: ${profile.stressLevel}/10\n`;
+      if (profile.nutritionNotes) prompt += `Nutrition: ${profile.nutritionNotes}\n`;
+      if (profile.recoveryNotes) prompt += `Recovery: ${profile.recoveryNotes}\n`;
+      if (profile.motivation) prompt += `Motivation: ${profile.motivation}\n`;
+      if (profile.lifestyleNotes) prompt += `Lifestyle: ${profile.lifestyleNotes}\n`;
     }
 
-    prompt += `--- ЦЕЛЬ ПОЛЬЗОВАТЕЛЯ ---\n`;
-    prompt += `${goal ? `"${goal.title}" (Показатель: ${goal.metricLabel}, Цель: ${goal.targetValue} ${goal.unit})` : 'Не установлена'}\n\n`;
-    
-    prompt += `ДАННЫЕ АНАЛИТИКИ:\n`;
-    prompt += `- Состояние цели: ${analytics.goal.status}\n`;
-    prompt += `- Скорость изменения: ${analytics.goal.velocity} ${goal?.unit || ''}/нед\n`;
-    prompt += `- Направление тренда: ${analytics.trends.actualDirection}\n`;
-    prompt += `- Соответствие цели: ${analytics.trends.isTrendMatchingGoal ? 'Да' : 'Нет'}\n\n`;
+    prompt += `\n--- ACTIVE GOAL ---\n`;
+    if (currentGoal) {
+      prompt += `Goal: "${currentGoal.title}"\n`;
+      prompt += `Target: ${currentGoal.targetValue} ${currentGoal.unit} (Start: ${currentGoal.startValue}, Progress: ${Math.round(currentGoal.progress * 100)}%)\n`;
+    } else {
+      prompt += `No active goal.\n`;
+    }
 
-    prompt += `ДАННЫЕ АКТИВНОСТИ:\n`;
-    prompt += `- Разнообразие тренировок: ${JSON.stringify(activity.workoutDiversity)}\n`;
-    prompt += `- Последние тренировки: ${JSON.stringify(activity.recentIntensity)}\n\n`;
+    prompt += `\n--- ANALYTICS ---\n`;
+    prompt += `Status: ${analytics.goal.status}\n`;
+    prompt += `Velocity: ${analytics.goal.velocity} ${currentGoal?.unit || ''}/week\n`;
+    prompt += `Trend: ${analytics.trends.actualDirection} (Matching target: ${analytics.trends.isTrendMatchingGoal ? 'YES' : 'NO'})\n`;
 
-    if (context.history.weightEntries.length > 0) {
-      prompt += `ИСТОРИЯ ВЕСА (последние замеры):\n`;
-      context.history.weightEntries.forEach(w => {
-        prompt += `- ${new Date(w.date).toLocaleDateString('ru-RU')}: ${w.value} кг\n`;
-      });
+    prompt += `\n--- RECENT ACTIVITY ---\n`;
+    prompt += `Workouts/week: ${activity.weeklyFrequency}, Total: ${activity.totalWorkouts}\n`;
+    prompt += `Types: ${Object.entries(activity.workoutDiversity).map(([k, v]) => `${k}:${v}`).join(', ')}\n`;
+    prompt += `Last 3 sessions: ${activity.recentWorkouts.slice(0, 3).map(w => `${w.type}(${w.duration}min)`).join(', ')}\n`;
+
+    prompt += `\n--- RECENT METRICS ---\n`;
+    if (metrics.weightHistory.length) {
+      prompt += `Weight: ${metrics.weightHistory.map(w => w.value).join(' -> ')}\n`;
+    }
+    if (metrics.latestBaselines.length) {
+      prompt += `Baselines: ${metrics.latestBaselines.map(b => `${b.name}:${b.value}${b.unit}`).join(', ')}\n`;
+    }
+
+    if (memory.recentAnalyses.length) {
+      prompt += `\n--- PREVIOUS AI INSIGHTS ---\n`;
+      prompt += memory.recentAnalyses.map(a => `- ${a.date}: ${a.summary} (Trend: ${a.trend})`).join('\n');
     }
 
     return prompt;
