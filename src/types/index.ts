@@ -97,11 +97,15 @@ export interface AIAnalysis {
   id: string;
   date: string;
   summary: string;
-  trend: 'IMPROVING' | 'STAGNATING' | 'DECLINING';
+  verdict?: string;
+  trend: 'IMPROVING' | 'STAGNATING' | 'DECLINING' | 'STABLE';
   explanation?: string;
   mainRisk?: string;
   forecast?: string;
   recommendations: (AIRecommendation & { reason?: string })[];
+  nextSteps?: string[];
+  insights?: string[];
+  motivation?: string;
 }
 
 export interface MetricBaseline {

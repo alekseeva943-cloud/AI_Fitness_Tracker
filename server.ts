@@ -50,7 +50,7 @@ async function startServer() {
         });
       }
 
-      const { userPrompt, actionType } = req.body;
+      const { userPrompt, actionType, systemPrompt } = req.body;
       const apiKey = process.env.OPENAI_API_KEY;
       
       if (!apiKey) {
@@ -60,45 +60,47 @@ async function startServer() {
 
       const openai = new OpenAI({ apiKey });
 
-      console.log('[OPENAI START] Requesting completion from gpt-4o-mini');
+      console.log('[OPENAI START] Requesting structured completion from gpt-4o-mini');
 
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'You are a fitness AI assistant. Respond briefly and EXCLUSIVELY in Russian language. (Отвечай только на русском языке).'
+            content: systemPrompt || 'You are a fitness AI assistant. Always return valid JSON in Russian.'
           },
           {
             role: 'user',
-            content: `Action: ${actionType || 'general'}. Prompt: ${userPrompt || 'Check connection'}`
+            content: userPrompt || 'Analyze my data'
           }
         ],
-        temperature: 0.7
+        response_format: { type: "json_object" },
+        temperature: 0.5
       });
 
       console.log('[OPENAI RESPONSE RECEIVED]', completion.id);
-      const text = completion.choices[0]?.message?.content || '';
-      console.log('[OPENAI TEXT LENGTH]', text.length);
-
-      const response = {
-        success: true,
-        summary: text,
-        recommendations: [],
-        insights: [],
-        trends: [],
-        warnings: [],
-        overallProgress: 0,
-        trend: "STABLE",
-        mainRisk: null,
-        date: new Date().toISOString()
-      };
-
-      const duration = Date.now() - startTime;
-      console.log(`[AI API SUCCESS] Sending response. Time: ${duration}ms`);
+      const rawContent = completion.choices[0]?.message?.content || '{}';
       
-      // Explicitly end the response with the JSON
-      return res.status(200).json(response);
+      try {
+        const parsed = JSON.parse(rawContent);
+        console.log('[AI API SUCCESS] Parsed JSON response');
+        return res.status(200).json({
+          ...parsed,
+          success: true,
+          date: new Date().toISOString()
+        });
+      } catch (parseErr) {
+        console.warn('[AI API WARNING] Failed to parse OpenAI JSON');
+        return res.status(200).json({
+          success: true,
+          summary: rawContent,
+          verdict: "Анализ завершен, но данные требуют ручной проверки.",
+          recommendations: [],
+          nextSteps: [],
+          motivation: "Продолжай в том же духе!",
+          date: new Date().toISOString()
+        });
+      }
 
     } catch (error: any) {
       console.error('[AI API FATAL CRASH]', error);

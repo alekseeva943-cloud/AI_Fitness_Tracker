@@ -361,7 +361,7 @@ export const GoalsView: React.FC = () => {
           }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
           return (
-            <div className="space-y-8 py-4">
+            <div className="space-y-8 py-4 max-h-[75vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/10">
               {/* Header Card */}
               <div className={cn(
                 "p-8 rounded-[2.5rem] border flex flex-col sm:flex-row items-center gap-6 group relative overflow-hidden transition-all duration-500",

@@ -15,6 +15,7 @@ export interface AIActionOptions {
 
 export interface AIResponse {
   summary: string;
+  verdict?: string;
   trend?: 'IMPROVING' | 'STAGNATING' | 'DECLINING' | 'STABLE';
   explanation?: string;
   mainRisk?: string | null;
@@ -25,6 +26,8 @@ export interface AIResponse {
     priority: 'LOW' | 'MEDIUM' | 'HIGH';
     reason?: string;
   }[];
+  nextSteps?: string[];
+  motivation?: string;
   confidence?: number;
   reasoning?: string;
   insights?: string[];
