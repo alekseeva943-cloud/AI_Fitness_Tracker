@@ -22,24 +22,38 @@ export const ProfileView: React.FC = () => {
   if (!profile) return null;
 
   const bodyMetrics = getMetricsByCategory('BODY').filter(m => m.id !== 'weight');
+  const strengthMetrics = getMetricsByCategory('STRENGTH').filter(m => m.primary);
+  const cardioMetrics = getMetricsByCategory('CARDIO').filter(m => m.primary);
   
   const currentMeasurements = (profile.baselines || []).filter(b => {
     const metric = METRICS[b.id];
-    return metric && metric.category === 'BODY' && b.id !== 'weight';
+    return (metric && (metric.category === 'BODY' || metric.category === 'STRENGTH' || metric.category === 'CARDIO') && b.id !== 'weight') || 
+           (!metric && b.id.length > 30);
   });
 
   const handleAddMeasurement = (metricId: string) => {
-    const metricConfig = METRICS[metricId];
-    if (!metricConfig) return;
+    if (metricId === 'custom') {
+      const newBaseline: MetricBaseline = {
+        id: crypto.randomUUID(),
+        name: 'Новый замер',
+        value: 0,
+        unit: 'ед.',
+        date: new Date().toISOString()
+      };
+      updateBaseline(newBaseline);
+    } else {
+      const metricConfig = METRICS[metricId];
+      if (!metricConfig) return;
 
-    const newBaseline: MetricBaseline = {
-      id: metricConfig.id,
-      name: metricConfig.label,
-      value: 0,
-      unit: metricConfig.unit,
-      date: new Date().toISOString()
-    };
-    updateBaseline(newBaseline);
+      const newBaseline: MetricBaseline = {
+        id: metricConfig.id,
+        name: metricConfig.label,
+        value: 0,
+        unit: metricConfig.unit,
+        date: new Date().toISOString()
+      };
+      updateBaseline(newBaseline);
+    }
     setIsSelectOpen(false);
   };
 
@@ -91,6 +105,27 @@ export const ProfileView: React.FC = () => {
               
               <div className="grid grid-cols-2 gap-x-4 gap-y-6">
                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Вес (кг)</label>
+                    <input 
+                      type="number"
+                      step="0.1"
+                      value={profile.weight || ''}
+                      onChange={e => updateProfile({ weight: parseFloat(e.target.value) })}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus:outline-hidden focus:border-primary/50 transition-all font-bold text-primary"
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Рост (см)</label>
+                    <input 
+                      type="number"
+                      value={profile.height}
+                      onChange={e => updateProfile({ height: parseInt(e.target.value) })}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus:outline-hidden focus:border-primary/50 transition-all font-bold"
+                    />
+                 </div>
+
+                 <div className="space-y-2">
                     <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Возраст</label>
                     <input 
                       type="number"
@@ -114,27 +149,6 @@ export const ProfileView: React.FC = () => {
                       </select>
                       <ChevronDown className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                     </div>
-                 </div>
-                 
-                 <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Рост (см)</label>
-                    <input 
-                      type="number"
-                      value={profile.height}
-                      onChange={e => updateProfile({ height: parseInt(e.target.value) })}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus:outline-hidden focus:border-primary/50 transition-all font-bold"
-                    />
-                 </div>
-
-                 <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Вес (кг)</label>
-                    <input 
-                      type="number"
-                      step="0.1"
-                      value={profile.weight || ''}
-                      onChange={e => updateProfile({ weight: parseFloat(e.target.value) })}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus:outline-hidden focus:border-primary/50 transition-all font-bold text-primary"
-                    />
                  </div>
               </div>
 
@@ -180,21 +194,68 @@ export const ProfileView: React.FC = () => {
                                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
                                   className="absolute right-0 top-full mt-2 w-48 bg-[#16161D] border border-white/10 rounded-2xl shadow-2xl z-[100] py-2"
                                 >
-                                  {bodyMetrics.map(m => {
-                                    const isAdded = currentMeasurements.some(curr => curr.id === m.id);
-                                    return (
+                                  <div className="max-h-[300px] overflow-y-auto no-scrollbar">
+                                    <div className="px-4 py-2 text-[8px] font-black uppercase text-muted-foreground tracking-widest bg-white/5">Тело</div>
+                                    {bodyMetrics.map(m => {
+                                      const isAdded = currentMeasurements.some(curr => curr.id === m.id);
+                                      return (
+                                        <button
+                                          key={m.id}
+                                          onClick={() => !isAdded && handleAddMeasurement(m.id)}
+                                          className={`w-full text-left px-4 py-2 text-[10px] font-black uppercase flex items-center justify-between transition-colors ${
+                                            isAdded ? 'opacity-30 cursor-default' : 'hover:bg-primary/10 hover:text-primary'
+                                          }`}
+                                        >
+                                          {m.label}
+                                          {isAdded && <Check className="w-3 h-3" />}
+                                        </button>
+                                      );
+                                    })}
+                                    
+                                    <div className="px-4 py-2 text-[8px] font-black uppercase text-muted-foreground tracking-widest bg-white/5 border-t border-white/5">Сила</div>
+                                    {strengthMetrics.map(m => {
+                                      const isAdded = currentMeasurements.some(curr => curr.id === m.id);
+                                      return (
+                                        <button
+                                          key={m.id}
+                                          onClick={() => !isAdded && handleAddMeasurement(m.id)}
+                                          className={`w-full text-left px-4 py-2 text-[10px] font-black uppercase flex items-center justify-between transition-colors ${
+                                            isAdded ? 'opacity-30 cursor-default' : 'hover:bg-primary/10 hover:text-primary'
+                                          }`}
+                                        >
+                                          {m.label}
+                                          {isAdded && <Check className="w-3 h-3" />}
+                                        </button>
+                                      );
+                                    })}
+
+                                    <div className="px-4 py-2 text-[8px] font-black uppercase text-muted-foreground tracking-widest bg-white/5 border-t border-white/5">Кардио / Выносливость</div>
+                                    {cardioMetrics.map(m => {
+                                      const isAdded = currentMeasurements.some(curr => curr.id === m.id);
+                                      return (
+                                        <button
+                                          key={m.id}
+                                          onClick={() => !isAdded && handleAddMeasurement(m.id)}
+                                          className={`w-full text-left px-4 py-2 text-[10px] font-black uppercase flex items-center justify-between transition-colors ${
+                                            isAdded ? 'opacity-30 cursor-default' : 'hover:bg-primary/10 hover:text-primary'
+                                          }`}
+                                        >
+                                          {m.label}
+                                          {isAdded && <Check className="w-3 h-3" />}
+                                        </button>
+                                      );
+                                    })}
+
+                                    <div className="border-t border-white/5 mt-1 pt-1">
                                       <button
-                                        key={m.id}
-                                        onClick={() => !isAdded && handleAddMeasurement(m.id)}
-                                        className={`w-full text-left px-4 py-2 text-[10px] font-black uppercase flex items-center justify-between transition-colors ${
-                                          isAdded ? 'opacity-30 cursor-default' : 'hover:bg-primary/10 hover:text-primary'
-                                        }`}
+                                        onClick={() => handleAddMeasurement('custom')}
+                                        className="w-full text-left px-4 py-2 text-[10px] font-black uppercase flex items-center gap-2 text-primary hover:bg-primary/10 transition-colors"
                                       >
-                                        {m.label}
-                                        {isAdded && <Check className="w-3 h-3" />}
+                                        <Plus className="w-3 h-3" />
+                                        Свой показатель
                                       </button>
-                                    );
-                                  })}
+                                    </div>
+                                  </div>
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -204,18 +265,28 @@ export const ProfileView: React.FC = () => {
                         <div className="grid grid-cols-1 gap-3">
                           {currentMeasurements.map(m => (
                             <div key={m.id} className="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-2xl group/item">
-                              <div className="flex-1">
-                                <div className="text-[9px] uppercase font-black text-muted-foreground tracking-tighter mb-1">{m.name}</div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex-1">
                                   <input 
-                                    type="number"
-                                    value={m.value}
-                                    onChange={e => updateBaseline({ ...m, value: parseFloat(e.target.value) })}
-                                    className="bg-transparent font-display font-black text-lg w-16 focus:outline-hidden"
+                                     type="text"
+                                     value={m.name}
+                                     onChange={e => updateBaseline({ ...m, name: e.target.value })}
+                                     className="text-[9px] uppercase font-black text-muted-foreground tracking-tighter mb-1 bg-transparent border-none focus:outline-hidden w-full"
                                   />
-                                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{m.unit}</span>
+                                  <div className="flex items-center gap-2">
+                                    <input 
+                                      type="number"
+                                      value={m.value}
+                                      onChange={e => updateBaseline({ ...m, value: parseFloat(e.target.value) })}
+                                      className="bg-transparent font-display font-black text-lg w-16 focus:outline-hidden"
+                                    />
+                                    <input 
+                                      type="text"
+                                      value={m.unit}
+                                      onChange={e => updateBaseline({ ...m, unit: e.target.value })}
+                                      className="text-[10px] font-bold text-muted-foreground uppercase bg-transparent border-none focus:outline-hidden w-10"
+                                    />
+                                  </div>
                                 </div>
-                              </div>
                               <button 
                                 onClick={() => removeMeasurement(m.id)}
                                 className="opacity-0 group-hover/item:opacity-100 p-2 text-red-500/30 hover:text-red-500 transition-all"

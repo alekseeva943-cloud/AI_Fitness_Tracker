@@ -6,7 +6,7 @@ import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
 import { SidePanel } from '../../components/ui/SidePanel';
 import { GoalForm } from './components/GoalForm';
-import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles, Star, Dumbbell, Activity, Zap, Info } from 'lucide-react';
+import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, Play, CheckCircle2, Clock, Sparkles, Star, Dumbbell, Activity, Zap, Info, Scale } from 'lucide-react';
 import { GoalType, Goal } from '../../types';
 import { cn, formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
@@ -131,7 +131,23 @@ export const GoalsView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-4xl font-display font-medium tracking-tight">Мои цели</h1>
-            <p className="text-muted-foreground">Управляйте своими стремлениями и отслеживайте прогресс</p>
+            <div className="flex items-center gap-4 text-sm">
+               <p className="text-muted-foreground tracking-tight">Управляйте своими стремлениями и отслеживайте прогресс</p>
+               <div className="hidden lg:flex items-center gap-3 px-3 py-1 bg-white/5 border border-white/10 rounded-xl">
+                  <div className="flex items-center gap-1.5">
+                     <Scale className="w-3 h-3 text-primary" />
+                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Вес:</span>
+                  </div>
+                  <input 
+                     type="number"
+                     step="0.1"
+                     value={state.profile?.weight || ''}
+                     onChange={(e) => useFitnessStore.getState().updateProfile({ weight: parseFloat(e.target.value) })}
+                     className="w-12 bg-transparent text-primary font-bold text-xs border-none focus:outline-hidden"
+                  />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">кг</span>
+               </div>
+            </div>
           </div>
           <GradientButton onClick={() => setModalOpen(true)} className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
