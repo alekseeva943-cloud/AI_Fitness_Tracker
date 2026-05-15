@@ -16,11 +16,12 @@ import { WorkoutDetailModal } from '../entries/components/WorkoutDetailModal';
 import { ModalFooter } from '../../components/ui/ModalFooter';
 import { METRICS } from '../../constants/metrics';
 import { AIRecommendationsSection } from '../ai/components/AIRecommendationsSection';
+import { GoalAchievementReport } from './components/GoalAchievementReport';
 
 export const GoalsView: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const goals = useGoals();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const goals = useGoals().filter(g => g.status !== 'ARCHIVED');
   const activeGoalId = useActiveGoalId();
   const weightHistory = useFitnessStore((state) => state.weightHistory);
   const workouts = useFitnessStore((state) => state.workouts);
@@ -38,6 +39,16 @@ export const GoalsView: React.FC = () => {
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
   const [isWorkoutModalOpen, setWorkoutModalOpen] = useState(false);
   const [detailMetric, setDetailMetric] = useState<'calories' | 'weight' | 'duration'>('weight');
+
+  const handleCloseDetail = () => {
+    setDetailOpen(false);
+    // Clear search param to prevent re-opening on next state change
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('id');
+      return next;
+    });
+  };
 
   useEffect(() => {
     const goalId = searchParams.get('id');
@@ -289,7 +300,7 @@ export const GoalsView: React.FC = () => {
 
       <Modal 
         isOpen={isDetailOpen} 
-        onClose={() => setDetailOpen(false)} 
+        onClose={handleCloseDetail} 
         title="Детали цели"
         maxWidth="2xl"
       >
@@ -299,6 +310,21 @@ export const GoalsView: React.FC = () => {
           
           // Latest value for 'Current' display
           const latestValue = DataNormalizer.getLatestMetricValue(state, baselineMetricId);
+          const isAchieved = selectedGoal.status === 'COMPLETED';
+
+          if (isAchieved) {
+            return (
+              <GoalAchievementReport 
+                goal={selectedGoal}
+                workouts={workouts}
+                weightHistory={weightHistory}
+                onArchive={() => {
+                  updateGoal(selectedGoal.id, { status: 'ARCHIVED' });
+                  handleCloseDetail();
+                }}
+              />
+            );
+          }
 
           const totalDiff = Math.abs(selectedGoal.targetValue - selectedGoal.startValue);
           const currentDiff = Math.abs(latestValue - selectedGoal.startValue);
@@ -383,7 +409,10 @@ export const GoalsView: React.FC = () => {
                 </div>
                 <div className="p-5 rounded-3xl bg-primary/5 border border-primary/20 space-y-1">
                   <p className="text-[10px] uppercase font-bold tracking-widest text-primary">Разница</p>
-                  <p className="text-xl font-bold">{Math.abs(selectedGoal.targetValue - latestValue).toFixed(1)} {selectedGoal.unit}</p>
+                  <p className="text-xl font-bold">
+                    {latestValue - selectedGoal.targetValue > 0 ? '+' : ''}
+                    {(latestValue - selectedGoal.targetValue).toFixed(1)} {selectedGoal.unit}
+                  </p>
                 </div>
               </div>
 
@@ -552,7 +581,7 @@ export const GoalsView: React.FC = () => {
               </div>
 
               <ModalFooter 
-                onBack={() => setDetailOpen(false)}
+                onBack={handleCloseDetail}
                 onEdit={() => {
                   setDetailOpen(false);
                   setEditPanelOpen(true);
@@ -560,7 +589,7 @@ export const GoalsView: React.FC = () => {
                 onDelete={selectedGoal.status === 'PAUSED' || selectedGoal.status === 'COMPLETED' || (selectedGoal.id !== activeGoalId) ? () => {
                   if (window.confirm('Вы уверены, что хотите окончательно удалить эту цель?')) {
                     removeGoal(selectedGoal.id);
-                    setDetailOpen(false);
+                    handleCloseDetail();
                   }
                 } : undefined}
                 primaryAction={selectedGoal.status === 'COMPLETED' ? {
@@ -576,8 +605,12 @@ export const GoalsView: React.FC = () => {
               {selectedGoal.status !== 'COMPLETED' && (
                 <button 
                   onClick={() => {
-                    updateGoal(selectedGoal.id, { status: 'COMPLETED' });
-                    setDetailOpen(false);
+                    updateGoal(selectedGoal.id, { 
+                      status: 'COMPLETED',
+                      completedAt: new Date().toISOString(),
+                      currentValue: latestValue
+                    });
+                    handleCloseDetail();
                   }}
                   className="w-full py-3 text-[10px] uppercase font-bold tracking-widest text-green-400 hover:text-green-300 transition-colors flex items-center justify-center gap-2 mt-2"
                 >

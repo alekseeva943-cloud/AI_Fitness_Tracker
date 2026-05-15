@@ -43,7 +43,8 @@ export const selectAnalyticsSummary = (state: FitnessState): AnalyticsSummary | 
         remainingValue: 0,
         estimatedCompletionDate: null,
         isImproving: false,
-        status: 'STAGNANT'
+        status: 'STAGNANT',
+        isAchieved: false
       }
     };
   } catch (error) {

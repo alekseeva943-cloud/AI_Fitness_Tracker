@@ -22,14 +22,18 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({ summary, activeGoa
       <StatCard 
         label="Прогресс цели"
         subLabel={activeGoal?.title || "Выберите цель"}
-        value={formatPercent(summary?.goal.completionPercentage ?? 0)}
+        value={summary?.goal.completionPercentage ?? 0}
         unit="%"
         icon={<Target className="w-4 h-4" />}
         onClick={() => navigate(activeGoal ? `/goals?id=${activeGoal.id}` : '/goals')}
         title="Прогресс достижения вашей текущей основной цели"
-        trend={summary ? { 
-          value: formatWeight(Math.abs(summary.weight.totalChange)), 
+        trend={summary && activeGoal ? { 
+          // Show change since goal start, not since beginning of all history
+          value: formatWeight(Math.abs((summary.weight.currentWeight || activeGoal.currentValue) - activeGoal.startValue)), 
           isPositive: summary.goal.isImproving 
+        } : summary ? {
+          value: formatWeight(Math.abs(summary.weight.totalChange)), 
+          isPositive: summary.weight.totalChange >= 0
         } : undefined}
       />
       <StatCard 

@@ -3,7 +3,7 @@ import { RU } from "../../constants";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
-import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles, CheckCircle2 } from "lucide-react";
 import { useFitnessStore, useGoals, useActiveGoalId, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { METRICS } from "../../constants/metrics";
 import { THEME } from "../../constants/theme";
@@ -189,11 +189,13 @@ export const DashboardView: React.FC = () => {
             <h1 className="text-4xl font-display font-medium mb-2 tracking-tight">{RU.NAV.DASHBOARD}</h1>
             <p className="text-muted-foreground">
               {activeGoal ? (
-                summary?.goal.status === 'WRONG_DIRECTION' 
-                  ? 'Текущая динамика противоречит вашей цели' 
-                  : summary?.goal.status === 'AHEAD_OF_SCHEDULE' 
-                    ? 'Вы опережаете поставленный график' 
-                    : 'Ваш прогресс соответствует намеченному плану'
+                summary?.goal.isAchieved 
+                  ? 'Поздравляем! Основная цель достигнута!'
+                  : summary?.goal.status === 'WRONG_DIRECTION' 
+                    ? 'Текущая динамика противоречит вашей цели' 
+                    : summary?.goal.status === 'AHEAD_OF_SCHEDULE' 
+                      ? 'Вы опережаете поставленный график' 
+                      : 'Ваш прогресс соответствует намеченному плану'
               ) : 'Выберите основную цель для аналитики'}
             </p>
           </div>
@@ -230,6 +232,33 @@ export const DashboardView: React.FC = () => {
         {activeGoal ? (
           <>
             <DashboardGrid summary={summary} activeGoal={activeGoal} />
+
+            {summary?.goal.isAchieved && activeGoal.status !== 'COMPLETED' && (
+              <GlassCard className="p-8 bg-linear-to-br from-green-500/20 to-emerald-500/5 border-green-500/30 flex flex-col md:flex-row items-center justify-between gap-8 animate-in zoom-in-95 duration-1000 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 translate-x-1/4 -translate-y-1/4 pointer-events-none">
+                    <CheckCircle2 className="w-64 h-64 text-green-500" />
+                 </div>
+                 <div className="flex flex-col md:flex-row items-center gap-6 relative z-10 text-center md:text-left">
+                    <div className="w-20 h-20 rounded-[2rem] bg-green-500 text-black flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-bounce-slow">
+                       <CheckCircle2 className="w-10 h-10" />
+                    </div>
+                    <div className="space-y-1">
+                       <h3 className="text-3xl font-display font-black italic uppercase tracking-tighter text-green-400">Победа! Цель достигнута!</h3>
+                       <p className="text-muted-foreground text-lg max-w-xl">
+                          Ты показал невероятный результат и достиг поставленной планки. Давай изучим твой успех подробнее и наметим новые горизонты.
+                       </p>
+                    </div>
+                 </div>
+                 <div className="relative z-10 w-full md:w-auto">
+                    <GradientButton 
+                      className="px-8 py-4 h-auto text-lg w-full md:w-auto shadow-2xl" 
+                      onClick={() => navigate(`/goals?id=${activeGoal.id}`)}
+                    >
+                        Посмотреть отчет об успехе
+                    </GradientButton>
+                 </div>
+              </GlassCard>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
@@ -497,7 +526,7 @@ export const DashboardView: React.FC = () => {
                                     ? "bg-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)]" 
                                     : "bg-primary shadow-[0_0_20px_rgba(223,255,0,0.3)]"
                                 )}
-                                style={{ width: `${Math.min(100, Math.max(2, summary.goal.completionPercentage))}%` }}
+                                style={{ width: `${Math.max(2, summary.goal.completionPercentage)}%` }}
                               />
                             </div>
                             <div className="flex justify-between items-center px-1">

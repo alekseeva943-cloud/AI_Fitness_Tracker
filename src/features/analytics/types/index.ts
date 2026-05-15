@@ -34,6 +34,7 @@ export interface GoalProgress {
   estimatedCompletionDate: string | null;
   isImproving: boolean;
   status: 'AHEAD_OF_SCHEDULE' | 'ON_TRACK' | 'BEHIND_SCHEDULE' | 'STAGNANT' | 'WRONG_DIRECTION';
+  isAchieved: boolean;
 }
 
 export interface AnalyticsSummary {

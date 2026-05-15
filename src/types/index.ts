@@ -33,9 +33,11 @@ export interface Goal {
   startDate: string;
   deadline: string;
   createdAt: string;
-  status: 'ACTIVE' | 'SECONDARY' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+  status: 'ACTIVE' | 'SECONDARY' | 'PAUSED' | 'COMPLETED' | 'CANCELLED' | 'ARCHIVED';
   motivation?: string;
   baselineMeasurements?: Record<string, number>; // e.g., { biceps: 38, waist: 85 }
+  completedAt?: string;
+  archivedAt?: string;
 }
 
 export interface Exercise {

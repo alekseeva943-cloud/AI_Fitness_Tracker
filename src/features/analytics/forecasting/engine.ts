@@ -29,13 +29,18 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
     completionPercentage = totalToGain > 0 ? (gainedSoFar / totalToGain) * 100 : 0;
   }
   
-  completionPercentage = Math.max(0, Math.min(100, completionPercentage));
+  const isAchieved = completionPercentage >= 99.9; // Use small buffer for precision
+  completionPercentage = Math.round(Math.max(0, Math.min(100, completionPercentage)));
 
   // 2. Forecasting logic
   let estimatedCompletionDate: string | null = null;
   let status: GoalProgress['status'] = 'ON_TRACK';
 
-  if (trend) {
+  if (isAchieved) {
+    status = 'ON_TRACK';
+    // If achieved, the estimated date is effectively "now"
+    estimatedCompletionDate = new Date().toISOString();
+  } else if (trend) {
     const remainingValue = Math.abs(target - current);
     
     // Direction Check
@@ -96,7 +101,8 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
       remainingValue: Math.abs(target - current),
       estimatedCompletionDate,
       isImproving: isImprovingOverall && (isMovingTowardsGoalRecent || isOverallMovingTowardsGoal),
-      status
+      status,
+      isAchieved
     };
   }
 
@@ -109,6 +115,7 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
     remainingValue: Math.abs(target - current),
     estimatedCompletionDate,
     isImproving: false,
-    status
+    status,
+    isAchieved
   };
 };
