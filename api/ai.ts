@@ -1,3 +1,5 @@
+import OpenAI from 'openai';
+
 export const runtime = 'nodejs';
 
 export default async function handler(req: any, res: any) {
@@ -11,29 +13,53 @@ export default async function handler(req: any, res: any) {
     const startTime = Date.now();
     const { actionType, userPrompt } = req.body || {};
 
-    console.log('[AI API STATUS] STABILITY_TEST_MODE: Returning test payload from serverless function');
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error('[AI API ERROR] OPENAI_API_KEY is missing');
+      return res.status(500).json({ success: false, error: 'OpenAI API key not configured' });
+    }
 
-    const testResponse = {
-      success: true,
-      summary: "Бэкенд диагностика (Serverless): Канал связи активен. AI временно в режиме теста для проверки транспорта.",
-      recommendations: [
-        { type: 'system', text: 'Serverless transport layer verified', priority: 'high', icon: 'check-circle' }
+    const openai = new OpenAI({ apiKey });
+    
+    console.log('[OPENAI START] Requesting completion from gpt-4o-mini');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a fitness AI assistant. Respond briefly and EXCLUSIVELY in Russian language. (Отвечай только на русском языке).'
+        },
+        {
+          role: 'user',
+          content: `Action: ${actionType || 'general'}. Prompt: ${userPrompt || 'Check connection'}`
+        }
       ],
-      insights: ["Native Vercel route detected", "Body parsing OK"],
-      trends: ["STABLE"],
+      temperature: 0.7
+    });
+
+    console.log('[OPENAI RESPONSE RECEIVED]', completion.id);
+    const text = completion.choices[0]?.message?.content || '';
+    console.log('[OPENAI TEXT LENGTH]', text.length);
+
+    const response = {
+      success: true,
+      summary: text,
+      recommendations: [],
+      insights: [],
+      trends: [],
       warnings: [],
-      overallProgress: 100,
+      overallProgress: 0,
       trend: "STABLE",
       mainRisk: null,
       date: new Date().toISOString(),
-      isTestResponse: true,
       receivedPrompt: userPrompt ? userPrompt.slice(0, 20) + '...' : 'none'
     };
 
     const duration = Date.now() - startTime;
-    console.log(`[AI API SUCCESS] Internal processing took ${duration}ms`);
+    console.log(`[AI API SUCCESS] Total serverless time: ${duration}ms`);
     
-    return res.status(200).json(testResponse);
+    return res.status(200).json(response);
   } catch (error: any) {
     console.error('[AI API FATAL ERROR]', error);
     return res.status(500).json({
