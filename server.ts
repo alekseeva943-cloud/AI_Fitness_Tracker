@@ -22,15 +22,14 @@ async function startServer() {
 
   // AI Endpoint
   app.post("/api/ai", async (req, res) => {
-    console.log('[AI ROUTE START]');
-    console.group(`[AI API HIT] ${req.method} ${req.url}`);
     const startTime = Date.now();
+    console.log('[AI ROUTE START] Received request');
+    console.group(`[AI API HIT] ${req.method} ${req.url} - ${new Date().toISOString()}`);
     
     try {
-      if (!req.body || Object.keys(req.body).length === 0) {
-        console.error("[AI ERROR] Empty request body");
-        console.groupEnd();
-        return res.status(400).json({ success: false, error: "Empty request body" });
+      if (!req.body || typeof req.body !== 'object') {
+        console.error("[AI ERROR] Invalid or empty request body");
+        return res.status(400).json({ success: false, error: "Invalid request body" });
       }
 
       const { actionType, systemPrompt, userPrompt, provider = 'openai' } = req.body;
@@ -45,44 +44,36 @@ async function startServer() {
       if (provider === 'openai') {
         const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
-          console.error("[AI ERROR] OPENAI_API_KEY is missing");
-          console.groupEnd();
-          return res.status(500).json({ success: false, error: "OPENAI_API_KEY is not set." });
+          console.error("[AI ERROR] OPENAI_API_KEY environment variable is NOT set");
+          return res.status(500).json({ success: false, error: "OPENAI_API_KEY is not configured on the server." });
         }
 
         const openai = new OpenAI({ apiKey });
         
-        // TEMPORARY SIMPLE REQUEST for stability testing
-        console.log(`[OPENAI REQUEST START] Model: gpt-4o-mini, Time: ${new Date().toISOString()}`);
+        console.log(`[OPENAI EXECUTION] model: gpt-4o-mini`);
 
         const response = await openai.chat.completions.create({
-          model: "gpt-4o-mini", // Faster and more stable for simple text testing
+          model: "gpt-4o-mini", 
           messages: [
             { role: "system", content: "You are a fitness AI assistant. Always return valid JSON." },
-            { role: "user", content: `Action: ${actionType}. Context provided. User says: ${userPrompt || 'Analyze my data'}` }
+            { role: "user", content: `Action: ${actionType}. User prompt: ${userPrompt || 'Analyze my data'}` }
           ],
-          // response_format: { type: "json_object" }, // Temporarily disabled for stability
           temperature: 0.3,
         });
 
-        console.log("[OPENAI RESPONSE OK]", response.id);
-        const duration = Date.now() - startTime;
+        console.log("[OPENAI RESPONSE RECEIVED]", response.id);
         const rawContent = response.choices[0]?.message?.content;
         
-        console.log(`[OPENAI RAW] Length: ${rawContent?.length || 0} chars`);
-
         if (!rawContent) {
-          console.error("[AI ERROR] OpenAI returned null content");
-          console.groupEnd();
-          return res.status(502).json({ success: false, error: "OpenAI returned empty content" });
+          console.error("[AI ERROR] OpenAI choices[0].message.content was empty/null");
+          return res.status(502).json({ success: false, error: "AI provider returned an empty body" });
         }
 
-        // Try to return as JSON if it looks like JSON, otherwise return as text object
+        console.log(`[SERIALIZATION START] Length: ${rawContent.length} chars`);
+
         try {
           const parsed = JSON.parse(rawContent);
-          
-          // Ensure structure compatibility
-          const response = {
+          const normalizedResponse = {
             success: true,
             summary: parsed.summary || parsed.text || "Анализ завершен",
             recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
@@ -94,14 +85,12 @@ async function startServer() {
             mainRisk: parsed.mainRisk || null
           };
 
-          console.log('[AI ROUTE SUCCESS RESPONSE (JSON)]');
-          console.groupEnd();
-          return res.status(200).json(response);
-        } catch (e) {
-          console.warn("[AI WARNING] Response was not valid JSON, returning normalized structure");
-          console.log('[AI ROUTE SUCCESS RESPONSE (NORMALIZED TEXT)]');
-          console.groupEnd();
-          return res.status(200).json({ 
+          const duration = Date.now() - startTime;
+          console.log(`[AI ROUTE SUCCESS] JSON Parsed. Duration: ${duration}ms`);
+          return res.status(200).json(normalizedResponse);
+        } catch (jsonErr) {
+          console.warn("[AI WARNING] AI output was not valid JSON. Returning raw text as summary.");
+          const fallback = { 
             success: true, 
             summary: rawContent,
             recommendations: [],
@@ -112,30 +101,29 @@ async function startServer() {
             trend: "STABLE",
             mainRisk: null,
             isRawText: true 
-          });
+          };
+          console.log('[AI ROUTE SUCCESS] Fallback structure used.');
+          return res.status(200).json(fallback);
         }
       } else {
-        console.error(`[AI ERROR] Unsupported provider: ${provider}`);
-        console.groupEnd();
+        console.error(`[AI ERROR] Requested unsupported provider: ${provider}`);
         return res.status(400).json({ success: false, error: `Unsupported provider: ${provider}` });
       }
     } catch (error: any) {
+      console.error('[AI ROUTE FATAL CRASH]', error);
       const duration = Date.now() - startTime;
-      console.error('[AI ROUTE CRASH]', error);
-      console.error(`[AI ERROR DETAIL] Failed after ${duration}ms:`, {
-        message: error.message,
-        status: error.status,
-        code: error.code
-      });
-      console.groupEnd();
       
       return res.status(error.status || 500).json({
         success: false,
         error: {
-          message: error.message || "Internal AI Pipeline Error",
-          type: error.constructor.name
+          message: error.message || "Unknown server error during AI processing",
+          type: error.constructor.name,
+          durationMs: duration
         }
       });
+    } finally {
+      console.log('[AI ROUTE EXIT]');
+      console.groupEnd();
     }
   });
 
