@@ -6,11 +6,15 @@ import { ANALYTICS_CONSTANTS } from "../../../constants/analytics";
 
 export const calculateWorkoutStats = (workouts: WorkoutEntry[]): WorkoutStats => {
   // Sanity filter
-  const sanitized = workouts.filter(w => 
-    w.duration >= VALIDATION_LIMITS.workout.duration.min && 
-    w.duration <= VALIDATION_LIMITS.workout.duration.max &&
-    (!w.caloriesBurned || (w.caloriesBurned >= VALIDATION_LIMITS.workout.calories.min && w.caloriesBurned <= VALIDATION_LIMITS.workout.calories.max))
-  );
+  const sanitized = workouts.filter(w => {
+    const d = new Date(w.date);
+    const isValidDate = d instanceof Date && !isNaN(d.getTime());
+    
+    return isValidDate &&
+      w.duration >= VALIDATION_LIMITS.workout.duration.min && 
+      w.duration <= VALIDATION_LIMITS.workout.duration.max &&
+      (!w.caloriesBurned || (w.caloriesBurned >= VALIDATION_LIMITS.workout.calories.min && w.caloriesBurned <= VALIDATION_LIMITS.workout.calories.max));
+  });
 
   if (sanitized.length === 0) {
     return {

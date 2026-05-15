@@ -3,10 +3,12 @@ import { WeightTrend } from "../types";
 import { differenceInDays, subDays, isAfter } from "date-fns";
 import { VALIDATION_LIMITS } from "../../../lib/validation";
 import { ANALYTICS_CONSTANTS } from "../../../constants/analytics";
+import { DataNormalizer } from "../../../lib/data-normalizer";
 
 export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null): WeightTrend | null => {
-  // 1. Initial Sanitization (Static Limits)
+  // 1. Initial Sanitization (Static Limits + Date Validation)
   const initialSanitized = history.filter(e => 
+    DataNormalizer.isValidDate(e.date) &&
     e.value >= VALIDATION_LIMITS.weight.value.min && 
     e.value <= VALIDATION_LIMITS.weight.value.max
   );
@@ -26,7 +28,7 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
     }
     const prev = sanitized[sanitized.length - 1];
     const diff = Math.abs(entry.value - prev.value);
-    const percentChange = diff / prev.value;
+    const percentChange = DataNormalizer.safeDivide(diff, prev.value);
     const daysSince = Math.max(1, differenceInDays(new Date(entry.date), new Date(prev.date)));
     
     // If weight jumped more than 5% in 1 day, it's likely an error, unless verified over multiple days
@@ -55,11 +57,11 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
   );
 
   const avg7 = last7Days.length > 0 
-    ? last7Days.reduce((sum, e) => sum + e.value, 0) / last7Days.length 
+    ? DataNormalizer.safeAverage(last7Days.map(e => e.value)) 
     : analyticsCurrent;
   
   const avgPrev7 = prev7Days.length > 0 
-    ? prev7Days.reduce((sum, e) => sum + e.value, 0) / prev7Days.length 
+    ? DataNormalizer.safeAverage(prev7Days.map(e => e.value)) 
     : (last7Days.length > 0 ? (sorted.find(e => !isAfter(new Date(e.date), subDays(now, 7)))?.value ?? starting) : analyticsCurrent);
 
   const weeklyChange = avg7 - avgPrev7;

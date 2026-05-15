@@ -1,6 +1,7 @@
 import { WorkoutEntry, WeightEntry, Goal } from '../types';
 import { METRICS } from '../constants/metrics';
 import { formatDate } from './utils';
+import { DataNormalizer } from './data-normalizer';
 
 export interface ChartDataPoint {
   dateKey: string;
@@ -49,94 +50,92 @@ export const getMetricValueFromWorkout = (workout: WorkoutEntry, metricId: strin
  * Builds a unified timeline for charting from multiple data sources
  */
 export const buildChartTimeline = (
-  measurements: WeightEntry[],
-  workouts: WorkoutEntry[],
+  rawMeasurements: WeightEntry[],
+  rawWorkouts: WorkoutEntry[],
   goal?: Goal | null,
   metricId: string = 'weight',
   forecastedDate?: string | null
 ): ChartDataPoint[] => {
   const unit = METRICS[metricId]?.unit || goal?.unit || '';
 
-  // 1. Collect all raw measurement points for this metric
-  const dailyMeasurements = new Map<string, { avg: number, entries: WeightEntry[] }>();
+  // Use DataNormalizer to get clean, sorted, filtered data
+  const stateMock = { 
+    weightHistory: rawMeasurements, 
+    workouts: rawWorkouts,
+    profile: null,
+    goals: [],
+    activeGoalId: null,
+    analyses: [],
+    analysesHistory: []
+  } as any;
+
+  const cleanData = DataNormalizer.getMetricTimeline(stateMock, metricId);
   
-  measurements.forEach(m => {
-    if (!isValidDate(m.date)) return;
-    const dayKey = new Date(m.date).toISOString().split('T')[0];
-    const existing = dailyMeasurements.get(dayKey) || { avg: 0, entries: [] };
+  // 1. Collect all raw points for this metric
+  const dailyData = new Map<string, { avg: number, entries: any[] }>();
+  
+  cleanData.forEach(p => {
+    if (!isValidDate(p.date)) return;
+    const dayKey = new Date(p.date).toISOString().split('T')[0];
+    const existing = dailyData.get(dayKey) || { avg: 0, entries: [] };
     
-    // If it's weight, use .value, otherwise it might be in additional metrics
-    let val = m.value;
-    if (metricId !== 'weight' && m.metrics) {
-      val = m.metrics[metricId] || 0;
-    }
-    
-    if (val > 0) {
-      existing.entries.push({ ...m, value: val });
-      dailyMeasurements.set(dayKey, existing);
-    }
+    existing.entries.push(p.original);
+    dailyData.set(dayKey, existing);
   });
 
-  dailyMeasurements.forEach((val) => {
-    val.avg = val.entries.reduce((s, v) => s + v.value, 0) / val.entries.length;
+  // Calculate averages for days with multiple entries
+  dailyData.forEach((val) => {
+    val.avg = DataNormalizer.safeAverage(val.entries.map(e => e.value || DataNormalizer.getMetricValueFromWorkout(e, metricId)));
   });
 
-  // 2. Identify relevant workouts for this metric
-  const dailyWorkouts = new Map<string, WorkoutEntry[]>();
-  const workoutPoints = new Map<string, number[]>();
-
-  workouts.forEach(w => {
+  // 2. Identify all workouts for markers (even if they don't have the metric)
+  const workoutMarkers = new Map<string, WorkoutEntry[]>();
+  rawWorkouts.forEach(w => {
     if (!isValidDate(w.date)) return;
     const dayKey = new Date(w.date).toISOString().split('T')[0];
-    
-    // Track all workouts for markers
-    const list = dailyWorkouts.get(dayKey) || [];
+    const list = workoutMarkers.get(dayKey) || [];
     list.push(w);
-    dailyWorkouts.set(dayKey, list);
-
-    // If it's a workout-based metric
-    const val = getMetricValueFromWorkout(w, metricId);
-    if (val > 0) {
-      const vals = workoutPoints.get(dayKey) || [];
-      vals.push(val);
-      workoutPoints.set(dayKey, vals);
-    }
+    workoutMarkers.set(dayKey, list);
   });
 
   // 3. Build a combined set of dates
   const allDates = new Set<string>();
-  dailyMeasurements.forEach((_, k) => allDates.add(k));
-  workoutPoints.forEach((_, k) => allDates.add(k));
-  if (goal && isValidDate(goal.startDate)) {
-    allDates.add(new Date(goal.startDate).toISOString().split('T')[0]);
+  dailyData.forEach((_, k) => allDates.add(k));
+  
+  try {
+    if (goal && isValidDate(goal.startDate)) {
+      allDates.add(new Date(goal.startDate).toISOString().split('T')[0]);
+    }
+  } catch (e) {
+    console.error('Invalid goal.startDate in chart engine', goal?.startDate);
   }
 
   // 4. Create sorted base timeline
   let timeline: ChartDataPoint[] = Array.from(allDates)
     .sort()
     .map(dateKey => {
-      const measurement = dailyMeasurements.get(dateKey);
-      const wPoints = workoutPoints.get(dateKey);
+      const data = dailyData.get(dateKey);
+      const workoutsAtDate = workoutMarkers.get(dateKey) || [];
       
-      let currentVal: number | null = null;
-      if (measurement) {
-        currentVal = measurement.avg;
-      } else if (wPoints) {
-        currentVal = wPoints.reduce((s, v) => s + v, 0) / wPoints.length;
-      }
+      const currentVal = data ? data.avg : null;
+
+      let displayDate = '—';
+      try {
+        displayDate = formatDate(dateKey);
+      } catch (e) {}
 
       return {
         dateKey,
-        displayDate: formatDate(new Date(dateKey)),
+        displayDate,
         current: currentVal !== null ? Number(currentVal.toFixed(1)) : null,
         forecast: null,
         goal: goal?.targetValue,
         ideal: null,
         unit,
-        workout: dailyWorkouts.has(dateKey),
+        workout: workoutsAtDate.length > 0,
         isReal: currentVal !== null,
-        workoutsAtDate: dailyWorkouts.get(dateKey) || [],
-        measurementEntries: measurement?.entries || [],
+        workoutsAtDate: workoutsAtDate,
+        measurementEntries: data?.entries || [],
         isForecast: false
       };
     });
@@ -155,9 +154,9 @@ export const buildChartTimeline = (
         goal: goal.targetValue,
         ideal: null,
         unit,
-        workout: dailyWorkouts.has(startIso),
+        workout: workoutMarkers.has(startIso),
         isReal: hasValidStartValue,
-        workoutsAtDate: dailyWorkouts.get(startIso) || [],
+        workoutsAtDate: workoutMarkers.get(startIso) || [],
         measurementEntries: [],
         isForecast: false
       });
@@ -170,9 +169,9 @@ export const buildChartTimeline = (
           goal: goal.targetValue,
           ideal: null,
           unit,
-          workout: dailyWorkouts.has(startIso),
+          workout: workoutMarkers.has(startIso),
           isReal: hasValidStartValue,
-          workoutsAtDate: dailyWorkouts.get(startIso) || [],
+          workoutsAtDate: workoutMarkers.get(startIso) || [],
           measurementEntries: [],
           isForecast: false
         };

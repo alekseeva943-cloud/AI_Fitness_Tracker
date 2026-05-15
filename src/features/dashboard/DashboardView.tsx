@@ -10,6 +10,7 @@ import { THEME } from "../../constants/theme";
 import { useNavigate } from "react-router-dom";
 import { selectAnalyticsSummary } from "../analytics/selectors/fitnessSelectors";
 import { cn, formatDate, formatWeight, formatPercent } from "../../lib/utils";
+import { DataNormalizer } from "../../lib/data-normalizer";
 import { Modal } from "../../components/ui/Modal";
 import { GoalForm } from "../goals/components/GoalForm";
 import { EntryForm } from "../entries/components/EntryForm";
@@ -247,11 +248,7 @@ export const DashboardView: React.FC = () => {
                         <div className="flex flex-col gap-0.5">
                            <span className="opacity-40 text-[8px]">Старт</span>
                            <span className="text-foreground text-sm font-bold">
-                              {(() => {
-                                 // weightHistory is sorted newest-first, so reversed index 0 is oldest
-                                 const firstMeasurement = [...weightHistory].reverse().find(h => h.value > 0);
-                                 return activeGoal.startValue || firstMeasurement?.value || 0;
-                              })()} {activeGoal.unit}
+                              {summary?.weight.startingWeight || activeGoal.startValue || 0} {activeGoal.unit}
                            </span>
                         </div>
                         <div className="flex flex-col gap-0.5">

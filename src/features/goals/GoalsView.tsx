@@ -10,6 +10,7 @@ import { Plus, Target, Trash2, Calendar, TrendingUp, ChevronLeft, Edit2, Pause, 
 import { GoalType, Goal } from '../../types';
 import { cn, formatDate, formatWeight } from '../../lib/utils';
 import { selectAnalyticsSummary } from '../analytics/selectors/fitnessSelectors';
+import { DataNormalizer } from '../../lib/data-normalizer';
 import { MetricChart } from '../dashboard/components/MetricChart';
 import { WorkoutDetailModal } from '../entries/components/WorkoutDetailModal';
 import { ModalFooter } from '../../components/ui/ModalFooter';
@@ -297,15 +298,7 @@ export const GoalsView: React.FC = () => {
           const baselineMetricId = selectedGoal.metricId || 'weight';
           
           // Latest value for 'Current' display
-          const latestValue = (() => {
-            if (baselineMetricId === 'weight') {
-              const latest = weightHistory.find(h => h.value > 0);
-              return latest?.value || selectedGoal.currentValue || selectedGoal.startValue || 0;
-            }
-            // For other metrics, look in workouts or additional metrics
-            // (Simplifying to use summary or goal for now if not weight)
-            return selectedGoal.currentValue || selectedGoal.startValue || 0;
-          })();
+          const latestValue = DataNormalizer.getLatestMetricValue(state, baselineMetricId);
 
           const totalDiff = Math.abs(selectedGoal.targetValue - selectedGoal.startValue);
           const currentDiff = Math.abs(latestValue - selectedGoal.startValue);

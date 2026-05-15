@@ -71,13 +71,16 @@ export const calculateGoalProgress = (goal: Goal | null, trend: WeightTrend | nu
         if (daysToGoal < ANALYTICS_CONSTANTS.GOAL.MAX_FORECAST_DAYS) {
           estimatedCompletionDate = addDays(new Date(), daysToGoal).toISOString();
           
-          const deadline = new Date(goal.deadline);
           const estimated = new Date(estimatedCompletionDate);
+          const deadline = goal.deadline ? new Date(goal.deadline) : null;
+          const isValidDeadline = deadline && !isNaN(deadline.getTime());
           
-          if (estimated < deadline) {
-            status = 'AHEAD_OF_SCHEDULE';
-          } else if (differenceInDays(estimated, deadline) > ANALYTICS_CONSTANTS.GOAL.STAGNANT_DAYS_THRESHOLD) {
-            status = 'BEHIND_SCHEDULE';
+          if (isValidDeadline && deadline) {
+            if (estimated < deadline) {
+              status = 'AHEAD_OF_SCHEDULE';
+            } else if (differenceInDays(estimated, deadline) > ANALYTICS_CONSTANTS.GOAL.STAGNANT_DAYS_THRESHOLD) {
+              status = 'BEHIND_SCHEDULE';
+            }
           }
         }
       } else {

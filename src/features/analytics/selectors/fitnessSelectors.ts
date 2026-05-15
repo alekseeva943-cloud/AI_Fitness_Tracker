@@ -4,6 +4,7 @@ import { calculateWeightTrend } from "../calculators/trends";
 import { calculateWorkoutStats } from "../calculators/performance";
 import { calculateGoalProgress } from "../forecasting/engine";
 import { logger } from "../../../lib/logger";
+import { DataNormalizer } from "../../../lib/data-normalizer";
 
 /**
  * High-performance selectors to compute internal analytics from state.
@@ -13,7 +14,13 @@ export const selectAnalyticsSummary = (state: FitnessState): AnalyticsSummary | 
   try {
     const activeGoal = state.goals.find(g => g.id === state.activeGoalId) || null; 
     
-    const weightTrend = calculateWeightTrend(state.weightHistory, activeGoal);
+    // STRICT: Use normalized weight timeline instead of raw weightHistory
+    const normalizedWeightHistory = DataNormalizer.getWeightTimeline(state);
+    
+    // Debug validation
+    DataNormalizer.validateDataFlow(state, 'weight');
+
+    const weightTrend = calculateWeightTrend(normalizedWeightHistory, activeGoal);
     const workoutStats = calculateWorkoutStats(state.workouts);
     const goalProgress = calculateGoalProgress(activeGoal, weightTrend);
     const forecast = weightTrend?.forecastedWeight;
@@ -50,7 +57,8 @@ export const selectAnalyticsSummary = (state: FitnessState): AnalyticsSummary | 
  */
 export const selectWeightChartData = (state: FitnessState) => {
   try {
-    return state.weightHistory
+    const normalized = DataNormalizer.getWeightTimeline(state);
+    return normalized
       .map(e => ({
         date: new Date(e.date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' }),
         weight: e.value,
