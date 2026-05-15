@@ -492,13 +492,7 @@ export const GoalsView: React.FC = () => {
 
               {/* AI Recommendations Section */}
               {selectedGoal.id === activeGoalId && (
-                <div className="space-y-4">
-                  <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 text-primary" />
-                    Рекомендации ИИ
-                  </h4>
-                  <AIRecommendationsSection />
-                </div>
+                <AIRecommendationsSection variant="compact" />
               )}
 
               {/* Workouts Section */}
