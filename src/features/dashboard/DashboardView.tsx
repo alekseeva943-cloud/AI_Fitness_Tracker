@@ -361,24 +361,8 @@ export const DashboardView: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex-1 mt-4 min-h-[400px]">
-                    {(() => {
-                        console.group('[DASHBOARD GRAPH]');
-                        console.log('activeGoal:', activeGoal);
-                        console.log('metricId:', activeGoal?.metricId);
-                        console.log('chartMetric:', chartMetric);
-                        console.log('summary:', summary);
-                        console.groupEnd();
-                        return null;
-                    })()}
                     <div
-                      style={{
-                        width: '100%',
-                        height: 400,
-                        background: 'rgba(255,0,0,0.05)',
-                        border: '1px dashed rgba(255,255,255,0.1)',
-                        borderRadius: '24px',
-                        overflow: 'hidden'
-                      }}
+                      className="w-full h-[400px] bg-secondary/20 rounded-[32px] border border-white/5 overflow-hidden"
                     >
                       <MetricChart 
                         data={weightHistory} 

@@ -147,17 +147,6 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     return { label, isPositive, isUp };
   }, [chartData, goal]);
 
-  // DEBUG LOGS
-  console.group('[METRIC CHART]');
-  console.log('metricId:', metricId);
-  console.log('goal:', goal);
-  console.log('raw data length:', data?.length);
-  console.log('chartData length:', chartData?.length);
-  console.log('chartData:', chartData);
-  console.log('minVal:', minVal);
-  console.log('maxVal:', maxVal);
-  console.groupEnd();
-
   if (!data.length && !goal) return (
     <div className="w-full h-full min-h-[260px] flex flex-col items-center justify-center text-muted-foreground/40 italic text-xs">
        <Activity className="w-8 h-8 mb-2 opacity-20" />
@@ -332,11 +321,6 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             />
           </ComposedChart>
         </ResponsiveContainer>
-      </div>
-
-      {/* DEBUG DATA OUTPUT */}
-      <div className="absolute bottom-0 left-0 right-0 max-h-[100px] overflow-auto bg-black/80 p-2 text-[8px] font-mono whitespace-pre text-green-400 opacity-20 pointer-events-none">
-        {JSON.stringify(chartData, null, 2)}
       </div>
     </motion.div>
   );
