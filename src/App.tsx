@@ -13,6 +13,7 @@ import { AIInsightsView } from './features/ai/AIInsightsView';
 import { ProfileView } from './features/profile/ProfileView';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppLayout } from './components/layout/AppLayout';
+import { useFitnessStore } from './store/useFitnessStore';
 import { logger } from './lib/logger';
 
 // Lightweight Route Logger
@@ -41,18 +42,19 @@ const PlaceholderView = ({ title }: { title: string }) => (
 );
 
 export default function App() {
+  const initialize = useFitnessStore(state => state.initialize);
+
   useEffect(() => {
+    initialize();
     logger.log('system', 'App root component mounted');
-  }, []);
+  }, [initialize]);
 
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <RouteObserver />
         <AppLayout>
           <Routes>
             <Route path="/" element={<DashboardView />} />
-            {console.log('[ROUTER] Registering /profile route')}
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/goals" element={<GoalsView />} />
             <Route path="/analytics" element={<AnalyticsView />} />
