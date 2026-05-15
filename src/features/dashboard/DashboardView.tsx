@@ -248,7 +248,8 @@ export const DashboardView: React.FC = () => {
                            <span className="opacity-40 text-[8px]">Старт</span>
                            <span className="text-foreground text-sm font-bold">
                               {(() => {
-                                 const firstMeasurement = weightHistory.find(h => h.value > 0);
+                                 // weightHistory is sorted newest-first, so reversed index 0 is oldest
+                                 const firstMeasurement = [...weightHistory].reverse().find(h => h.value > 0);
                                  return activeGoal.startValue || firstMeasurement?.value || 0;
                               })()} {activeGoal.unit}
                            </span>
@@ -257,7 +258,8 @@ export const DashboardView: React.FC = () => {
                            <span className="text-primary text-[8px]">Текущий</span>
                            <span className="text-primary text-sm font-bold">
                               {(() => {
-                                const latest = [...weightHistory].reverse().find(h => h.value > 0);
+                                // weightHistory is sorted newest-first, so index 0 is newest
+                                const latest = [...weightHistory].find(h => h.value > 0);
                                 return latest?.value || activeGoal.currentValue || activeGoal.startValue || 0;
                               })()} {activeGoal.unit}
                            </span>

@@ -299,7 +299,7 @@ export const GoalsView: React.FC = () => {
           // Latest value for 'Current' display
           const latestValue = (() => {
             if (baselineMetricId === 'weight') {
-              const latest = [...weightHistory].reverse().find(h => h.value > 0);
+              const latest = weightHistory.find(h => h.value > 0);
               return latest?.value || selectedGoal.currentValue || selectedGoal.startValue || 0;
             }
             // For other metrics, look in workouts or additional metrics
