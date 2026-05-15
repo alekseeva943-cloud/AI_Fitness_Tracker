@@ -1,37 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { METRICS } from '../constants/metrics';
 import { FitnessState, AIAnalysis } from '../types';
+import { AI_CONFIG } from '../constants/ai';
+import { ANALYTICS_SYSTEM_PROMPT } from '../ai/prompts/analytics';
+import { AIContextBuilder } from '../ai/context/context-builder';
 
 export class AIService {
   static async analyzeProgress(state: FitnessState, analytics: any): Promise<AIAnalysis> {
-    const goal = state.goals.find(g => g.id === state.activeGoalId) || null;
-    const currentMetric = goal ? METRICS[goal.metricId] || METRICS.weight : METRICS.weight;
-
-    const semanticContext = goal ? {
-      goalType: goal.type,
-      goalTitle: goal.title,
-      metricId: goal.metricId,
-      metricLabel: currentMetric.label,
-      metricUnit: currentMetric.unit,
-      expectedDirection: goal.targetValue > goal.startValue ? 'up' : 'down',
-      actualDirection: analytics.goal.velocity < 0 ? 'down' : (analytics.goal.velocity > 0 ? 'up' : 'stable'),
-      isTrendMatchingGoal: analytics.goal.status !== 'WRONG_DIRECTION' && analytics.goal.status !== 'STAGNANT',
-      velocity: analytics.goal.velocity,
-      workoutDiversity: state.workouts.reduce((acc: any, w) => {
-        const cat = w.category || 'OTHER';
-        acc[cat] = (acc[cat] || 0) + 1;
-        return acc;
-      }, {}),
-      recentIntensity: state.workouts.slice(0, 10).map(w => ({
-        type: w.type,
-        category: w.category,
-        duration: w.duration,
-        totalWeight: w.totalWeight,
-        distance: w.distance,
-        heartRate: w.heartRate,
-        calories: w.caloriesBurned
-      }))
-    } : null;
+    const context = AIContextBuilder.buildUserContext(state, analytics);
+    const userContextStr = AIContextBuilder.formatContextForPrompt(context);
 
     try {
       const apiKey = process.env.GEMINI_API_KEY;
@@ -40,28 +16,17 @@ export class AIService {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `
-        Ты – профессиональный фитнес-аналитик и коуч. Твоя задача – проанализировать прогресс пользователя относительно его КОНКРЕТНОЙ ЦЕЛИ.
-        
-        ЦЕЛЬ ПОЛЬЗОВАТЕЛЯ: ${goal ? `"${goal.title}" (Показатель: ${currentMetric.label}, Цель: ${goal.targetValue} ${goal.unit})` : 'Не установлена'}
-        
-        ДАННЫЕ ДЛЯ АНАЛИЗА:
-        - Аналитика: ${JSON.stringify(analytics.goal)}
-        - Семантика процесса: ${JSON.stringify(semanticContext)}
-        
-        ВЫХОДНОЙ ФОРМАТ: JSON
-        {
-          "summary": "Краткое описание прогресса",
-          "trend": "IMPROVING" | "STAGNATING" | "DECLINING",
-          "recommendations": [
-            { "type": "EXERCISE" | "DIET" | "REST" | "MOTIVATION", "text": "Текст рекомендации", "priority": "LOW" | "MEDIUM" | "HIGH" }
-          ]
-        }
-      `;
+      
+      // DEBUG LOGGING
+      console.group('[AI REQUEST]');
+      console.log('SYSTEM PROMPT:', ANALYTICS_SYSTEM_PROMPT);
+      console.log('USER CONTEXT:', context);
+      console.log('FORMATTED CONTEXT:', userContextStr);
+      console.groupEnd();
 
       const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+        model: AI_CONFIG.MODEL,
+        contents: `${ANALYTICS_SYSTEM_PROMPT}\n\n${userContextStr}`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -85,6 +50,11 @@ export class AIService {
         }
       });
 
+      // DEBUG RESPONSE LOGGING
+      console.group('[AI RESPONSE]');
+      console.log('TEXT:', result.text);
+      console.groupEnd();
+
       const resultJson = JSON.parse(result.text || "{}");
       
       return {
@@ -100,3 +70,4 @@ export class AIService {
     }
   }
 }
+
