@@ -93,33 +93,35 @@ export class AIContextBuilder {
       console.error('[CONTEXT SECTION FAILED] goals', e);
     }
 
-    // SECTION: ANALYTICS
+      // SECTION: ANALYTICS
     try {
       console.log('[AI SAFE CHECK] Analytics raw input:', analytics);
       
-      const safeAnalytics = analytics || {};
-      const safeGoal = safeAnalytics.goal || {};
-      const safeSummary = safeAnalytics.summary || {};
+      // ROOT LEVEL DEFENSE
+      const rootAnalytics = analytics || {};
+      const goalObj = rootAnalytics.goal || {};
+      
+      // The user reported "Cannot read properties of undefined (reading 'overallProgress')"
+      // We will check EVERY possible location where overallProgress might hide
+      const summaryObj = rootAnalytics.summary || rootAnalytics || {};
+      const progressVal = summaryObj.overallProgress ?? (rootAnalytics as any).overallProgress ?? (goalObj as any).completionPercentage ?? 0;
 
-      context.analytics.goal = safeGoal;
+      context.analytics.goal = goalObj;
       
-      if (safeGoal) {
-        const vel = safeGoal.velocity ?? 0;
-        context.analytics.trends = {
-          velocity: vel,
-          actualDirection: vel < 0 ? 'down' : (vel > 0 ? 'up' : 'stable'),
-          isTrendMatchingGoal: safeGoal.status !== 'WRONG_DIRECTION' && safeGoal.status !== 'STAGNANT',
-        };
-      }
+      const vel = goalObj.velocity ?? (rootAnalytics as any).weight?.velocity ?? 0;
+      context.analytics.trends = {
+        velocity: vel,
+        actualDirection: vel < 0 ? 'down' : (vel > 0 ? 'up' : 'stable'),
+        isTrendMatchingGoal: goalObj.status !== 'WRONG_DIRECTION' && goalObj.status !== 'STAGNANT',
+      };
       
-      // EXTREMELY SAFE ACCESS for overallProgress
-      context.analytics.overallProgress = safeSummary.overallProgress ?? 0;
+      context.analytics.overallProgress = typeof progressVal === 'number' ? progressVal : 0;
       
       console.log('[AI SAFE CHECK] Context Analytics mapped:', context.analytics);
-      
       logger.log('ai', '[STEP SUCCESS] Analytics mapped');
     } catch (e) {
       console.error('[CONTEXT SECTION FAILED] analytics critical error:', e);
+      // Fallback already partially handled by initial object if this catch is hit
     }
 
     // SECTION: ACTIVITY

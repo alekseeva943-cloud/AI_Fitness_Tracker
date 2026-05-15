@@ -64,7 +64,12 @@ export class AIOrchestrator {
       });
 
       const rawText = await response.text();
-      console.log('[RAW RESPONSE FROM SERVER]', rawText);
+      console.log('[RAW RESPONSE FROM SERVER]', rawText || '(EMPTY RESPONSE)');
+
+      if (!rawText || rawText.trim() === '') {
+        console.error('[AI PROVIDER ERROR] Server returned empty response body');
+        throw new Error('Server returned empty response body. Trace ID: ' + startTime);
+      }
 
       if (!response.ok) {
         let errorData;

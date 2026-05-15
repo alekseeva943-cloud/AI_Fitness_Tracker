@@ -9,10 +9,28 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      env: {
+        hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+        nodeEnv: process.env.NODE_ENV
+      }
+    });
+  });
+
   // AI Endpoint
   app.post("/api/ai", async (req, res) => {
-    console.log('[AI API HIT]');
+    console.group(`[AI API HIT] ${req.method} ${req.url}`);
     const startTime = Date.now();
+    
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error("[AI ERROR] Empty request body");
+      console.groupEnd();
+      return res.status(400).json({ error: "Empty request body" });
+    }
+
     const { actionType, systemPrompt, userPrompt, provider = 'openai' } = req.body;
 
     console.log(`[AI REQUEST START] ${new Date().toISOString()}`);
@@ -28,11 +46,12 @@ async function startServer() {
         const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
           console.error("[AI ERROR] OPENAI_API_KEY is missing in environment");
+          console.groupEnd();
           return res.status(500).json({ error: "Server Configuration Error: OPENAI_API_KEY is not set." });
         }
 
         const openai = new OpenAI({ apiKey });
-        console.log("[OPENAI REQUEST START] Model: gpt-4o");
+        console.log(`[OPENAI REQUEST START] Model: gpt-4o, Time: ${new Date().toISOString()}`);
 
         const response = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -48,32 +67,40 @@ async function startServer() {
         const duration = Date.now() - startTime;
         const rawContent = response.choices[0].message.content;
         
-        console.log(`[OPENAI RAW RESPONSE] Received in ${duration}ms`);
-        console.log(`[OPENAI RAW RESPONSE] Length: ${rawContent?.length} chars`);
+        console.log(`[OPENAI RAW RESPONSE] Received in ${duration}ms, Length: ${rawContent?.length} chars`);
 
         if (!rawContent) {
-          throw new Error("Empty response from OpenAI");
+          throw new Error("Empty response from OpenAI (content is null)");
         }
 
         console.log("[JSON PARSE START] Attempting to parse response...");
         try {
           const parsed = JSON.parse(rawContent);
           console.log("[JSON PARSE SUCCESS]");
+          console.groupEnd();
           return res.json(parsed);
         } catch (parseError) {
           console.error("[JSON PARSE ERROR] Malformed JSON from AI", rawContent);
+          console.groupEnd();
           return res.status(502).json({ 
-            error: "Malformed JSON from AI", 
+            error: "Malformed JSON from AI. The AI sent invalid data.", 
             rawResponse: rawContent,
             details: parseError instanceof Error ? parseError.message : String(parseError)
           });
         }
       } else {
-        return res.status(400).json({ error: "Unsupported provider" });
+        console.error(`[AI ERROR] Unsupported provider: ${provider}`);
+        console.groupEnd();
+        return res.status(400).json({ error: `Unsupported provider: ${provider}` });
       }
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error(`[AI ERROR] Failed after ${duration}ms:`, error);
+      console.error(`[AI ERROR] Failed after ${duration}ms:`, {
+        message: error.message,
+        status: error.status,
+        code: error.code
+      });
+      console.groupEnd();
       
       return res.status(error.status || 500).json({
         error: error.message || "Internal AI Pipeline Error",
