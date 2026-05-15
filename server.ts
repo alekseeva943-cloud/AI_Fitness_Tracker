@@ -22,80 +22,86 @@ async function startServer() {
 
   // AI Endpoint
   app.post("/api/ai", async (req, res) => {
+    console.log('[AI ROUTE START]');
     console.group(`[AI API HIT] ${req.method} ${req.url}`);
     const startTime = Date.now();
     
-    if (!req.body || Object.keys(req.body).length === 0) {
-      console.error("[AI ERROR] Empty request body");
-      console.groupEnd();
-      return res.status(400).json({ error: "Empty request body" });
-    }
-
-    const { actionType, systemPrompt, userPrompt, provider = 'openai' } = req.body;
-
-    console.log(`[AI REQUEST START] ${new Date().toISOString()}`);
-    console.log(`[REQUEST BODY]`, { 
-      actionType, 
-      provider, 
-      systemPromptLength: systemPrompt?.length, 
-      userPromptLength: userPrompt?.length 
-    });
-
     try {
+      if (!req.body || Object.keys(req.body).length === 0) {
+        console.error("[AI ERROR] Empty request body");
+        console.groupEnd();
+        return res.status(400).json({ success: false, error: "Empty request body" });
+      }
+
+      const { actionType, systemPrompt, userPrompt, provider = 'openai' } = req.body;
+
+      console.log(`[AI REQUEST DATA]`, { 
+        actionType, 
+        provider, 
+        systemPromptLength: systemPrompt?.length, 
+        userPromptLength: userPrompt?.length 
+      });
+
       if (provider === 'openai') {
         const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
-          console.error("[AI ERROR] OPENAI_API_KEY is missing in environment");
+          console.error("[AI ERROR] OPENAI_API_KEY is missing");
           console.groupEnd();
-          return res.status(500).json({ error: "Server Configuration Error: OPENAI_API_KEY is not set." });
+          return res.status(500).json({ success: false, error: "OPENAI_API_KEY is not set." });
         }
 
         const openai = new OpenAI({ apiKey });
-        console.log(`[OPENAI REQUEST START] Model: gpt-4o, Time: ${new Date().toISOString()}`);
+        
+        // TEMPORARY SIMPLE REQUEST for stability testing
+        console.log(`[OPENAI REQUEST START] Model: gpt-4o-mini, Time: ${new Date().toISOString()}`);
 
         const response = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-4o-mini", // Faster and more stable for simple text testing
           messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "system", content: "You are a fitness AI assistant. Always return valid JSON." },
+            { role: "user", content: `Action: ${actionType}. Context provided. User says: ${userPrompt || 'Analyze my data'}` }
           ],
-          response_format: { type: "json_object" },
+          // response_format: { type: "json_object" }, // Temporarily disabled for stability
           temperature: 0.3,
         });
 
-        console.log("[OPENAI RESPONSE OK]");
+        console.log("[OPENAI RESPONSE OK]", response.id);
         const duration = Date.now() - startTime;
-        const rawContent = response.choices[0].message.content;
+        const rawContent = response.choices[0]?.message?.content;
         
-        console.log(`[OPENAI RAW RESPONSE] Received in ${duration}ms, Length: ${rawContent?.length} chars`);
+        console.log(`[OPENAI RAW] Length: ${rawContent?.length || 0} chars`);
 
         if (!rawContent) {
-          throw new Error("Empty response from OpenAI (content is null)");
+          console.error("[AI ERROR] OpenAI returned null content");
+          console.groupEnd();
+          return res.status(502).json({ success: false, error: "OpenAI returned empty content" });
         }
 
-        console.log("[JSON PARSE START] Attempting to parse response...");
+        // Try to return as JSON if it looks like JSON, otherwise return as text object
         try {
           const parsed = JSON.parse(rawContent);
-          console.log("[JSON PARSE SUCCESS]");
+          console.log('[AI ROUTE SUCCESS RESPONSE (JSON)]');
           console.groupEnd();
-          return res.json(parsed);
-        } catch (parseError) {
-          console.error("[JSON PARSE ERROR] Malformed JSON from AI", rawContent);
+          return res.status(200).json(parsed);
+        } catch (e) {
+          console.warn("[AI WARNING] Response was not valid JSON, returning as text object");
+          console.log('[AI ROUTE SUCCESS RESPONSE (TEXT)]');
           console.groupEnd();
-          return res.status(502).json({ 
-            error: "Malformed JSON from AI. The AI sent invalid data.", 
-            rawResponse: rawContent,
-            details: parseError instanceof Error ? parseError.message : String(parseError)
+          return res.status(200).json({ 
+            success: true, 
+            text: rawContent,
+            isRawText: true 
           });
         }
       } else {
         console.error(`[AI ERROR] Unsupported provider: ${provider}`);
         console.groupEnd();
-        return res.status(400).json({ error: `Unsupported provider: ${provider}` });
+        return res.status(400).json({ success: false, error: `Unsupported provider: ${provider}` });
       }
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error(`[AI ERROR] Failed after ${duration}ms:`, {
+      console.error('[AI ROUTE CRASH]', error);
+      console.error(`[AI ERROR DETAIL] Failed after ${duration}ms:`, {
         message: error.message,
         status: error.status,
         code: error.code
@@ -103,11 +109,11 @@ async function startServer() {
       console.groupEnd();
       
       return res.status(error.status || 500).json({
-        error: error.message || "Internal AI Pipeline Error",
-        status: error.status,
-        code: error.code,
-        type: error.type,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        success: false,
+        error: {
+          message: error.message || "Internal AI Pipeline Error",
+          type: error.constructor.name
+        }
       });
     }
   });
