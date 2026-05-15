@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { User, Activity, Heart, Clock, FileText, Scale, Ruler, Coffee, Zap, Info, Plus, Trash2, ChevronDown, Check } from 'lucide-react';
 import { useFitnessStore, useProfile } from '../../store/useFitnessStore';
@@ -12,14 +12,45 @@ import { METRICS, getMetricsByCategory } from '../../constants/metrics';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const ProfileView: React.FC = () => {
+  useEffect(() => {
+    console.group('[PROFILE VIEW]');
+    console.log('ProfileView mounted');
+    console.groupEnd();
+    
+    return () => {
+      console.log('[PROFILE VIEW] ProfileView unmounted');
+    };
+  }, []);
+
+  console.group('[PROFILE VIEW]');
+  console.log('render started');
+  console.groupEnd();
+
   const profile = useProfile();
+  
+  console.group('[PROFILE VIEW]');
+  console.log('render logic', { hasProfile: !!profile });
+  console.groupEnd();
+
+  if (!profile) {
+    return (
+      <div className="p-20 text-center">
+        <div className="bg-red-500/10 border border-red-500/20 p-8 rounded-3xl inline-block max-w-md">
+          <h2 className="text-2xl font-black uppercase text-red-500 mb-4 tracking-tighter italic">Ошибка профиля</h2>
+          <p className="text-muted-foreground mb-8 text-sm uppercase font-black tracking-widest">Данные не загружены. Обратитесь в консоль разработчика для диагностики.</p>
+          <div style={{ color: 'white', padding: 20, border: '1px dashed white', borderRadius: '1rem', fontSystem: 'monospace' }}>
+            DEBUG: profile is null
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const updateProfile = useFitnessStore(state => state.updateProfile);
   const updateBaseline = useFitnessStore(state => state.updateBaseline);
   const [showAdditional, setShowAdditional] = useState(false);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [selectedMetricId, setSelectedMetricId] = useState('chest');
-
-  if (!profile) return null;
 
   const bodyMetrics = getMetricsByCategory('BODY').filter(m => m.id !== 'weight');
   const strengthMetrics = getMetricsByCategory('STRENGTH').filter(m => m.primary);

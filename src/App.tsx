@@ -20,6 +20,12 @@ const RouteObserver = () => {
   const location = useLocation();
   
   useEffect(() => {
+    console.group('[ROUTE CHANGED]');
+    console.log('pathname:', location.pathname);
+    console.log('search:', location.search);
+    console.log('hash:', location.hash);
+    console.groupEnd();
+    
     logger.router(`Navigation to: ${location.pathname}`);
   }, [location]);
 
@@ -46,6 +52,7 @@ export default function App() {
         <AppLayout>
           <Routes>
             <Route path="/" element={<DashboardView />} />
+            {console.log('[ROUTER] Registering /profile route')}
             <Route path="/profile" element={<ProfileView />} />
             <Route path="/goals" element={<GoalsView />} />
             <Route path="/analytics" element={<AnalyticsView />} />
