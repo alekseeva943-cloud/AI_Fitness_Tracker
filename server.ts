@@ -11,23 +11,28 @@ async function startServer() {
 
   // AI Endpoint
   app.post("/api/ai", async (req, res) => {
+    console.log('[AI API HIT]');
     const startTime = Date.now();
     const { actionType, systemPrompt, userPrompt, provider = 'openai' } = req.body;
 
     console.log(`[AI REQUEST START] ${new Date().toISOString()}`);
-    console.log(`[AI REQUEST INFO] Action: ${actionType}, Provider: ${provider}`);
-    console.log(`[AI REQUEST INFO] Payload Size: ${JSON.stringify(req.body).length} chars`);
+    console.log(`[REQUEST BODY]`, { 
+      actionType, 
+      provider, 
+      systemPromptLength: systemPrompt?.length, 
+      userPromptLength: userPrompt?.length 
+    });
 
     try {
       if (provider === 'openai') {
         const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
           console.error("[AI ERROR] OPENAI_API_KEY is missing in environment");
-          return res.status(500).json({ error: "OpenAI API key not configured on server" });
+          return res.status(500).json({ error: "Server Configuration Error: OPENAI_API_KEY is not set." });
         }
 
         const openai = new OpenAI({ apiKey });
-        console.log("[OPENAI REQUEST] Initializing chat completion...");
+        console.log("[OPENAI REQUEST START] Model: gpt-4o");
 
         const response = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -39,6 +44,7 @@ async function startServer() {
           temperature: 0.3,
         });
 
+        console.log("[OPENAI RESPONSE OK]");
         const duration = Date.now() - startTime;
         const rawContent = response.choices[0].message.content;
         

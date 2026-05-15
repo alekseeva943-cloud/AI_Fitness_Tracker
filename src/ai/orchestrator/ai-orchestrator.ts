@@ -32,30 +32,61 @@ export class AIOrchestrator {
 
       logger.log('ai', '[AI PROVIDER START] Calling server API /api/ai...');
       
+      const payload = {
+        actionType,
+        systemPrompt,
+        userPrompt,
+        provider: 'openai'
+      };
+
+      console.group('[AI TRANSPORT]');
+      console.log('[FETCH CONFIG]', {
+        url: '/api/ai',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        payloadSize: JSON.stringify(payload).length
+      });
+      console.log('[PAYLOAD]', payload);
+      console.groupEnd();
+
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          actionType,
-          systemPrompt,
-          userPrompt,
-          provider: 'openai'
-        }),
+        body: JSON.stringify(payload),
       });
 
+      console.log('[FETCH RESPONSE STATUS]', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      const rawText = await response.text();
+      console.log('[RAW RESPONSE FROM SERVER]', rawText);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Sync failed' }));
-        console.error('[AI PROVIDER ERROR]', errorData);
+        let errorData;
+        try {
+          errorData = JSON.parse(rawText);
+        } catch (e) {
+          errorData = { error: rawText || 'Sync failed' };
+        }
+        
+        console.error('[AI PROVIDER ERROR RESPONSE]', errorData);
         throw new Error(errorData.error || `Server Error: ${response.status}`);
       }
 
-      const parsedResponse = await response.json() as AIResponse;
-      logger.log('ai', '[AI RESPONSE] Success');
-      
-      console.groupEnd();
-      return parsedResponse;
+      try {
+        const parsedResponse = JSON.parse(rawText) as AIResponse;
+        logger.log('ai', '[AI RESPONSE] Success');
+        console.groupEnd();
+        return parsedResponse;
+      } catch (parseError) {
+        console.error('[AI RESPONSE PARSE ERROR]', parseError);
+        throw new Error('Failed to parse AI response as JSON');
+      }
     } catch (error: any) {
       console.error('[AI ERROR DETAILS]', {
         message: error.message,
