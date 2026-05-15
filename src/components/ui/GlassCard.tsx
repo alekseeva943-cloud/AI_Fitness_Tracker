@@ -27,7 +27,8 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         transition: { duration: 0.3 } 
       } : undefined}
       className={cn(
-        "glass dashboard-card overflow-hidden",
+        "glass dashboard-card",
+        !className?.includes('overflow-') && "overflow-hidden",
         props.onClick && "cursor-pointer active:scale-[0.99] transition-transform",
         className
       )}

@@ -97,8 +97,9 @@ export class DataNormalizer {
    * Get the absolute latest valid body weight.
    */
   static getLatestWeight(state: FitnessState): number {
+    if (state.profile?.weight) return this.safeNum(state.profile.weight);
     const timeline = this.getWeightTimeline(state);
-    if (timeline.length === 0) return this.safeNum(state.profile?.startingWeight, 0);
+    if (timeline.length === 0) return this.safeNum(state.profile?.baselines.find(b => b.id === 'weight')?.value, 0);
     return timeline[timeline.length - 1].value;
   }
 
@@ -168,9 +169,10 @@ export class DataNormalizer {
   }
 
   static getLatestMetricValue(state: FitnessState, metricId: string): number {
+    if (metricId === 'weight' && state.profile?.weight) return this.safeNum(state.profile.weight);
     const timeline = this.getMetricTimeline(state, metricId);
     if (timeline.length === 0) {
-      if (metricId === 'weight' && state.profile?.startingWeight) return state.profile.startingWeight;
+      if (metricId === 'weight') return this.safeNum(state.profile?.baselines.find(b => b.id === 'weight')?.value, 0);
       return 0;
     }
     return timeline[timeline.length - 1].value;

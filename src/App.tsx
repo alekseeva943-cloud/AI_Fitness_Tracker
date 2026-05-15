@@ -10,6 +10,7 @@ import { GoalsView } from './features/goals/GoalsView';
 import { WorkoutsView } from './features/entries/WorkoutsView';
 import { AnalyticsView } from './features/analytics/AnalyticsView';
 import { AIInsightsView } from './features/ai/AIInsightsView';
+import { ProfileView } from './features/profile/ProfileView';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppLayout } from './components/layout/AppLayout';
 import { logger } from './lib/logger';
@@ -45,6 +46,7 @@ export default function App() {
         <AppLayout>
           <Routes>
             <Route path="/" element={<DashboardView />} />
+            <Route path="/profile" element={<ProfileView />} />
             <Route path="/goals" element={<GoalsView />} />
             <Route path="/analytics" element={<AnalyticsView />} />
             <Route path="/workouts" element={<WorkoutsView />} />

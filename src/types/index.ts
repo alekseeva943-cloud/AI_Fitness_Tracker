@@ -13,12 +13,14 @@ export enum GoalType {
 }
 
 export enum ActivityLevel {
-  SEDENTARY = 'SEDENTARY',
-  LIGHT = 'LIGHT',
-  MODERATE = 'MODERATE',
-  ACTIVE = 'ACTIVE',
-  VERY_ACTIVE = 'VERY_ACTIVE',
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
 }
+
+export type BodyType = 'ECTOMORPH' | 'MESOMORPH' | 'ENDOMORPH';
+export type FitnessLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 
 export interface Goal {
   id: string;
@@ -111,13 +113,35 @@ export interface MetricBaseline {
 }
 
 export interface UserProfile {
+  id: string;
   name: string;
   age: number;
-  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  gender: Gender;
   height: number;
-  startingWeight: number;
+  weight?: number;
+  bodyType?: BodyType;
   activityLevel: ActivityLevel;
-  baselines: MetricBaseline[]; // Centralized baseline metrics
+  fitnessLevel?: FitnessLevel;
+  
+  // Health & Context
+  injuries?: string[];
+  chronicConditions?: string[];
+  limitations?: string[];
+  
+  // Daily & Lifestyle
+  sleepAverage?: number; // hours
+  stressLevel?: number; // 1-10
+  
+  // Subjective / Textual data
+  nutritionNotes?: string;
+  recoveryNotes?: string;
+  lifestyleNotes?: string;
+  motivation?: string;
+  customNotes?: string;
+  
+  baselines: MetricBaseline[]; // Matches existing baseline structure
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FitnessState {

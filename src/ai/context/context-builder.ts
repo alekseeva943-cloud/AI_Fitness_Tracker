@@ -1,7 +1,8 @@
-import { FitnessState } from '../../types';
+import { FitnessState, UserProfile } from '../../types';
 import { METRICS } from '../../constants/metrics';
 
 export interface AIUserContext {
+  profile: UserProfile | null;
   goal: {
     title: string;
     type: string;
@@ -22,6 +23,9 @@ export interface AIUserContext {
   activity: {
     workoutDiversity: Record<string, number>;
     recentIntensity: any[];
+  };
+  history: {
+    weightEntries: any[];
   };
 }
 
@@ -48,6 +52,7 @@ export class AIContextBuilder {
     }));
 
     return {
+      profile: state.profile,
       goal: goal ? {
         title: goal.title,
         type: goal.type,
@@ -68,14 +73,40 @@ export class AIContextBuilder {
       activity: {
         workoutDiversity,
         recentIntensity
+      },
+      history: {
+        weightEntries: state.weightHistory.slice(-10).map(w => ({ date: w.date, value: w.value }))
       }
     };
   }
 
   static formatContextForPrompt(context: AIUserContext): string {
-    const { goal, analytics, activity } = context;
+    const { goal, analytics, activity, profile } = context;
 
-    let prompt = `ЦЕЛЬ ПОЛЬЗОВАТЕЛЯ: ${goal ? `"${goal.title}" (Показатель: ${goal.metricLabel}, Цель: ${goal.targetValue} ${goal.unit})` : 'Не установлена'}\n\n`;
+    let prompt = `--- ЛИЧНЫЙ ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ---\n`;
+    if (profile) {
+      prompt += `- Имя: ${profile.name || 'Не указано'}\n`;
+      prompt += `- Возраст: ${profile.age} лет, Пол: ${profile.gender}, Рост: ${profile.height} см, Текущий вес: ${profile.weight || 'Не указан'} кг\n`;
+      prompt += `- Телосложение: ${profile.bodyType}, Уровень подготовки: ${profile.fitnessLevel}\n`;
+      prompt += `- Уровень активности: ${profile.activityLevel}\n`;
+      
+      if (profile.baselines?.length) {
+        prompt += `- Исходные замеры (Baselines):\n`;
+        profile.baselines.forEach(b => {
+          prompt += `  * ${b.name}: ${b.value} ${b.unit} (Дата: ${new Date(b.date).toLocaleDateString('ru-RU')})\n`;
+        });
+      }
+
+      if (profile.injuries?.length) prompt += `- Травмы/Ограничения: ${profile.injuries.join(', ')}\n`;
+      if (profile.lifestyleNotes) prompt += `- Стиль жизни: ${profile.lifestyleNotes}\n`;
+      if (profile.nutritionNotes) prompt += `- Питание: ${profile.nutritionNotes}\n`;
+      prompt += `- Сон: ~${profile.sleepAverage}ч, Стресс: ${profile.stressLevel}/10\n\n`;
+    } else {
+      prompt += `Профиль не заполнен.\n\n`;
+    }
+
+    prompt += `--- ЦЕЛЬ ПОЛЬЗОВАТЕЛЯ ---\n`;
+    prompt += `${goal ? `"${goal.title}" (Показатель: ${goal.metricLabel}, Цель: ${goal.targetValue} ${goal.unit})` : 'Не установлена'}\n\n`;
     
     prompt += `ДАННЫЕ АНАЛИТИКИ:\n`;
     prompt += `- Состояние цели: ${analytics.goal.status}\n`;
@@ -85,7 +116,14 @@ export class AIContextBuilder {
 
     prompt += `ДАННЫЕ АКТИВНОСТИ:\n`;
     prompt += `- Разнообразие тренировок: ${JSON.stringify(activity.workoutDiversity)}\n`;
-    prompt += `- Последние тренировки: ${JSON.stringify(activity.recentIntensity)}\n`;
+    prompt += `- Последние тренировки: ${JSON.stringify(activity.recentIntensity)}\n\n`;
+
+    if (context.history.weightEntries.length > 0) {
+      prompt += `ИСТОРИЯ ВЕСА (последние замеры):\n`;
+      context.history.weightEntries.forEach(w => {
+        prompt += `- ${new Date(w.date).toLocaleDateString('ru-RU')}: ${w.value} кг\n`;
+      });
+    }
 
     return prompt;
   }

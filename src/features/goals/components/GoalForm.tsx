@@ -40,7 +40,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
   React.useEffect(() => {
     if (!initialData) {
         const baseline = selectedMetricId === 'weight' 
-            ? (weightHistory[0]?.value || profile?.startingWeight || 0)
+            ? (weightHistory[0]?.value || profile?.baselines.find(b => b.id === 'weight')?.value || 0)
             : 0;
         setCustomStartValue(baseline === 0 ? '' : baseline.toString());
     }
@@ -60,7 +60,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSubmit, initialData, onCan
 
   const getBaselineValue = () => {
     if (customStartValue !== '') return Number(customStartValue);
-    if (selectedMetricId === 'weight') return weightHistory[0]?.value || profile?.startingWeight || 0;
+    if (selectedMetricId === 'weight') return weightHistory[0]?.value || profile?.baselines.find(b => b.id === 'weight')?.value || 0;
     return 0;
   };
 

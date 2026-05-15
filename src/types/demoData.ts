@@ -4,17 +4,22 @@ export const MOCK_GOAL_ID = 'goal-1';
 
 export const INITIAL_DEMO_STATE: FitnessState = {
   profile: {
+    id: 'demo-user',
     name: 'Алексей',
     age: 28,
     gender: 'MALE',
     height: 182,
-    startingWeight: 85.5,
-    activityLevel: ActivityLevel.MODERATE,
+    weight: 85.5,
+    bodyType: 'MESOMORPH',
+    activityLevel: ActivityLevel.MEDIUM,
+    fitnessLevel: 'INTERMEDIATE',
     baselines: [
       { id: 'weight', name: 'Вес', value: 85.5, unit: 'кг', date: '2026-04-01T00:00:00.000Z' },
       { id: 'workingWeight', name: 'Жим лежа', value: 60, unit: 'кг', date: '2026-04-01T00:00:00.000Z' },
       { id: 'distance', name: 'Бег (5км)', value: 32, unit: 'мин', date: '2026-04-01T00:00:00.000Z' }
     ],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
   },
   goals: [
     {

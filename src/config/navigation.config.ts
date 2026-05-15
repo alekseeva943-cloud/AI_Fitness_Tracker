@@ -1,4 +1,4 @@
-import { LayoutDashboard, BarChart2, Dumbbell, Target, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Dumbbell, Target, MessageSquare, UserCircle } from 'lucide-react';
 import { RU } from '../constants';
 
 export const NAVIGATION_CONFIG = [
@@ -7,6 +7,12 @@ export const NAVIGATION_CONFIG = [
     label: RU.NAV.DASHBOARD,
     icon: LayoutDashboard,
     path: '/',
+  },
+  {
+    id: 'profile',
+    label: RU.NAV.PROFILE,
+    icon: UserCircle,
+    path: '/profile',
   },
   {
     id: 'analytics',

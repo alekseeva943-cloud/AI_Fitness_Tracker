@@ -10,6 +10,7 @@ export const RU = {
     ENTRIES: 'Активность',
     ANALYTICS: 'Аналитика',
     AI: 'ИИ Помощник',
+    PROFILE: 'Профиль',
   },
   DASHBOARD: {
     TITLE: 'Ваш прогресс',

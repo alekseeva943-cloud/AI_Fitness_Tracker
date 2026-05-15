@@ -16,14 +16,33 @@ export const createProfileSlice: StateCreator<
 > = (set) => ({
   profile: null,
   setProfile: (profile) => set({ profile }),
-  updateProfile: (updates) => set((state) => ({
-    profile: state.profile ? { ...state.profile, ...updates } : (updates as UserProfile)
-  })),
+  updateProfile: (updates) => set((state) => {
+    const currentProfile = state.profile || {
+      id: crypto.randomUUID(),
+      name: '',
+      age: 25,
+      gender: 'MALE',
+      height: 175,
+      activityLevel: 'MEDIUM' as any,
+      baselines: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } as UserProfile;
+
+    return {
+      profile: { 
+        ...currentProfile, 
+        ...updates,
+        updatedAt: new Date().toISOString()
+      }
+    };
+  }),
   updateBaseline: (metric) => set((state) => {
     if (!state.profile) return state;
     
-    const existing = state.profile.baselines.findIndex(b => b.id === metric.id);
-    const newBaselines = [...state.profile.baselines];
+    const baselines = state.profile.baselines || [];
+    const existing = baselines.findIndex(b => b.id === metric.id);
+    const newBaselines = [...baselines];
     
     if (existing >= 0) {
       newBaselines[existing] = metric;
@@ -32,7 +51,11 @@ export const createProfileSlice: StateCreator<
     }
     
     return {
-      profile: { ...state.profile, baselines: newBaselines }
+      profile: { 
+        ...state.profile, 
+        baselines: newBaselines,
+        updatedAt: new Date().toISOString()
+      }
     };
   }),
 });
