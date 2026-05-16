@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { AIAnalysis } from '../../types';
+import { AIAnalysis, AIMemory, BehavioralPattern } from '../../types';
 import { RequestState, INITIAL_REQUEST_STATE } from '../../types/requests';
 
 export interface ChatMessage {
@@ -15,10 +15,13 @@ export interface AISlice {
   analysisRequest: RequestState;
   chatMessages: ChatMessage[];
   goalChatMessages: Record<string, ChatMessage[]>;
+  aiMemory: AIMemory;
   addAIAnalysis: (analysis: AIAnalysis) => void;
   setAnalysisRequestState: (requestState: Partial<RequestState>) => void;
   addChatMessage: (message: ChatMessage, goalId?: string) => void;
   clearChatHistory: (goalId?: string) => void;
+  updateAIMemory: (memory: Partial<AIMemory>) => void;
+  addBehavioralPattern: (pattern: BehavioralPattern) => void;
 }
 
 export const createAISlice: StateCreator<
@@ -31,6 +34,11 @@ export const createAISlice: StateCreator<
   analysisRequest: INITIAL_REQUEST_STATE,
   chatMessages: [],
   goalChatMessages: {},
+  aiMemory: {
+    patterns: [],
+    coachingStyle: 'SUPPORTIVE',
+    userNotes: []
+  },
   addAIAnalysis: (analysis) => set((state: any) => ({
     analyses: [analysis, ...state.analyses].slice(0, 50)
   })),
@@ -62,4 +70,13 @@ export const createAISlice: StateCreator<
     }
     return { chatMessages: [] };
   }),
+  updateAIMemory: (memory) => set((state: any) => ({
+    aiMemory: { ...state.aiMemory, ...memory }
+  })),
+  addBehavioralPattern: (pattern) => set((state: any) => ({
+    aiMemory: {
+      ...state.aiMemory,
+      patterns: [pattern, ...state.aiMemory.patterns].slice(0, 20)
+    }
+  })),
 });

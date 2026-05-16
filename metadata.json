@@ -1,6 +1,6 @@
 {
   "name": "AI Fitness Tracker",
-  "description": "Персональный фитнес-трекер на базе ИИ для мониторинга целей, прогресса и прогнозов.",
+  "description": "Персональная AI Performance OS: умная аналитика, адаптивный коучинг, Tactical Blueprint и живая экосистема планирования.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

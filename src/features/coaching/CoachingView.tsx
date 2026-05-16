@@ -6,11 +6,12 @@ import { GradientButton } from '../../components/ui/GradientButton';
 import { 
   Brain, Sparkles, Calendar, Target, Activity, 
   MessageSquare, ChevronLeft, ChevronRight, CheckCircle2, 
-  Zap, Clock, Trash2, Plus, ArrowRight, Star, User
+  Zap, Clock, Trash2, Plus, ArrowRight, Star, User, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, formatDate } from '../../lib/utils';
-import { AIActions } from '../../ai/orchestrator/ai-actions';
+import { AICalendar } from './components/AICalendar';
+import { AIWeekGenerator } from './components/AIWeekGenerator';
 
 export const CoachingView: React.FC = () => {
   const navigate = useNavigate();
@@ -95,7 +96,7 @@ export const CoachingView: React.FC = () => {
                            <div className="p-2 rounded-xl bg-primary text-black">
                              <Target className="w-4 h-4" />
                            </div>
-                           <h3 className="text-[10px] uppercase font-black tracking-widest text-primary">Current Execution Goal</h3>
+                           <h3 className="text-[10px] uppercase font-black tracking-widest text-primary">Active Strategy</h3>
                          </div>
                          <h4 className="text-2xl font-bold font-display">
                            {goals.find(g => g.status === 'ACTIVE')?.title || 'Стабилизация веса'}
@@ -108,12 +109,12 @@ export const CoachingView: React.FC = () => {
 
                    <GlassCard className="p-8 border-white/5 bg-secondary/20 flex flex-col justify-between">
                       <div className="space-y-1">
-                         <h3 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40">Execution Score</h3>
+                         <h3 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40">Execution Efficiency</h3>
                          <div className="flex items-end gap-2">
                             <span className="text-5xl font-display font-black text-primary">
                                {Math.round((planEvents.filter(e => e.isCompleted).length / (planEvents.length || 1)) * 100)}%
                             </span>
-                            <span className="text-muted-foreground font-black uppercase text-[10px] pb-2">Done</span>
+                            <span className="text-muted-foreground font-black uppercase text-[10px] pb-2">Compliance</span>
                          </div>
                       </div>
                       <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mt-4">
@@ -125,87 +126,20 @@ export const CoachingView: React.FC = () => {
                    </GlassCard>
                 </div>
 
-                {/* AI Calendar Engine */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between px-2">
-                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">AI Generated Calendar</h3>
-                    <div className="flex items-center gap-4">
-                       <span className="text-[9px] font-black uppercase tracking-widest text-primary/40 flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                          Live Planner
-                       </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {planEvents.length === 0 ? (
-                      <div className="py-20 text-center glass rounded-[2.5rem] border-2 border-dashed border-white/5">
-                        <Calendar className="w-12 h-12 text-primary/20 mx-auto mb-4" />
-                        <p className="text-muted-foreground font-medium uppercase text-xs tracking-widest">План пуст</p>
-                        <button className="mt-4 text-primary text-[10px] font-black uppercase tracking-widest hover:underline">
-                           Сгенерировать AI-неделю
-                        </button>
+                <div className="grid grid-cols-1 gap-8">
+                   <div className="space-y-4">
+                      <div className="flex items-center justify-between px-2">
+                         <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Performance Calendar</h3>
                       </div>
-                    ) : (
-                      planEvents.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((event, i) => (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}
-                          key={event.id}
-                          className={cn(
-                            "group p-5 rounded-[2rem] border transition-all duration-500 flex items-center justify-between",
-                            event.isCompleted ? "bg-green-500/5 border-green-500/20 opacity-60" : "bg-secondary/30 border-white/5 hover:bg-white/5 hover:-translate-y-1"
-                          )}
-                        >
-                          <div className="flex items-center gap-5">
-                             <div className={cn(
-                               "w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-500",
-                               event.isCompleted ? "bg-green-500/20 border-green-500/40 text-green-400" : 
-                               event.type === 'WORKOUT' ? "bg-orange-500/10 border-orange-500/20 text-orange-400" :
-                               event.type === 'NUTRITION' ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400" :
-                               "bg-primary/20 border-primary/40 text-primary"
-                             )}>
-                               {event.isCompleted ? <CheckCircle2 className="w-6 h-6" /> : 
-                                event.type === 'WORKOUT' ? <Activity className="w-6 h-6" /> :
-                                event.type === 'NUTRITION' ? <Zap className="w-6 h-6" /> :
-                                <Calendar className="w-6 h-6" />}
-                             </div>
-                             <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                   <p className="text-lg font-bold font-display">{event.title}</p>
-                                   {event.source === 'AI' && (
-                                     <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest border border-primary/20">AI Generated</span>
-                                   )}
-                                </div>
-                                <div className="flex items-center gap-4 text-muted-foreground/60 text-[10px] font-black uppercase tracking-widest">
-                                   <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {new Date(event.date).toLocaleDateString([], { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</span>
-                                   {event.duration && <span>• {event.duration} min</span>}
-                                </div>
-                             </div>
-                          </div>
+                      <AICalendar />
+                   </div>
 
-                          <div className="flex items-center gap-3">
-                             <button 
-                               onClick={() => togglePlanEvent(event.id)}
-                               className={cn(
-                                 "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                                 event.isCompleted ? "bg-green-500 text-black" : "bg-white/5 text-muted-foreground hover:bg-primary/20 hover:text-primary border border-white/5"
-                               )}
-                             >
-                               <CheckCircle2 className="w-5 h-5" />
-                             </button>
-                             <button 
-                               onClick={() => removePlanEvent(event.id)}
-                               className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 text-muted-foreground hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                             >
-                               <Trash2 className="w-5 h-5" />
-                             </button>
-                          </div>
-                        </motion.div>
-                      ))
-                    )}
-                  </div>
+                   <div className="space-y-4">
+                      <div className="flex items-center justify-between px-2">
+                         <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Strategic Adaptation</h3>
+                      </div>
+                      <AIWeekGenerator />
+                   </div>
                 </div>
               </motion.div>
             )}
@@ -276,43 +210,62 @@ export const CoachingView: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.05 }}
-                className="space-y-6"
+                className="space-y-8"
               >
-                 <div className="flex items-center justify-between px-2">
-                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Insight History & Memory Layer</h3>
+                 {/* Behavioral Patterns Section */}
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-primary px-2">Behavioral Patterns & Insights</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {useFitnessStore.getState().aiMemory.patterns.map((pattern: any) => (
+                         <GlassCard key={pattern.id} className="p-6 border-white/5 hover:border-primary/20 transition-all flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                               {pattern.icon === 'Clock' ? <Clock className="w-4 h-4 text-primary" /> : 
+                                pattern.icon === 'AlertTriangle' ? <AlertTriangle className="w-4 h-4 text-orange-400" /> :
+                                <Brain className="w-4 h-4 text-cyan-400" />}
+                            </div>
+                            <div className="space-y-1">
+                               <p className="text-xs font-black uppercase tracking-widest">{pattern.title}</p>
+                               <p className="text-[11px] text-muted-foreground leading-relaxed">{pattern.description}</p>
+                            </div>
+                         </GlassCard>
+                       ))}
+                       {useFitnessStore.getState().aiMemory.patterns.length === 0 && (
+                          <div className="col-span-full py-12 text-center opacity-40">
+                             <p className="text-xs uppercase font-black tracking-widest">No patterns detected yet</p>
+                          </div>
+                       )}
+                    </div>
                  </div>
-                 
-                 <div className="grid gap-4">
-                    {analyses.map((analysis, i) => (
-                      <GlassCard key={analysis.id} className="p-6 border-white/5 hover:border-white/10 transition-all">
-                         <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                               <div className="p-2 rounded-xl bg-white/5 text-muted-foreground">
-                                  <Clock className="w-4 h-4" />
-                               </div>
-                               <div>
-                                  <p className="text-xs font-black uppercase tracking-widest">{formatDate(analysis.date)}</p>
-                                  <p className="text-[10px] text-muted-foreground/60">{analysis.trend}</p>
+
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40 px-2">Memory Layer: Strategy Log</h3>
+                    <div className="grid gap-4">
+                       {analyses.map((analysis, i) => (
+                         <GlassCard key={analysis.id} className="p-6 border-white/5 hover:border-white/10 transition-all">
+                            <div className="flex items-start justify-between mb-4">
+                               <div className="flex items-center gap-3">
+                                  <div className="p-2 rounded-xl bg-white/5 text-muted-foreground">
+                                     <Clock className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                     <p className="text-xs font-black uppercase tracking-widest">{formatDate(analysis.date)}</p>
+                                     <p className="text-[10px] text-muted-foreground/60">{analysis.trend}</p>
+                                  </div>
                                </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                               {Array.from({ length: 3 }).map((_, i) => (
-                                 <div key={i} className="w-1 h-1 rounded-full bg-primary/40" />
+                            <p className="text-sm font-medium leading-relaxed italic text-primary/80 mb-4">
+                               "{analysis.summary}"
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                               {analysis.recommendations.map((rec, j) => (
+                                 <span key={j} className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                                   {rec.type}
+                                 </span>
                                ))}
                             </div>
-                         </div>
-                         <p className="text-sm font-medium leading-relaxed italic text-primary/80 mb-4">
-                            "{analysis.summary}"
-                         </p>
-                         <div className="flex flex-wrap gap-2">
-                            {analysis.recommendations.map((rec, j) => (
-                              <span key={j} className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                                {rec.type}
-                              </span>
-                            ))}
-                         </div>
-                      </GlassCard>
-                    ))}
+                         </GlassCard>
+                       ))}
+                    </div>
                  </div>
               </motion.div>
             )}

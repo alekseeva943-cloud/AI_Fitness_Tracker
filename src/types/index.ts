@@ -98,8 +98,33 @@ export interface PlanEvent {
   duration?: number; // minutes
   description?: string;
   isCompleted: boolean;
-  metadata?: Record<string, any>;
+  metadata?: {
+    intensity?: 'LOW' | 'MEDIUM' | 'HIGH';
+    targetMuscle?: string;
+    nutritionGoals?: { protein: number; carbs: number; fats: number };
+    wasRescheduled?: boolean;
+    originalDate?: string;
+    category?: string;
+  };
   createdAt: string;
+}
+
+export interface BehavioralPattern {
+  id: string;
+  type: 'PREFERENCE' | 'STRUGGLE' | 'STRENGTH' | 'TREND';
+  title: string;
+  description: string;
+  icon?: string;
+  observationDate: string;
+  evidenceCount: number;
+  lastOccurrence: string;
+}
+
+export interface AIMemory {
+  patterns: BehavioralPattern[];
+  lastInterventionDate?: string;
+  coachingStyle: 'DEMANDING' | 'SUPPORTIVE' | 'ANALYTICAL';
+  userNotes: string[];
 }
 
 export interface AIRecommendation {
@@ -183,5 +208,6 @@ export interface FitnessState {
   weightHistory: WeightEntry[];
   planEvents: PlanEvent[];
   analyses: AIAnalysis[];
+  aiMemory: AIMemory;
   isDemoMode?: boolean;
 }

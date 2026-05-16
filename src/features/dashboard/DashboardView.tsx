@@ -42,6 +42,7 @@ export const DashboardView: React.FC = () => {
 
   const allAnalyses = useFitnessStore(state => state.analyses);
   const profile = useFitnessStore(state => state.profile);
+  const planEvents = useFitnessStore(state => state.planEvents);
   
   // Explicitly select only what is needed for summary calculation
   // This avoids re-calculating on unrelated state changes (like chat messages)
@@ -256,27 +257,29 @@ export const DashboardView: React.FC = () => {
             {/* Tactical Blueprint / Today's AI Plan */}
             <div className="grid grid-cols-1 lg:grid-cols-1 gap-0">
                <motion.div 
-                 initial={{ opacity: 0, y: 20 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 className="group cursor-pointer"
-                 onClick={() => navigate('/coaching')}
+                 initial={{ opacity: 0, scale: 0.98 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 className="group"
                >
-                  <GlassCard className="p-6 bg-linear-to-r from-primary/10 via-background to-background border-primary/20 relative overflow-hidden flex flex-col md:flex-row items-center gap-8 group-hover:border-primary transition-all">
+                  <GlassCard className="p-8 bg-linear-to-r from-primary/10 via-background to-background border-primary/20 relative overflow-hidden flex flex-col xl:flex-row items-center gap-10 group-hover:border-primary/40 transition-all duration-500">
                      <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform">
-                        <Brain className="w-32 h-32" />
+                        <Brain className="w-48 h-48" />
                      </div>
-                     <div className="flex items-center gap-5 relative z-10 shrink-0">
-                        <div className="w-14 h-14 rounded-2xl bg-primary text-black flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-                           <Calendar className="w-7 h-7" />
+                     <div className="flex items-center gap-6 relative z-10 shrink-0">
+                        <div className="w-20 h-20 rounded-[2rem] bg-primary text-black flex items-center justify-center shadow-[0_0_30px_rgba(223,255,0,0.3)] group-hover:rotate-6 transition-transform">
+                           <Calendar className="w-10 h-10" />
                         </div>
                         <div>
-                           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Tactical Blueprint</h3>
-                           <p className="text-xl font-bold font-display">Твой план на сегодня</p>
+                           <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Tactical Blueprint</h3>
+                              <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-[8px] font-black uppercase">Live</span>
+                           </div>
+                           <p className="text-3xl font-black font-display italic tracking-tight underline decoration-primary/40 decoration-4 underline-offset-4">Твой план на сегодня</p>
                         </div>
                      </div>
 
-                     <div className="flex-1 flex flex-wrap gap-3 relative z-10">
-                        {useFitnessStore.getState().planEvents
+                     <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 w-full relative z-10">
+                        {planEvents
                           .filter(e => {
                             const d = new Date(e.date);
                             const now = new Date();
@@ -284,29 +287,53 @@ export const DashboardView: React.FC = () => {
                           })
                           .slice(0, 3)
                           .map((event, i) => (
-                            <div key={i} className={cn(
-                              "px-4 py-2 rounded-xl border flex items-center gap-3 transition-all",
-                              event.isCompleted ? "bg-green-500/10 border-green-500/20 text-green-400 opacity-60" : "bg-white/5 border-white/10"
-                            )}>
-                               <div className={cn(
-                                 "w-1.5 h-1.5 rounded-full",
-                                 event.isCompleted ? "bg-green-500" : "bg-primary animate-pulse"
-                               )} />
-                               <span className="text-[10px] font-black uppercase tracking-tight">{event.title}</span>
+                            <div 
+                              key={i} 
+                              onClick={() => useFitnessStore.getState().togglePlanEvent(event.id)}
+                              className={cn(
+                                "p-4 rounded-3xl border flex items-center justify-between gap-4 transition-all cursor-pointer",
+                                event.isCompleted 
+                                  ? "bg-green-500/10 border-green-500/20 text-green-400 opacity-60" 
+                                  : "bg-white/5 border-white/10 hover:border-primary/40 hover:bg-white/10"
+                              )}
+                            >
+                               <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-xl flex items-center justify-center border",
+                                    event.isCompleted ? "bg-green-500/20 border-green-500/40" : "bg-white/5 border-white/10"
+                                  )}>
+                                     {event.isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
+                                  </div>
+                                  <div>
+                                     <p className="text-[10px] font-black uppercase tracking-tight leading-none mb-1">{event.title}</p>
+                                     <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest">
+                                        {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                     </p>
+                                  </div>
+                               </div>
+                               {!event.isCompleted && (
+                                  <div className="w-5 h-5 rounded-full border border-primary/20 flex items-center justify-center">
+                                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                  </div>
+                                )}
                             </div>
                           ))}
-                        {useFitnessStore.getState().planEvents.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length === 0 && (
-                          <div className="text-muted-foreground/40 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2">
-                             Нет запланированных действий на сегодня
-                             <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                        
+                        {planEvents.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length === 0 && (
+                          <div className="col-span-full py-6 flex flex-col items-center justify-center gap-3 border-2 border-dashed border-white/5 rounded-[2rem] opacity-40">
+                             <Sparkles className="w-6 h-6 text-primary" />
+                             <p className="text-[10px] font-black uppercase tracking-widest italic">Нет задач на сегодня. Сгенерируй тактику.</p>
                           </div>
                         )}
                      </div>
 
-                     <div className="relative z-10 shrink-0">
-                        <GradientButton variant="outline" size="sm" className="px-6 border-white/10 group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary">
-                           View Full Plan
-                           <ChevronRight className="w-4 h-4 ml-2" />
+                     <div className="relative z-10 shrink-0 w-full xl:w-auto">
+                        <GradientButton 
+                          onClick={() => navigate('/coaching')} 
+                          className="w-full xl:px-10 h-16 text-xs font-black uppercase tracking-widest border border-white/10 hover:border-primary/40"
+                        >
+                           Full Workspace
+                           <ChevronRight className="w-5 h-5 ml-4" />
                         </GradientButton>
                      </div>
                   </GlassCard>

@@ -56,5 +56,13 @@ export const INITIAL_DEMO_STATE: FitnessState = {
   ],
   analyses: [],
   planEvents: [],
+  aiMemory: {
+    patterns: [
+      { id: '1', type: 'PREFERENCE', title: 'Evening Performance', description: 'Твоя интенсивность на 12% выше во время вечерних тренировок (18:00 - 20:00).', icon: 'Clock', observationDate: new Date().toISOString(), lastOccurrence: new Date().toISOString(), evidenceCount: 5 },
+      { id: '2', type: 'STRUGGLE', title: 'Monday Adherence', description: 'По понедельникам вероятность пропуска тренировки выше на 40%.', icon: 'AlertTriangle', observationDate: new Date().toISOString(), lastOccurrence: new Date().toISOString(), evidenceCount: 3 }
+    ],
+    coachingStyle: 'SUPPORTIVE',
+    userNotes: []
+  },
   isDemoMode: true
 };
