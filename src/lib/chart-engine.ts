@@ -274,13 +274,14 @@ export const buildChartTimeline = (
 
   // 8. Ideal path calculation
   if (goal && isValidDate(goal.startDate) && timeline.length > 0) {
-    const startDate = new Date(goal.startDate).getTime();
+    // Determine where the ideal line should start visually
+    const firstPoint = timeline[0];
+    const effectiveStartDate = new Date(firstPoint.dateKey).getTime();
     
-    // Use first real measurement if startValue is missing or 0
-    const firstRealMeasurement = timeline.find(p => p.current !== null && p.current > 0)?.current;
+    // Values for calculation
     const startVal = (typeof goal.startValue === 'number' && goal.startValue > 0) 
       ? goal.startValue 
-      : (firstRealMeasurement || 0);
+      : (timeline.find(p => p.current !== null && p.current > 0)?.current || 0);
       
     const targetVal = goal.targetValue;
     
@@ -288,18 +289,12 @@ export const buildChartTimeline = (
     const finalDateStr = forecastedDate || goal.deadline;
     const endDate = isValidDate(finalDateStr) ? new Date(finalDateStr).getTime() : new Date(timeline[timeline.length - 1].dateKey).getTime();
     
-    if (endDate > startDate && startVal > 0) {
+    if (endDate > effectiveStartDate && startVal > 0) {
       timeline.forEach(p => {
         const t = new Date(p.dateKey).getTime();
-        if (t >= startDate) {
-          const ratio = Math.min(1, (t - startDate) / (endDate - startDate));
-          p.ideal = Number((startVal + (targetVal - startVal) * ratio).toFixed(1));
-        } else {
-          // Fore points before goal start, don't set ideal to startVal necessarily 
-          // as it pulls the chart range. Set it to the first point of the line if needed,
-          // or leave as null if it shouldn't be drawn before start.
-          p.ideal = null; 
-        }
+        // Calculate point on the ideal linear path
+        const ratio = Math.max(0, Math.min(1, (t - effectiveStartDate) / (endDate - effectiveStartDate)));
+        p.ideal = Number((startVal + (targetVal - startVal) * ratio).toFixed(1));
       });
     }
   }
