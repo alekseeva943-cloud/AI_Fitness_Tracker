@@ -43,8 +43,37 @@ export const AIWeekGenerator: React.FC = () => {
         aiRationale: 'Твой уровень энергии высок по понедельникам. Последние 2 недели объем на грудные был ниже нормы.',
         metadata: { intensity: 'HIGH', targetMuscle: 'Грудь' },
         exercises: [
-          { name: 'Жим штанги лежа', sets: 4, reps: '8-10', weight: '85кг', rest: '90s' },
-          { name: 'Жим гантелей под углом', sets: 3, reps: '12', weight: '30кг', rest: '60s' }
+          { 
+            name: 'Жим штанги лежа', 
+            sets: 4, 
+            reps: '8-10', 
+            weight: '85кг', 
+            rest: '90s',
+            technique: {
+                steps: [
+                    'Ляг на горизонтальную скамью, сведи лопатки.',
+                    'Упрись ногами в пол для стабильности корпуса.',
+                    'Опускай штангу до легкого касания низа грудных.',
+                    'Выжимай штангу вверх, сохраняя контроль в верхней точке.'
+                ],
+                coachTip: 'Александр, здесь важно не гнаться за весом. Твоя цель сейчас — стабильная техника и контроль.'
+            }
+          },
+          { 
+            name: 'Жим гантелей под углом', 
+            sets: 3, 
+            reps: '12', 
+            weight: '30кг', 
+            rest: '60s',
+            technique: {
+                steps: [
+                    'Установи скамью под углом 30-45 градусов.',
+                    'Жми гантели вверх по дуге, не своди их до касания.',
+                    'Опускай медленно, чувствуя растяжение грудных.'
+                ],
+                coachTip: 'Не разводи локти слишком широко, держи их чуть впереди плеча.'
+            }
+          }
         ]
       },
       { 
@@ -71,8 +100,36 @@ export const AIWeekGenerator: React.FC = () => {
         date: getNextDate(3),
         metadata: { intensity: 'HIGH', targetMuscle: 'Спина' },
         exercises: [
-          { name: 'Подтягивания с весом', sets: 4, reps: '8', weight: '15кг', rest: '120s' },
-          { name: 'Тяга штанги в наклоне', sets: 4, reps: '10', weight: '70кг', rest: '90s' }
+          { 
+            name: 'Подтягивания с весом', 
+            sets: 4, 
+            reps: '8', 
+            weight: '15кг', 
+            rest: '120s',
+            technique: {
+                steps: [
+                    'Используй средний хват, чуть шире плеч.',
+                    'Тянись грудью к перекладине, сводя лопатки.',
+                    'Контролируй опускание, не прыгай вниз.'
+                ],
+                coachTip: 'Если хват устает раньше спины - используй лямки, сегодня фокус на объеме широчайших.'
+            }
+          },
+          { 
+            name: 'Тяга штанги в наклоне', 
+            sets: 4, 
+            reps: '10', 
+            weight: '70кг', 
+            rest: '90s',
+            technique: {
+                steps: [
+                    'Наклони корпус до 45 градусов, спина прямая.',
+                    'Тяни штангу к животу, локти прижаты к телу.',
+                    'Задержись в верхней точке на долю секунды.'
+                ],
+                coachTip: 'Не помогай ногами, старайся изолировать спину.'
+            }
+          }
         ]
       },
       { 
@@ -109,16 +166,22 @@ export const AIWeekGenerator: React.FC = () => {
     setIsGenerating(false);
   };
 
-  const applyPlan = () => {
-    generatedWeek.forEach(event => {
-      addPlanEvent({
+  const applyPlan = async () => {
+    // Standardize source and status for all
+    const enrichedEvents = generatedWeek.map(event => ({
         ...event,
-        source: 'AI',
-        status: 'PLANNED',
+        source: 'AI' as const,
+        status: 'PLANNED' as const,
         isCompleted: false,
         createdAt: new Date().toISOString()
-      });
-    });
+    }));
+
+    // Add them sequentially with a tiny delay to ensure store stability
+    for (const event of enrichedEvents) {
+        addPlanEvent(event);
+        await new Promise(r => setTimeout(r, 50));
+    }
+    
     setGeneratedWeek([]);
     alert('AI Стратегия успешно интегрирована в твой календарь. Я адаптировал нагрузку под твои текущие показатели готовности.');
   };
