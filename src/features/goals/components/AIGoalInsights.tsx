@@ -94,7 +94,7 @@ export const AIGoalInsights: React.FC<AIGoalInsightsProps> = ({ goalId }) => {
               <h4 className="text-[10px] uppercase font-black tracking-[0.2em] text-primary/80">Coach Insight</h4>
             </div>
 
-            <p className="text-sm font-bold leading-relaxed mb-4 text-primary-foreground/90 italic">
+            <p className="text-sm font-bold leading-relaxed mb-4 text-white/90">
               "{latestAnalysis.summary}"
             </p>
 
@@ -122,7 +122,7 @@ export const AIGoalInsights: React.FC<AIGoalInsightsProps> = ({ goalId }) => {
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase tracking-tight">{step.title}</p>
-                      <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{step.description}</p>
+                      <p className="text-[10px] text-muted-foreground/90 leading-relaxed">{step.description}</p>
                     </div>
                   </motion.div>
                 ))}

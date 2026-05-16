@@ -406,7 +406,7 @@ export const GoalsView: React.FC = () => {
                     "p-3 rounded-2xl border border-white/5",
                     stat.highlight ? "bg-primary/5" : "bg-secondary/20"
                   )}>
-                    <p className="text-[8px] uppercase font-black tracking-[0.2em] text-muted-foreground/40 mb-1">{stat.label}</p>
+                    <p className="text-[8px] uppercase font-black tracking-[0.2em] text-muted-foreground/70 mb-1">{stat.label}</p>
                     <p className={cn("text-sm font-black", stat.highlight && "text-primary")}>{stat.value} {!stat.value.toString().includes('%') && selectedGoal.unit}</p>
                   </div>
                 ))}

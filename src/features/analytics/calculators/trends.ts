@@ -48,7 +48,7 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
   const weeklyChange = avg7 - avgPrev7;
   
   // Plateau detection
-  const isPlateau = Math.abs(weeklyChange) < ANALYTICS_CONSTANTS.WEIGHT.PLATEAU_THRESHOLD && sanitized.length > 5;
+  const isPlateau = Math.abs(weeklyChange) < ANALYTICS_CONSTANTS.WEIGHT.PLATEAU_THRESHOLD && sorted.length > 5;
 
   // 5. Robust Velocity Calculation
   const daysDiff = Math.max(1, differenceInDays(new Date(sorted[0].date), new Date(sorted[sorted.length - 1].date)));
