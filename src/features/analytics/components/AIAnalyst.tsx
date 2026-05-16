@@ -4,7 +4,7 @@ import { AIActions } from '../../../ai/orchestrator/ai-actions';
 import { selectAnalyticsSummary } from '../selectors/fitnessSelectors';
 import { GlassCard } from '../../../components/ui/GlassCard';
 import { GradientButton } from '../../../components/ui/GradientButton';
-import { Sparkles, Brain, TrendingUp, AlertTriangle, Activity, Calendar, History, ChevronRight, Info, Zap } from 'lucide-react';
+import { Sparkles, Brain, TrendingUp, AlertTriangle, Activity, Calendar, History, ChevronRight, Info, Zap, ShieldCheck, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AIAnalysis } from '../../../types';
 import { cn, formatDate } from '../../../lib/utils';
@@ -141,6 +141,36 @@ export const AIAnalyst: React.FC = () => {
                             <p className="text-sm font-bold text-white leading-relaxed">{currentAnalysis.verdict}</p>
                           </div>
                         )}
+                      </div>
+
+                      {/* Deep Dive Section */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400/60 flex items-center gap-2">
+                             <ShieldCheck className="w-3 h-3" /> Сильные стороны
+                          </h4>
+                          <div className="space-y-2">
+                             {(currentAnalysis.insights || []).slice(0, 3).map((insight: string, i: number) => (
+                               <div key={i} className="flex gap-3 text-xs text-white/50 leading-relaxed group/item">
+                                  <div className="w-1 h-1 rounded-full bg-emerald-500 mt-1.5 shrink-0 group-hover/item:scale-150 transition-transform" />
+                                  {insight}
+                               </div>
+                             ))}
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400/60 flex items-center gap-2">
+                             <Target className="w-3 h-3" /> Точки роста
+                          </h4>
+                          <div className="space-y-2">
+                             {(currentAnalysis.warnings || []).slice(0, 3).map((warning: string, i: number) => (
+                               <div key={i} className="flex gap-3 text-xs text-white/50 leading-relaxed group/item">
+                                  <div className="w-1 h-1 rounded-full bg-amber-500 mt-1.5 shrink-0 group-hover/item:scale-150 transition-transform" />
+                                  {warning}
+                               </div>
+                             ))}
+                          </div>
+                        </div>
                       </div>
                    </div>
                 </GlassCard>

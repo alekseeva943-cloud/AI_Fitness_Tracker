@@ -51,36 +51,68 @@ async function startServer() {
       }
 
       const { userPrompt, actionType, systemPrompt } = req.body;
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
       
       if (!apiKey) {
-        console.error('[AI API ERROR] OPENAI_API_KEY is missing');
-        return res.status(500).json({ success: false, error: 'OpenAI API key not configured' });
+        console.error('[AI API ERROR] No API key found (OPENAI_API_KEY or GEMINI_API_KEY)');
+        return res.status(500).json({ success: false, error: 'AI API key not configured' });
       }
 
-      const openai = new OpenAI({ apiKey });
+      const isOpenAI = !!process.env.OPENAI_API_KEY;
+      const openai = new OpenAI({ 
+        apiKey,
+        baseURL: isOpenAI ? undefined : "https://generativelanguage.googleapis.com/v1beta/openai/"
+      });
 
-      console.log('[OPENAI START] Requesting structured completion from gpt-4o-mini');
+      const isConversationalMode = actionType === 'WORKOUT_COACH' || actionType === 'EXERCISE_COACH';
+
+      console.log(`[AI START] Action: ${actionType} using ${isOpenAI ? 'OpenAI' : 'Gemini'}`);
+
+      const finalSystemPrompt = isConversationalMode 
+        ? (systemPrompt || 'Ты элитный fitness coach. Отвечай только на русском языке.')
+        : `${systemPrompt || 'Ты элитный fitness coach.'} ВАЖНО: Твой ответ ДОЛЖЕН быть в формате JSON. ГОВОРИ ТОЛЬКО НА РУССКОМ ЯЗЫКЕ.`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: isOpenAI ? 'gpt-4o-mini' : 'gemini-1.5-flash',
         messages: [
           {
             role: 'system',
-            content: systemPrompt || 'You are a fitness AI assistant. Always return valid JSON in Russian.'
+            content: finalSystemPrompt
           },
           {
             role: 'user',
             content: userPrompt || 'Analyze my data'
           }
         ],
-        response_format: { type: "json_object" },
-        temperature: 0.5
+        ...(isConversationalMode ? {} : { response_format: { type: "json_object" } }),
+        temperature: isConversationalMode ? 0.7 : 0.5,
+        max_tokens: isConversationalMode ? 700 : 1200
       });
 
-      console.log('[OPENAI RESPONSE RECEIVED]', completion.id);
+      console.log('[AI RESPONSE RECEIVED]', completion.id);
       const rawContent = completion.choices[0]?.message?.content || '{}';
       
+      if (isConversationalMode) {
+        return res.status(200).json({
+          success: true,
+          summary: rawContent,
+          verdict: null,
+          trend: 'STABLE',
+          recommendations: [],
+          nextSteps: [],
+          tacticalPlan: [],
+          suggestedEvents: [],
+          followupQuestions: [],
+          insights: [],
+          trends: [],
+          warnings: [],
+          overallProgress: 0,
+          motivation: null,
+          mainRisk: null,
+          date: new Date().toISOString()
+        });
+      }
+
       try {
         const parsed = JSON.parse(rawContent);
         console.log('[AI API SUCCESS] Parsed JSON response');
@@ -90,7 +122,7 @@ async function startServer() {
           date: new Date().toISOString()
         });
       } catch (parseErr) {
-        console.warn('[AI API WARNING] Failed to parse OpenAI JSON');
+        console.warn('[AI API WARNING] Failed to parse AI JSON');
         return res.status(200).json({
           success: true,
           summary: rawContent,
