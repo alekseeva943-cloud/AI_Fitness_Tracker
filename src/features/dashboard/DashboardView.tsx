@@ -388,25 +388,23 @@ export const DashboardView: React.FC = () => {
                         <div className="flex flex-col gap-0.5">
                            <span className="opacity-40 text-[8px]">Старт</span>
                            <span className="text-foreground text-sm font-bold">
-                              {summary?.weight.startingWeight || activeGoal.startValue || 0} {activeGoal.unit}
+                              {activeGoal.startValue || 0} {activeGoal.unit}
                            </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                            <span className="text-primary text-[8px]">Текущий</span>
                            <span className="text-primary text-sm font-bold">
-                              {(() => {
-                                return DataNormalizer.getLatestWeight({
-                                  profile,
-                                  goals,
-                                  workouts,
-                                  weightHistory
-                                } as any);
-                              })()} {activeGoal.unit}
+                              {DataNormalizer.getLatestWeight({
+                                profile,
+                                goals,
+                                workouts,
+                                weightHistory
+                              } as any)} {activeGoal.unit}
                            </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                            <span className="opacity-40 text-[8px]">Цель</span>
-                           <span className="text-foreground text-sm font-bold">{activeGoal.targetValue} {activeGoal.unit}</span>
+                           <span className="text-foreground text-sm font-bold">{activeGoal.targetValue || 0} {activeGoal.unit}</span>
                         </div>
                       </div>
                       {activeGoal.baselineMeasurements && Object.keys(activeGoal.baselineMeasurements).length > 0 && (

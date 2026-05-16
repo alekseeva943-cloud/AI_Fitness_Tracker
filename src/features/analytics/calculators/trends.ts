@@ -18,35 +18,16 @@ export const calculateWeightTrend = (history: WeightEntry[], goal: Goal | null):
   // 2. Sort chronology
   const chronological = [...initialSanitized].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
-  // 3. Dynamic Anomaly Detection (Outlier Rejection)
-  // We reject entries that represent an impossible jump (>15% of body weight in a short period)
-  const sanitized: WeightEntry[] = [];
-  chronological.forEach((entry, i) => {
-    if (i === 0) {
-      sanitized.push(entry);
-      return;
-    }
-    const prev = sanitized[sanitized.length - 1];
-    const diff = Math.abs(entry.value - prev.value);
-    const percentChange = DataNormalizer.safeDivide(diff, prev.value);
-    const daysSince = Math.max(1, differenceInDays(new Date(entry.date), new Date(prev.date)));
-    
-    // If weight jumped more than 5% in 1 day, it's likely an error, unless verified over multiple days
-    const isAnomaly = percentChange > ANALYTICS_CONSTANTS.WEIGHT.OUTLIER_THRESHOLD && daysSince < 3;
-    
-    if (!isAnomaly) {
-      sanitized.push(entry);
-    }
-  });
+  if (chronological.length === 0) return null;
 
-  if (sanitized.length === 0) return null;
+  const sorted = [...chronological].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  // Real current weight: strictly the latest measurement
+  const actualCurrentWeight = sorted[0].value;
+  const analyticsCurrent = actualCurrentWeight;
 
-  const sorted = [...sanitized].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const analyticsCurrent = sorted[0].value;
-  const starting = sorted[sorted.length - 1].value;
-
-  // Real current weight from non-outlier filtered data (but still statistically valid)
-  const actualCurrentWeight = chronological[chronological.length - 1].value;
+  // Starting weight: exactly what the user set for the goal, or the oldest entry
+  const starting = goal?.startValue && goal.startValue > 0 ? goal.startValue : (chronological[0]?.value || 0);
 
   // 4. Moving Average (Smoothing)
   const now = new Date();

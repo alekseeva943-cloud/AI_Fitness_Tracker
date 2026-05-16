@@ -98,10 +98,17 @@ export class DataNormalizer {
    * Priority: weightHistory > profile baseline > profile weight field
    */
   static getLatestWeight(state: FitnessState): number {
-    const timeline = this.getWeightTimeline(state);
-    if (timeline.length > 0) return timeline[timeline.length - 1].value;
+    const measurements = state.weightHistory || [];
+    if (measurements.length > 0) {
+      // Sort to get strictly latest by date
+      const sorted = [...measurements].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return this.safeNum(sorted[0].value);
+    }
     
-    const baseline = state.profile?.baselines.find(b => b.id === 'weight')?.value;
+    const activeGoal = state.goals?.find(g => g.id === state.activeGoalId);
+    if (activeGoal?.currentValue) return this.safeNum(activeGoal.currentValue);
+    
+    const baseline = state.profile?.baselines?.find(b => b.id === 'weight')?.value;
     if (baseline !== undefined) return this.safeNum(baseline);
     
     return this.safeNum(state.profile?.weight, 0);
@@ -173,10 +180,13 @@ export class DataNormalizer {
   }
 
   static getLatestMetricValue(state: FitnessState, metricId: string): number {
-    if (metricId === 'weight' && state.profile?.weight) return this.safeNum(state.profile.weight);
     const timeline = this.getMetricTimeline(state, metricId);
     if (timeline.length === 0) {
-      if (metricId === 'weight') return this.safeNum(state.profile?.baselines.find(b => b.id === 'weight')?.value, 0);
+      if (metricId === 'weight') {
+        const baseline = state.profile?.baselines?.find(b => b.id === 'weight')?.value;
+        if (baseline !== undefined) return this.safeNum(baseline);
+        return this.safeNum(state.profile?.weight, 0);
+      }
       return 0;
     }
     return timeline[timeline.length - 1].value;

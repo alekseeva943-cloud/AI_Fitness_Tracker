@@ -171,6 +171,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 
   return (
     <motion.div 
+      key={hasMinimumData ? 'chart-active' : 'chart-empty'}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
@@ -178,7 +179,10 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     >
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 20 }}>
+          <ComposedChart 
+            data={chartData} 
+            margin={{ top: 20, right: 10, left: -20, bottom: 20 }}
+          >
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
@@ -207,7 +211,10 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               axisLine={false}
               tickLine={false}
               tick={{ fill: '#71717a', fontSize: 8, fontWeight: 900 }}
-              domain={[minVal, maxVal]} 
+              domain={[
+                Number.isFinite(minVal) ? minVal : 'auto', 
+                Number.isFinite(maxVal) ? maxVal : 'auto'
+              ]} 
               tickFormatter={(val) => `${val}${propUnit ? ` ${propUnit}` : ''}`}
               dx={5}
             />
