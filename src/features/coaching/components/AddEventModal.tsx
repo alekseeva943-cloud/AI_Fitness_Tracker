@@ -190,8 +190,8 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
                             <Brain className="w-5 h-5" />
                         </div>
                         <div className="text-left">
-                            <p className={cn("text-xs font-bold uppercase tracking-tight", isAIEnabled ? "text-primary" : "text-muted-foreground")}>AI Assisted Mode</p>
-                            <p className="text-[10px] text-muted-foreground/60">Авто-генерация и анализ изменений</p>
+                            <p className={cn("text-xs font-bold uppercase tracking-tight", isAIEnabled ? "text-primary" : "text-muted-foreground")}>Интеллектуальный режим</p>
+                            <p className="text-[10px] text-muted-foreground/60">Авто-генерация и анализ изменений Genesis</p>
                         </div>
                     </div>
                     <div className={cn(
@@ -400,25 +400,24 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
             </div>
 
             <div className="p-6 border-t border-white/5 bg-black/40 flex gap-3 shrink-0">
-               <GradientButton 
+               <button 
                  type="button" 
-                 variant="outline" 
                  onClick={onClose}
-                 className="flex-1 h-14 text-[10px] font-black"
+                 className="flex-1 h-12 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase text-white/40 hover:bg-white/10 hover:text-white transition-all"
                >
                   ОТМЕНА
-               </GradientButton>
-               <GradientButton 
+               </button>
+               <button 
                  type="submit"
-                 className="flex-[2] h-14 text-[10px] font-black"
+                 className="flex-[2] h-12 rounded-xl bg-primary text-black text-[10px] font-black uppercase flex items-center justify-center gap-2 hover:opacity-90 transition-all border border-primary/20"
                >
                   {isAIEnabled ? (
-                      <div className="flex items-center gap-2">
+                      <>
                          <Sparkles className="w-4 h-4" />
                          СФОРМИРОВАТЬ ПЛАН
-                      </div>
+                      </>
                   ) : 'ДОБАВИТЬ В ПЛАН'}
-               </GradientButton>
+               </button>
             </div>
           </form>
         </GlassCard>

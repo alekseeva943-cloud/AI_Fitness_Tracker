@@ -12,6 +12,8 @@ import { GlassCard } from '../../../components/ui/GlassCard';
 import { GradientButton } from '../../../components/ui/GradientButton';
 import { cn } from '../../../lib/utils';
 import { useFitnessStore } from '../../../store/useFitnessStore';
+import { AIOrchestrator } from '../../../ai/orchestrator/ai-orchestrator';
+import { AIActionType } from '../../../ai/orchestrator/types';
 import { AddEventModal } from './AddEventModal';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -66,50 +68,44 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
     if (!input.trim() || chatStatuses[idx] === 'thinking') return;
 
     const userMsg = input;
+    const history = chatThreads[idx] || [];
+    
     setChatThreads(prev => ({
         ...prev,
-        [idx]: [...(prev[idx] || []), { role: 'user', content: userMsg }]
+        [idx]: [...history, { role: 'user', content: userMsg }]
     }));
     setChatInputs(prev => ({ ...prev, [idx]: '' }));
     setChatStatuses(prev => ({ ...prev, [idx]: 'thinking' }));
 
     try {
-        await new Promise(r => setTimeout(r, 800));
-        setChatStatuses(prev => ({ ...prev, [idx]: 'generating' }));
-        await new Promise(r => setTimeout(r, 1000));
+        const state = useFitnessStore.getState();
+        const analytics = {}; // Dashboard analytics could be injected here if needed
 
-        let aiResponse = "";
-        let aiAction = "";
-        const lowerInput = userMsg.toLowerCase();
-        const currentExName = event.exercises?.[idx].name || '';
-
-        // Intent Classification
-        if (lowerInput.includes('замен') || lowerInput.includes('чем')) {
-            if (lowerInput.includes('гантел') || lowerInput.includes('свободн')) {
-                aiResponse = `Принято. Жим штанги может быть травмоопасным при дискомфорте. Меняю на жим гантелей. Новый целевой вес: 26 кг на каждую руку. Это обеспечит лучшую амплитуду и безопасность лопаток.`;
-                aiAction = "REPLACEMENT_APPLIED";
-                handleExerciseReplace(idx, 'Жим гантелей', '26 КГ');
-            } else {
-                aiResponse = `Для ${currentExName} я подготовил три альтернативы: \n1. Жим гантелей (лучшая амплитуда)\n2. Жим в Смите (максимальный контроль)\n3. Жим в хаммере (безопасно для плеч).\nЧто выбираем?`;
+        const response = await AIOrchestrator.executeAction(state, analytics, {
+            actionType: AIActionType.EXERCISE_COACH,
+            userMessage: userMsg,
+            contextOverride: {
+                workout: event,
+                exercise: event.exercises?.[idx],
+                chatHistory: history
             }
-        } else if (lowerInput.includes('тяжело') || lowerInput.includes('не могу') || lowerInput.includes('вес')) {
-            aiResponse = `Вижу, что ${currentExName} сегодня идет на пределе. Давай снизим рабочий вес на 10-15% (до ${parseInt(event.exercises?.[idx].weight || '0') * 0.85} кг) и сфокусируемся на негативной фазе (3 секунды вниз). Это даст стимул без риска травмы.`;
-        } else if (lowerInput.includes('болит') || lowerInput.includes('боль') || lowerInput.includes('травма')) {
-            const injuryContext = profile?.injuries?.join(', ') || 'колени/спина';
-            aiResponse = `Внимание: при любой резкой боли в ${lowerInput.includes('плеч') ? 'плече' : 'рабочей зоне'} мы немедленно прекращаем упражнение. Учитывая твою историю (${injuryContext}), я рекомендую сейчас либо заменить упражнение на изоляцию, либо закончить подход прямо сейчас. Безопасность — приоритет.`;
-        } else if (lowerInput.includes('как делать') || lowerInput.includes('техника')) {
-            aiResponse = `По ${currentExName}: Главное — не блокируй суставы в верхней точке. Держи мышцу под напряжением. На опускании делай глубокий вдох, на выживании — мощный выдох. Лопатки плотно прижаты к скамье всё время.`;
-        } else {
-            aiResponse = `Для ${currentExName}: фокусируйся на растяжении в нижней точке и не блокируй локти наверху. Это сохранит напряжение в целевой мышце. Помни про темп 3-1-1.`;
-        }
+        });
 
-        setChatThreads(prev => ({
-            ...prev,
-            [idx]: [...(prev[idx] || []), { role: 'ai', content: aiResponse, action: aiAction }]
-        }));
+        if (response.success) {
+            setChatThreads(prev => ({
+                ...prev,
+                [idx]: [...(prev[idx] || []), { role: 'ai', content: response.summary }]
+            }));
+        } else {
+             throw new Error('AI Error');
+        }
         setChatStatuses(prev => ({ ...prev, [idx]: 'completed' }));
     } catch (error) {
         setChatStatuses(prev => ({ ...prev, [idx]: 'failed' }));
+        setChatThreads(prev => ({
+            ...prev,
+            [idx]: [...(prev[idx] || []), { role: 'ai', content: "Извини, произошла ошибка связи с коучем. Попробуй еще раз." }]
+        }));
     } finally {
         setTimeout(() => setChatStatuses(prev => ({ ...prev, [idx]: 'idle' })), 1000);
     }
@@ -131,45 +127,38 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
         exit={{ opacity: 0, scale: 0.98, y: 30 }}
         className="relative w-full max-w-4xl h-[92vh] flex flex-col bg-transparent"
       >
-        <GlassCard className="border-white/10 overflow-hidden flex flex-col h-full shadow-[0_40px_120px_rgba(0,0,0,1)] rounded-[3rem]">
+        <GlassCard className="border-white/5 overflow-hidden flex flex-col h-full shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-3xl bg-[#0B1020]">
           {/* Header */}
-          <div className="p-10 pb-6 flex items-start justify-between bg-white/[0.01] shrink-0 border-b border-white/5">
+          <div className="px-10 py-8 flex items-center justify-between shrink-0 border-b border-white/5 bg-white/[0.01]">
              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                   {event.type === 'WORKOUT' ? <Dumbbell className="w-8 h-8" /> : 
-                    event.type === 'NUTRITION' ? <Utensils className="w-8 h-8" /> : <Calendar className="w-8 h-8" />}
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                   {event.type === 'WORKOUT' ? <Dumbbell className="w-6 h-6" /> : 
+                    event.type === 'NUTRITION' ? <Utensils className="w-6 h-6" /> : <Calendar className="w-6 h-6" />}
                 </div>
                 <div>
-                   <div className="flex items-center gap-2 mb-1">
-                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Оптимизировано ИИ</span>
-                     <div className="w-1 h-1 rounded-full bg-white/10" />
-                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
-                        {event.type === 'WORKOUT' ? 'Силовая тренировка' : event.type === 'NUTRITION' ? 'Питание' : 'Восстановление'}
-                     </span>
-                   </div>
-                   <h2 className="text-3xl font-display font-bold tracking-tight text-white leading-none">{event.title}</h2>
-                   <div className="flex items-center gap-6 mt-3 text-white/40">
-                      <div className="flex items-center gap-2">
-                         <Clock className="w-4 h-4" />
-                         <span className="text-[11px] font-bold uppercase tracking-widest leading-none">
+                   <h2 className="text-xl font-bold tracking-tight text-white mb-1 uppercase">{event.title}</h2>
+                   <div className="flex items-center gap-4 text-white/30">
+                      <div className="flex items-center gap-1.5">
+                         <Clock className="w-3.5 h-3.5" />
+                         <span className="text-[10px] font-bold uppercase tracking-widest">
                              {format(new Date(event.date), 'EEEE, HH:mm', { locale: ru })}
                          </span>
                       </div>
-                      <div className="text-[11px] font-bold uppercase tracking-widest leading-none">
-                         {event.duration} МИНУТ
+                      <div className="text-[10px] font-bold uppercase tracking-widest">
+                         {event.duration} МИН
                       </div>
                    </div>
                 </div>
              </div>
-             <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-xl transition-all text-white/20 hover:text-white"><X className="w-6 h-6" /></button>
+             <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white"><X className="w-5 h-5" /></button>
           </div>
 
           <div className="flex-1 overflow-hidden flex min-h-0 bg-black/40">
              {/* Left Rail: Exercises */}
-             <div className="w-[340px] border-r border-white/5 overflow-y-auto scrollbar-hide py-8 px-6 space-y-3 shrink-0">
-                <div className="flex items-center justify-between mb-4 px-2">
-                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 italic">Протокол занятия</h3>
-                   <span className="text-[9px] font-black text-primary uppercase">{event.exercises?.length || 0} пунктов</span>
+             <div className="w-[300px] border-r border-white/5 overflow-y-auto scrollbar-hide py-6 px-4 space-y-2 shrink-0 bg-black/20">
+                <div className="flex items-center justify-between mb-2 px-2">
+                   <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-white/10">Программа</h3>
+                   <span className="text-[8px] font-bold text-primary/60 uppercase">{event.exercises?.length || 0} этапов</span>
                 </div>
                 
                 {event.exercises?.map((ex, idx) => (
@@ -177,17 +166,17 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                     key={idx}
                     onClick={() => { setExpandedExercise(idx); setActiveTab('TECHNIQUE'); }}
                     className={cn(
-                      "w-full text-left p-5 rounded-2xl border transition-all duration-200 group relative",
-                      expandedExercise === idx ? "bg-white/[0.05] border-primary/40 shadow-lg" : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                      "w-full text-left p-4 rounded-xl border transition-all duration-200 group relative",
+                      expandedExercise === idx ? "bg-white/[0.04] border-primary/20" : "bg-transparent border-transparent hover:bg-white/[0.02]"
                     )}
                   >
                     <h4 className={cn(
-                      "text-xs font-bold uppercase tracking-tight mb-2 transition-colors",
-                      expandedExercise === idx ? "text-primary" : "text-white/80 group-hover:text-white"
+                      "text-xs font-bold uppercase tracking-tight mb-1",
+                      expandedExercise === idx ? "text-primary" : "text-white/60 group-hover:text-white/90"
                     )}>{ex.name}</h4>
-                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-white/20">
+                    <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest text-white/10">
                        <span>{ex.sets} × {ex.reps}</span>
-                       <span className={cn(expandedExercise === idx ? "text-primary/60" : "")}>{ex.weight || 'СВ'}</span>
+                       <span>{ex.weight || 'СВ'}</span>
                     </div>
                   </button>
                 ))}
@@ -381,31 +370,31 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
           <div className="p-10 border-t border-white/5 bg-black/60 flex items-center justify-between shrink-0">
              <div className="flex items-center gap-10">
                 <div className="flex flex-col">
-                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">Текущий статус</span>
-                   <div className="flex gap-1.5">
-                      {(['PLANNED', 'COMPLETED', 'SKIPPED'] as const).map(s => (
-                        <button
-                          key={s}
-                          onClick={() => handleStatusChange(s)}
-                          className={cn(
-                            "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
-                            event.status === s ? "bg-white text-black" : "bg-white/5 text-white/30 hover:text-white"
-                          )}
-                        >
-                          {s === 'PLANNED' ? 'Запланировано' : s === 'COMPLETED' ? 'Выполнено' : 'Пропущено'}
-                        </button>
-                      ))}
-                   </div>
+                    <span className="text-[9px] font-black uppercase tracking-[0.1em] text-white/10 mb-2">Статус сессии</span>
+                    <div className="flex gap-1">
+                       {(['PLANNED', 'COMPLETED', 'SKIPPED'] as const).map(s => (
+                         <button
+                           key={s}
+                           onClick={() => handleStatusChange(s)}
+                           className={cn(
+                             "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                             event.status === s ? "bg-white/10 text-white" : "text-white/20 hover:text-white/40"
+                           )}
+                         >
+                           {s === 'PLANNED' ? 'План' : s === 'COMPLETED' ? 'Готово' : 'Пропуск'}
+                         </button>
+                       ))}
+                    </div>
                 </div>
              </div>
 
              <div className="flex items-center gap-6">
-               <GradientButton 
-                 onClick={() => { handleStatusChange('COMPLETED'); onClose(); }}
-                 className="px-10 py-4 text-[10px] font-black uppercase tracking-[0.4em] rounded-2xl shadow-xl shadow-primary/10"
-               >
-                  Завершить тренировку
-               </GradientButton>
+                <button 
+                  onClick={() => { handleStatusChange('COMPLETED'); onClose(); }}
+                  className="px-6 py-2.5 bg-primary/20 hover:bg-primary/30 border border-primary/20 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                   Завершить тренировку
+                </button>
                
                <div className="h-10 w-px bg-white/5" />
 

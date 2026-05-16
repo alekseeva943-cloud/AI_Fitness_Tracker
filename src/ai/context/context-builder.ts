@@ -192,7 +192,7 @@ export class AIContextBuilder {
     return context as AIUserContext;
   }
 
-  static formatContextForPrompt(context: AIUserContext): string {
+  static formatContextForPrompt(context: AIUserContext, activityContext?: any): string {
     const { profile, currentGoal, analytics, activity, metrics, memory, systemMemory } = context;
 
     let prompt = `--- PROFILE ---\n`;
@@ -205,6 +205,25 @@ export class AIContextBuilder {
       if (profile.recoveryNotes) prompt += `Recovery: ${profile.recoveryNotes}\n`;
       if (profile.motivation) prompt += `Motivation: ${profile.motivation}\n`;
       if (profile.lifestyleNotes) prompt += `Lifestyle: ${profile.lifestyleNotes}\n`;
+    }
+
+    if (activityContext) {
+      prompt += `\n--- CURRENT ACTIVITY CONTEXT ---\n`;
+      if (activityContext.workout) {
+        prompt += `Current Workout: ${activityContext.workout.title} (${activityContext.workout.type})\n`;
+        prompt += `Duration: ${activityContext.workout.duration}min, Goal: ${activityContext.workout.description}\n`;
+      }
+      if (activityContext.exercise) {
+        prompt += `CURRENT FOCUS EXERCISE: ${activityContext.exercise.name}\n`;
+        prompt += `Protocol: ${activityContext.exercise.sets} sets x ${activityContext.exercise.reps} reps @ ${activityContext.exercise.weight || 'Bodyweight'}\n`;
+        if (activityContext.exercise.notes) prompt += `Trainer Notes: ${activityContext.exercise.notes}\n`;
+      }
+      if (activityContext.chatHistory?.length) {
+        prompt += `\nRecent Interaction on this item:\n`;
+        activityContext.chatHistory.slice(-5).forEach((m: any) => {
+          prompt += `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}\n`;
+        });
+      }
     }
 
     prompt += `\n--- ACTIVE GOAL ---\n`;

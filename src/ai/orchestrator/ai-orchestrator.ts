@@ -20,7 +20,7 @@ export class AIOrchestrator {
       logger.log('ai', '[AI CONTEXT VALIDATION] Validating context shape...');
       context = validateAIContext(context);
 
-      const contextStr = AIContextBuilder.formatContextForPrompt(context);
+      const contextStr = AIContextBuilder.formatContextForPrompt(context, options.contextOverride);
       logger.log('ai', `[AI CONTEXT BUILT] Success. Length: ${contextStr.length} chars`);
 
       logger.log('ai', '[AI PROMPT BUILT] Using Premium Coach Prompt');
@@ -97,6 +97,12 @@ export class AIOrchestrator {
   }
 
   private static getSystemPrompt(type: AIActionType): string {
+    if (type === AIActionType.EXERCISE_COACH || type === AIActionType.WORKOUT_COACH) {
+      return `${SYSTEM_PROMPT_BASE}\n\nТы сейчас работаешь в режиме "Полевого Коуча". Атлет находится прямо на тренировке. 
+      Отвечай максимально коротко, технически точно и с учетом его травм и текущей программы. 
+      Если он просит замену — подбери идеальный аналог по биомеханике. 
+      Всегда возвращай JSON.`;
+    }
     return `${SYSTEM_PROMPT_BASE}\n\n${COACH_PROMPT}\n\nCURRENT ACTION: ${type}`;
   }
 }

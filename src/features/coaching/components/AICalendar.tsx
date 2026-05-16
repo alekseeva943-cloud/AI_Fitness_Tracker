@@ -108,16 +108,26 @@ export const AICalendar: React.FC = () => {
 
   return (
     <>
-      <div className="flex flex-col h-full bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+      <div className="flex flex-col h-full bg-[#050816] border border-white/5 rounded-[1.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative">
         {/* Calendar Header */}
-        <div className="p-8 pb-4 flex items-center justify-between shrink-0 bg-white/[0.02] border-b border-white/5">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 p-1.5 bg-black/40 border border-white/10 rounded-2xl">
+        <div className="px-6 py-4 flex items-center justify-between shrink-0 bg-[#0B1020]/50 border-b border-white/5 backdrop-blur-md">
+          <div className="flex items-center gap-4">
+            <h2 className="text-sm font-bold uppercase tracking-[0.2em] w-48 text-white">
+              {format(currentDate, view === 'month' ? 'LLLL yyyy' : 'd LLLL, yyyy', { locale: ru })}
+            </h2>
+            <div className="flex items-center gap-1">
+               <button onClick={prevRange} className="p-1.5 hover:bg-white/5 rounded-lg transition-all text-white/40 hover:text-white"><ChevronLeft className="w-4 h-4" /></button>
+               <button onClick={nextRange} className="p-1.5 hover:bg-white/5 rounded-lg transition-all text-white/40 hover:text-white"><ChevronRight className="w-4 h-4" /></button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 p-1 bg-black/20 border border-white/5 rounded-xl">
               <button 
                 onClick={() => setView('month')}
                 className={cn(
-                  "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                  view === 'month' ? "bg-primary text-black" : "text-white/40 hover:text-white"
+                  "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                  view === 'month' ? "bg-white/10 text-white" : "text-white/20 hover:text-white/40"
                 )}
               >
                 Месяц
@@ -125,42 +135,36 @@ export const AICalendar: React.FC = () => {
               <button 
                 onClick={() => setView('week')}
                 className={cn(
-                  "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                  view === 'week' ? "bg-primary text-black" : "text-white/40 hover:text-white"
+                  "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                  view === 'week' ? "bg-white/10 text-white" : "text-white/20 hover:text-white/40"
                 )}
               >
                 Неделя
               </button>
             </div>
-            <div className="flex items-center gap-4">
-               <button onClick={prevRange} className="p-3 hover:bg-white/10 rounded-xl transition-all border border-white/5"><ChevronLeft className="w-5 h-5 text-white/60" /></button>
-               <h2 className="text-xl font-display font-bold uppercase tracking-tight w-56 text-center text-white">
-                 {format(currentDate, view === 'month' ? 'LLLL yyyy' : 'd LLLL, yyyy', { locale: ru })}
-               </h2>
-               <button onClick={nextRange} className="p-3 hover:bg-white/10 rounded-xl transition-all border border-white/5"><ChevronRight className="w-5 h-5 text-white/60" /></button>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <GradientButton onClick={() => setAddModalOpen(true)} className="px-8 py-3.5 rounded-2xl h-auto text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/10">
-              <Plus className="w-4 h-4 mr-2" />
+            
+            <button 
+              onClick={() => setAddModalOpen(true)} 
+              className="px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-black text-primary uppercase tracking-widest transition-all flex items-center gap-2"
+            >
+              <Plus className="w-3.5 h-3.5" />
               Добавить
-            </GradientButton>
+            </button>
           </div>
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide p-8 pt-0">
-          <div className="grid grid-cols-7 border-b border-white/10 mb-0">
-            {['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'].map(day => (
-              <div key={day} className="py-6 text-center border-r border-white/5 last:border-0">
-                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/10">{day}</span>
+        <div className="flex-1 overflow-y-auto scrollbar-hide bg-[#0B1020]">
+          <div className="grid grid-cols-7 border-b border-white/5 sticky top-0 bg-[#0B1020] z-40">
+            {['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'].map(day => (
+              <div key={day} className="py-3 text-center border-r border-white/5 last:border-0">
+                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/10">{day}</span>
               </div>
             ))}
           </div>
 
           {view === 'month' ? (
-            <div className="grid grid-cols-7 grid-rows-6 border-l border-white/5">
+            <div className="grid grid-cols-7 border-l border-white/5">
               {days.map((day, idx) => {
                   const dayEvents = getEventsForDay(day);
                   const isCurrentMonth = isSameMonth(day, monthStart);
@@ -171,24 +175,24 @@ export const AICalendar: React.FC = () => {
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => handleDrop(e, day)}
                       className={cn(
-                        "min-h-[140px] p-4 border-r border-b border-white/5 transition-all relative group flex flex-col gap-2",
-                        isCurrentMonth ? "bg-transparent hover:bg-white/[0.02]" : "bg-white/[0.01] opacity-20 pointer-events-none grayscale",
-                        isToday(day) && "bg-primary/[0.02]"
+                        "aspect-square p-2 border-r border-b border-white/5 transition-all relative group flex flex-col gap-1",
+                        isCurrentMonth ? "bg-transparent hover:bg-white/[0.01]" : "bg-black/20 opacity-20 pointer-events-none grayscale",
+                        isToday(day) && "bg-primary/[0.01]"
                       )}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className={cn(
-                          "text-[10px] font-black tracking-widest leading-none",
-                          isToday(day) ? "text-primary italic" : "text-white/20"
+                          "text-[11px] font-medium tracking-tight",
+                          isToday(day) ? "text-primary font-black" : "text-white/20"
                         )}>
                           {format(day, 'd')}
                         </span>
                         {isToday(day) && (
-                           <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                           <div className="w-1 h-1 rounded-full bg-primary" />
                         )}
                       </div>
 
-                      <div className="flex-1 space-y-1 relative">
+                      <div className="flex-1 space-y-0.5 overflow-y-auto scrollbar-hide">
                         {dayEvents.map(event => (
                           <div key={event.id} className="relative">
                             <motion.button 
@@ -198,21 +202,20 @@ export const AICalendar: React.FC = () => {
                               onMouseEnter={() => setHoveredEventId(event.id)}
                               onMouseMove={handleMouseMove}
                               onMouseLeave={() => setHoveredEventId(null)}
-                              whileHover={{ x: 1 }}
                               className={cn(
-                                "w-full text-left px-2 py-1.5 rounded-md text-[9px] font-bold border transition-all flex items-center gap-2 truncate relative overflow-hidden",
-                                event.type === 'WORKOUT' ? "bg-orange-500/5 border-orange-500/10 text-orange-200" :
-                                event.type === 'NUTRITION' ? "bg-blue-500/5 border-blue-500/10 text-blue-200" :
-                                "bg-emerald-500/5 border-emerald-500/10 text-emerald-200",
-                                hoveredEventId === event.id && "ring-1 ring-primary/40 z-20"
+                                "w-full text-left px-1.5 py-1 rounded-sm text-[9px] font-medium border border-transparent transition-all flex items-center gap-1.5 truncate relative",
+                                event.type === 'WORKOUT' ? "text-orange-200/80 hover:bg-orange-500/10" :
+                                event.type === 'NUTRITION' ? "text-blue-200/80 hover:bg-blue-500/10" :
+                                "text-emerald-200/80 hover:bg-emerald-500/10",
+                                hoveredEventId === event.id && "bg-white/5 border-white/10"
                               )}
                             >
                               <div className={cn(
-                                "absolute left-0 top-0 bottom-0 w-1",
+                                "absolute left-0 top-1 bottom-1 w-0.5 rounded-full",
                                 event.type === 'WORKOUT' ? "bg-orange-500" :
                                 event.type === 'NUTRITION' ? "bg-blue-500" : "bg-emerald-500"
                               )} />
-                              <span className="truncate uppercase tracking-tight flex-1 ml-1">{event.title}</span>
+                              <span className="truncate flex-1 pl-1">{event.title}</span>
                             </motion.button>
                           </div>
                         ))}
@@ -220,9 +223,9 @@ export const AICalendar: React.FC = () => {
 
                       <button 
                         onClick={() => { setAddModalInitialDate(day); setAddModalOpen(true); }}
-                        className="w-full py-1.5 rounded-lg text-white/0 group-hover:text-primary transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center hover:bg-primary/5"
+                        className="absolute bottom-1 right-1 p-1 rounded-md text-white/0 group-hover:text-white/10 transition-all hover:bg-white/5 hover:text-primary"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-3 h-3" />
                       </button>
                     </div>
                   );
@@ -385,24 +388,23 @@ export const AICalendar: React.FC = () => {
         </AnimatePresence>
 
         {/* Legend Footer */}
-        <div className="px-12 py-8 border-t border-white/10 bg-black/80 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-10">
-               <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]" />
-                  <span className="text-[10px] font-black uppercase text-white/20 tracking-[0.3em]">Тренировка</span>
+        <div className="px-6 py-4 border-t border-white/5 bg-[#0B1020]/80 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-6">
+               <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-orange-500" />
+                  <span className="text-[10px] font-bold uppercase text-white/20 tracking-widest">Тренировка</span>
                </div>
-               <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]" />
-                  <span className="text-[10px] font-black uppercase text-white/20 tracking-[0.3em]">Питание</span>
+               <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-[10px] font-bold uppercase text-white/20 tracking-widest">Питание</span>
                </div>
-               <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
-                  <span className="text-[10px] font-black uppercase text-white/20 tracking-[0.3em]">Восстановление</span>
+               <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] font-bold uppercase text-white/20 tracking-widest">Восстановление</span>
                </div>
             </div>
-            <div className="flex items-center gap-6 opacity-20">
-               <div className="h-px w-16 bg-white/20" />
-               <p className="text-[9px] font-black uppercase italic tracking-[0.5em] text-white">Genesis OS v1.2</p>
+            <div className="flex items-center gap-4 opacity-20">
+               <p className="text-[8px] font-black uppercase tracking-[0.3em] text-white">Genesis Adaptive Planner v1.5</p>
             </div>
         </div>
       </div>
