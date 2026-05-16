@@ -145,6 +145,10 @@ export const buildChartTimeline = (
     const startIso = new Date(goal.startDate).toISOString().split('T')[0];
     const hasValidStartValue = typeof goal.startValue === 'number' && goal.startValue > 0;
     
+    // Find absolute first real value in timeline for fallback
+    const firstRealInTimeline = timeline.find(p => p.current !== null && p.current > 0)?.current;
+    const fallbackStart = hasValidStartValue ? goal.startValue : (firstRealInTimeline || 0);
+
     if (timeline.length === 0) {
       timeline.push({
         dateKey: startIso,
@@ -271,21 +275,30 @@ export const buildChartTimeline = (
   // 8. Ideal path calculation
   if (goal && isValidDate(goal.startDate) && timeline.length > 0) {
     const startDate = new Date(goal.startDate).getTime();
-    const startVal = goal.startValue || timeline[0].current || 0;
+    
+    // Use first real measurement if startValue is missing or 0
+    const firstRealMeasurement = timeline.find(p => p.current !== null && p.current > 0)?.current;
+    const startVal = (typeof goal.startValue === 'number' && goal.startValue > 0) 
+      ? goal.startValue 
+      : (firstRealMeasurement || 0);
+      
     const targetVal = goal.targetValue;
     
     // End date is either forecast date or goal deadline
     const finalDateStr = forecastedDate || goal.deadline;
     const endDate = isValidDate(finalDateStr) ? new Date(finalDateStr).getTime() : new Date(timeline[timeline.length - 1].dateKey).getTime();
     
-    if (endDate > startDate) {
+    if (endDate > startDate && startVal > 0) {
       timeline.forEach(p => {
         const t = new Date(p.dateKey).getTime();
         if (t >= startDate) {
           const ratio = Math.min(1, (t - startDate) / (endDate - startDate));
           p.ideal = Number((startVal + (targetVal - startVal) * ratio).toFixed(1));
         } else {
-          p.ideal = startVal;
+          // Fore points before goal start, don't set ideal to startVal necessarily 
+          // as it pulls the chart range. Set it to the first point of the line if needed,
+          // or leave as null if it shouldn't be drawn before start.
+          p.ideal = null; 
         }
       });
     }

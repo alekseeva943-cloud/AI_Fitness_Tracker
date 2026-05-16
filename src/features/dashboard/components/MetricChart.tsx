@@ -89,10 +89,10 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 
   const minVal = useMemo(() => {
     if (!chartData.length) return 0;
-    const values: number[] = chartData.map(d => d.current).filter(v => v !== null && !isNaN(v));
-    chartData.forEach(d => { if (d.forecast !== null && !isNaN(d.forecast)) values.push(d.forecast); });
-    if (goal && !isNaN(goal.targetValue)) values.push(goal.targetValue);
-    if (goal && !isNaN(goal.startValue)) values.push(goal.startValue);
+    const values: number[] = chartData.map(d => d.current).filter(v => v !== null && !isNaN(v) && v > 0);
+    chartData.forEach(d => { if (d.forecast !== null && !isNaN(d.forecast) && d.forecast > 0) values.push(d.forecast); });
+    if (goal && !isNaN(goal.targetValue) && goal.targetValue > 0) values.push(goal.targetValue);
+    if (goal && !isNaN(goal.startValue) && goal.startValue > 0) values.push(goal.startValue);
     
     if (values.length === 0) return 0;
     const min = Math.min(...values);
