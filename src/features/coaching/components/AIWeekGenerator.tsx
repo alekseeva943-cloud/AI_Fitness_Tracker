@@ -26,43 +26,85 @@ export const AIWeekGenerator: React.FC = () => {
     setGeneratedWeek([]);
     
     for (let i = 0; i < steps.length; i++) {
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 600));
       setStep(i + 1);
     }
     
     const today = new Date();
+    const getNextDate = (days: number) => new Date(today.getTime() + days * 86400000).toISOString();
+    
     const mockEvents = [
       { 
-        id: 'gen-1', 
-        title: 'Силовая: Грудь/Трицепс', 
+        id: crypto.randomUUID(), 
+        title: 'Силовая: Грудь / Трицепс', 
         type: 'WORKOUT' as const, 
         duration: 60, 
-        date: new Date(today.getTime() + 86400000).toISOString(),
-        aiRationale: 'Твой уровень энергии высок по воскресеньям. Последние 2 недели объем на грудные был ниже нормы.',
+        date: getNextDate(1),
+        aiRationale: 'Твой уровень энергии высок по понедельникам. Последние 2 недели объем на грудные был ниже нормы.',
+        metadata: { intensity: 'HIGH', targetMuscle: 'Грудь' },
         exercises: [
-          { name: 'Жим штанги лежа', sets: 4, reps: '8-10', weight: '85кг', rest: '90' },
-          { name: 'Жим гантелей под углом', sets: 3, reps: '12', weight: '30кг', rest: '60' },
-          { name: 'Разводка гантелей', sets: 3, reps: '15', weight: '14кг', rest: '45' }
+          { name: 'Жим штанги лежа', sets: 4, reps: '8-10', weight: '85кг', rest: '90s' },
+          { name: 'Жим гантелей под углом', sets: 3, reps: '12', weight: '30кг', rest: '60s' }
         ]
       },
       { 
-        id: 'gen-2', 
-        title: 'Загрузка нутриентов', 
+        id: crypto.randomUUID(), 
+        title: 'Загрузка: Профицит 300ккал', 
         type: 'NUTRITION' as const, 
-        date: new Date(today.getTime() + 86400000).toISOString(),
-        description: 'Важно поддержать анаболический фон после тяжелой тренировки.'
+        date: getNextDate(1),
+        nutrition: { calories: 3100, protein: 180, carbs: 400, fats: 80, recommendedFoods: ['Овсянка', 'Грудка', 'Паста'] }
       },
       { 
-        id: 'gen-3', 
+        id: crypto.randomUUID(), 
         title: 'Активное восстановление', 
         type: 'WORKOUT' as const, 
         duration: 30, 
-        date: new Date(today.getTime() + 172800000).toISOString(),
-        description: 'Легкое кардио (пульс 110-120) для улучшения кровотока.'
+        date: getNextDate(2),
+        description: 'Легкое кардио (пульс 110-120) для улучшения кровотока.',
+        metadata: { intensity: 'LOW', targetMuscle: 'Все тело' }
       },
+      { 
+        id: crypto.randomUUID(), 
+        title: 'Силовая: Спина / Бицепс', 
+        type: 'WORKOUT' as const, 
+        duration: 75, 
+        date: getNextDate(3),
+        metadata: { intensity: 'HIGH', targetMuscle: 'Спина' },
+        exercises: [
+          { name: 'Подтягивания с весом', sets: 4, reps: '8', weight: '15кг', rest: '120s' },
+          { name: 'Тяга штанги в наклоне', sets: 4, reps: '10', weight: '70кг', rest: '90s' }
+        ]
+      },
+      { 
+        id: crypto.randomUUID(), 
+        title: 'Мобильность и МФР', 
+        type: 'RECOVERY' as const, 
+        duration: 40, 
+        date: getNextDate(4),
+        description: 'Работа над гибкостью плечевого пояса и ТБС.'
+      },
+      { 
+        id: crypto.randomUUID(), 
+        title: 'Силовая: Ноги (Акцент Квадрицепс)', 
+        type: 'WORKOUT' as const, 
+        duration: 90, 
+        date: getNextDate(5),
+        metadata: { intensity: 'HIGH', targetMuscle: 'Ноги' },
+        exercises: [
+          { name: 'Приседания со штангой', sets: 5, reps: '6-8', weight: '110кг', rest: '180s' },
+          { name: 'Жим ногами', sets: 4, reps: '12', weight: '240кг', rest: '90s' }
+        ]
+      },
+      { 
+        id: crypto.randomUUID(), 
+        title: 'Контрольный замер и Дефицит', 
+        type: 'NUTRITION' as const, 
+        date: getNextDate(6),
+        nutrition: { calories: 2400, protein: 200, carbs: 200, fats: 70, recommendedFoods: ['Белая рыба', 'Овощи', 'Творог'] }
+      }
     ];
     
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 400));
     setGeneratedWeek(mockEvents);
     setIsGenerating(false);
   };
@@ -78,6 +120,18 @@ export const AIWeekGenerator: React.FC = () => {
       });
     });
     setGeneratedWeek([]);
+    alert('AI Стратегия успешно интегрирована в твой календарь. Я адаптировал нагрузку под твои текущие показатели готовности.');
+  };
+
+  const addSingleEvent = (event: any) => {
+    addPlanEvent({
+        ...event,
+        source: 'AI',
+        status: 'PLANNED',
+        isCompleted: false,
+        createdAt: new Date().toISOString()
+    });
+    setGeneratedWeek(prev => prev.filter(e => e.id !== event.id));
   };
 
   return (
@@ -172,7 +226,12 @@ export const AIWeekGenerator: React.FC = () => {
                     </div>
                   </div>
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Plus className="w-5 h-5 text-primary" />
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); addSingleEvent(event); }}
+                        className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-black transition-all"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
                   </div>
                 </motion.div>
               ))}

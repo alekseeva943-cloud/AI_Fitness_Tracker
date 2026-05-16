@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Brain, Zap, Clock, Activity, Target, 
@@ -8,7 +8,7 @@ import {
   Dumbbell, Plus, Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { PlanEvent, PlanEventType, PlanEventStatus } from '../../../types';
+import { PlanEvent, PlanEventType, PlanEventStatus, ExercisePlan } from '../../../types';
 import { GlassCard } from '../../../components/ui/GlassCard';
 import { GradientButton } from '../../../components/ui/GradientButton';
 import { cn } from '../../../lib/utils';
@@ -33,10 +33,44 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
     duration: eventToEdit?.duration?.toString() || '60',
     description: eventToEdit?.description || '',
     intensity: eventToEdit?.metadata?.intensity || 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
-    targetMuscle: eventToEdit?.metadata?.targetMuscle || ''
+    targetMuscle: eventToEdit?.metadata?.targetMuscle || '',
+    exercises: eventToEdit?.exercises || [] as ExercisePlan[],
+    nutrition: eventToEdit?.nutrition || { calories: 2500, protein: 150, carbs: 300, fats: 70, recommendedFoods: [] }
   });
 
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
+
+  // Simulate AI reaction to changes
+  useEffect(() => {
+    if (!isAIEnabled) return;
+
+    const timeout = setTimeout(() => {
+        if (formData.type === 'WORKOUT' && formData.targetMuscle) {
+            setAiAdvice(`Анализ Genesis-X9: Тренировка на ${formData.targetMuscle} при текущем уровне стресса ${useFitnessStore.getState().profile?.stressLevel || 4}/10 оптимальна. Я рекомендую держать RPE в районе 8.`);
+        } else if (formData.type === 'NUTRITION') {
+            setAiAdvice(`Анализ Genesis-X9: Твоя цель — гипертрофия. Профицит в ${formData.nutrition.calories} ккал обеспечит нужный анаболический фон.`);
+        }
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [formData.targetMuscle, formData.intensity, formData.nutrition.calories, isAIEnabled]);
+
+  const addExercise = () => {
+    setFormData({
+        ...formData,
+        exercises: [...formData.exercises, { name: 'Новое упражнение', sets: 3, reps: '12', rest: '60s' }]
+    });
+  };
+
+  const updateExercise = (index: number, field: keyof ExercisePlan, value: any) => {
+    const newExs = [...formData.exercises];
+    newExs[index] = { ...newExs[index], [field]: value };
+    setFormData({ ...formData, exercises: newExs });
+  };
+
+  const removeExercise = (index: number) => {
+    setFormData({ ...formData, exercises: formData.exercises.filter((_, i) => i !== index) });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +84,8 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
             date: dateTime.toISOString(),
             duration: parseInt(formData.duration),
             description: formData.description,
+            exercises: formData.type === 'WORKOUT' ? formData.exercises : undefined,
+            nutrition: formData.type === 'NUTRITION' ? formData.nutrition : undefined,
             metadata: {
                 ...eventToEdit.metadata,
                 intensity: formData.intensity,
@@ -72,45 +108,17 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
         isCompleted: false,
         isAI: isAIEnabled,
         createdAt: new Date().toISOString(),
+        exercises: formData.type === 'WORKOUT' ? (formData.exercises.length > 0 ? formData.exercises : [
+            { name: 'Жим штанги лёжа', sets: 4, reps: '8-10', weight: '80кг', rest: '90s' },
+            { name: 'Разведение гантелей', sets: 3, reps: '12-15', weight: '16кг', rest: '60s' }
+        ]) : undefined,
+        nutrition: formData.type === 'NUTRITION' ? formData.nutrition : undefined,
         metadata: {
             intensity: formData.intensity,
             targetMuscle: formData.targetMuscle
         },
         aiRationale: isAIEnabled ? 'Сгенерировано по твоему запросу для оптимизации текущего цикла.' : undefined
     };
-
-    // If AI enabled and workout, simulate generation
-    if (isAIEnabled && formData.type === 'WORKOUT') {
-        newEvent.exercises = [
-            { 
-                name: 'Жим штанги лёжа', 
-                sets: 4, 
-                reps: '8-10', 
-                weight: '80кг', 
-                rest: '90s',
-                technique: {
-                    steps: [
-                        'Ляг на горизонтальную скамью.',
-                        'Сведи лопатки и упрись ногами в пол.',
-                        'Опускай штангу до касания нижней части грудных.',
-                        'Выжми вес на выдохе.'
-                    ],
-                    coachTip: 'Держи локти под углом 45 градусов к корпусу для здоровья плеч.'
-                }
-            },
-            { name: 'Разведение гантелей', sets: 3, reps: '12-15', weight: '16кг', rest: '60s' }
-        ];
-    }
-
-    if (isAIEnabled && formData.type === 'NUTRITION') {
-        newEvent.nutrition = {
-            calories: 2800,
-            protein: 180,
-            carbs: 350,
-            fats: 80,
-            recommendedFoods: ['Бурый рис', 'Куриное филе', 'Авокадо', 'Греческий йогурт']
-        };
-    }
 
     addPlanEvent(newEvent);
     onClose();
@@ -163,36 +171,57 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
               </div>
 
               {/* AI Toggle */}
-              <button
-                type="button"
-                onClick={() => setIsAIEnabled(!isAIEnabled)}
-                className={cn(
-                    "w-full p-4 rounded-3xl border flex items-center justify-between transition-all group",
-                    isAIEnabled ? "bg-primary/5 border-primary/20" : "bg-white/5 border-white/5"
-                )}
-              >
-                  <div className="flex items-center gap-3">
-                     <div className={cn(
-                         "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                         isAIEnabled ? "bg-primary text-black shadow-[0_0_15px_rgba(223,255,0,0.3)]" : "bg-white/5 text-muted-foreground"
-                     )}>
-                        <Brain className="w-5 h-5" />
-                     </div>
-                     <div className="text-left">
-                        <p className={cn("text-xs font-bold uppercase tracking-tight", isAIEnabled ? "text-primary" : "text-muted-foreground")}>AI Assisted Mode</p>
-                        <p className="text-[10px] text-muted-foreground/60">Авто-генерация программы и нутриентов</p>
-                     </div>
-                  </div>
-                  <div className={cn(
-                      "w-12 h-6 rounded-full p-1 transition-all",
-                      isAIEnabled ? "bg-primary" : "bg-white/10"
-                  )}>
-                     <div className={cn(
-                         "w-4 h-4 rounded-full bg-white transition-all transform",
-                         isAIEnabled ? "translate-x-6" : "translate-x-0"
-                     )} />
-                  </div>
-              </button>
+              <div className="space-y-4">
+                <button
+                    type="button"
+                    onClick={() => setIsAIEnabled(!isAIEnabled)}
+                    className={cn(
+                        "w-full p-4 rounded-3xl border flex items-center justify-between transition-all group",
+                        isAIEnabled ? "bg-primary/5 border-primary/20" : "bg-white/5 border-white/5"
+                    )}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                            isAIEnabled ? "bg-primary text-black shadow-[0_0_15px_rgba(223,255,0,0.3)]" : "bg-white/5 text-muted-foreground"
+                        )}>
+                            <Brain className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                            <p className={cn("text-xs font-bold uppercase tracking-tight", isAIEnabled ? "text-primary" : "text-muted-foreground")}>AI Assisted Mode</p>
+                            <p className="text-[10px] text-muted-foreground/60">Авто-генерация и анализ изменений</p>
+                        </div>
+                    </div>
+                    <div className={cn(
+                        "w-12 h-6 rounded-full p-1 transition-all",
+                        isAIEnabled ? "bg-primary" : "bg-white/10"
+                    )}>
+                        <div className={cn(
+                            "w-4 h-4 rounded-full bg-white transition-all transform",
+                            isAIEnabled ? "translate-x-6" : "translate-x-0"
+                        )} />
+                    </div>
+                </button>
+
+                <AnimatePresence>
+                    {isAIEnabled && aiAdvice && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="p-4 bg-primary/10 rounded-2xl border border-primary/20 flex gap-3 relative overflow-hidden group"
+                        >
+                            <div className="absolute top-0 right-0 p-2 opacity-5">
+                                <Brain className="w-12 h-12" />
+                            </div>
+                            <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-[10px] font-bold text-primary leading-snug italic">
+                                "{aiAdvice}"
+                            </p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
@@ -252,11 +281,120 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
                  <textarea 
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
+                    rows={2}
                     placeholder="Что мы сегодня планируем?"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-primary/40 transition-all resize-none"
                  />
               </div>
+
+              {/* Workout Editor */}
+              {formData.type === 'WORKOUT' && (
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                   <div className="flex items-center justify-between">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Программа упражнений</h3>
+                      <button 
+                        type="button"
+                        onClick={addExercise}
+                        className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:bg-primary/10 px-3 py-1.5 rounded-xl transition-all"
+                      >
+                         <Plus className="w-3 h-3" /> ДОБАВИТЬ
+                      </button>
+                   </div>
+                   
+                   <div className="space-y-3">
+                      {formData.exercises.map((ex, idx) => (
+                        <div key={idx} className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3 group/ex">
+                           <div className="flex items-center gap-3">
+                              <input 
+                                type="text"
+                                value={ex.name}
+                                onChange={e => updateExercise(idx, 'name', e.target.value)}
+                                placeholder="Название упражнения"
+                                className="flex-1 bg-transparent border-none text-sm font-bold focus:outline-none placeholder:text-muted-foreground/30"
+                              />
+                              <button 
+                                type="button" 
+                                onClick={() => removeExercise(idx)}
+                                className="p-1.5 text-muted-foreground hover:text-red-400 opacity-0 group-hover/ex:opacity-100 transition-all"
+                              >
+                                 <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                           </div>
+                           <div className="grid grid-cols-4 gap-2">
+                              <div className="space-y-1">
+                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Sets</p>
+                                 <input 
+                                    type="number" 
+                                    value={ex.sets}
+                                    onChange={e => updateExercise(idx, 'sets', parseInt(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                 />
+                              </div>
+                              <div className="space-y-1">
+                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Reps</p>
+                                 <input 
+                                    type="text" 
+                                    value={ex.reps}
+                                    onChange={e => updateExercise(idx, 'reps', e.target.value)}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                 />
+                              </div>
+                              <div className="space-y-1">
+                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Weight</p>
+                                 <input 
+                                    type="text" 
+                                    value={ex.weight}
+                                    onChange={e => updateExercise(idx, 'weight', e.target.value)}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                 />
+                              </div>
+                              <div className="space-y-1">
+                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Rest</p>
+                                 <input 
+                                    type="text" 
+                                    value={ex.rest}
+                                    onChange={e => updateExercise(idx, 'rest', e.target.value)}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                 />
+                              </div>
+                           </div>
+                        </div>
+                      ))}
+                      {formData.exercises.length === 0 && (
+                        <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-3xl">
+                           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest italic">Нет упражнений</p>
+                        </div>
+                      )}
+                   </div>
+                </div>
+              )}
+
+              {/* Nutrition Editor */}
+              {formData.type === 'NUTRITION' && (
+                 <div className="space-y-4 pt-4 border-t border-white/5">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">План питания</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-2">Цель калорий</label>
+                          <input 
+                             type="number" 
+                             value={formData.nutrition.calories}
+                             onChange={e => setFormData({ ...formData, nutrition: { ...formData.nutrition, calories: parseInt(e.target.value) } })}
+                             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-primary/40 transition-all"
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-2">Белки (г)</label>
+                          <input 
+                             type="number" 
+                             value={formData.nutrition.protein}
+                             onChange={e => setFormData({ ...formData, nutrition: { ...formData.nutrition, protein: parseInt(e.target.value) } })}
+                             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-primary/40 transition-all"
+                          />
+                       </div>
+                    </div>
+                 </div>
+              )}
             </div>
 
             <div className="p-6 border-t border-white/5 bg-black/40 flex gap-3">
