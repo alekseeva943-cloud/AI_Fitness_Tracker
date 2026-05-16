@@ -99,8 +99,8 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
             {/* MAIN COACHING BLOCK */}
             <div className={cn("space-y-6", isCompact ? "" : "lg:col-span-8")}>
               <GlassCard className={cn(
-                "bg-linear-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 relative overflow-hidden group",
-                isCompact ? "p-6" : "p-8"
+                "bg-linear-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 relative overflow-hidden group transition-all duration-500",
+                isCompact ? "p-5 rounded-[2rem]" : "p-8 rounded-[2.5rem]"
               )}>
                  {!isCompact && (
                    <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000">
@@ -108,20 +108,20 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
                    </div>
                  )}
                  
-                 <div className={cn("space-y-4 relative z-10", isCompact && "space-y-3")}>
+                 <div className={cn("space-y-3 relative z-10")}>
                     <div className="flex justify-between items-start">
-                       <div className="space-y-1">
-                          <div className={cn("flex items-center gap-2 text-primary", isCompact && "text-primary/70")}>
-                             {latestAnalysis.trend === 'IMPROVING' ? <TrendingUp className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                             <span className="text-[10px] font-black uppercase tracking-widest">
-                               {latestAnalysis.verdict ? "Заметка коуча" : (isCompact ? "Статус" : "Личный коуч")}
+                       <div className="space-y-0.5">
+                          <div className={cn("flex items-center gap-1.5 text-primary", isCompact && "text-primary/70")}>
+                             {latestAnalysis.trend === 'IMPROVING' ? <TrendingUp className="w-3.5 h-3.5 shadow-[0_0_10px_rgba(223,255,0,0.2)]" /> : <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
+                             <span className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                               {isCompact ? "Заметка тренера" : "Личный коуч"}
                              </span>
                           </div>
                           <h4 className={cn(
-                            "font-display font-black leading-none tracking-tight",
-                            isCompact ? "text-lg" : "text-xl"
+                            "font-display font-black tracking-tight",
+                            isCompact ? "text-lg text-foreground/90 uppercase italic" : "text-xl italic uppercase tracking-tighter"
                           )}>
-                             {latestAnalysis.verdict || (latestAnalysis.trend === 'IMPROVING' ? "Прогресс в норме" : "Требуется корректировка")}
+                             {latestAnalysis.verdict || (latestAnalysis.trend === 'IMPROVING' ? "Прогресс в норме" : "Нужна корректировка")}
                           </h4>
                        </div>
                        {!isCompact && (
@@ -138,8 +138,8 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
                     </div>
                     
                     <p className={cn(
-                      "leading-relaxed text-foreground/90 font-medium",
-                      isCompact ? "text-sm max-w-full" : "text-lg max-w-2xl"
+                      "leading-relaxed text-foreground/80 font-medium",
+                      isCompact ? "text-sm max-w-[500px]" : "text-lg max-w-2xl"
                     )}>
                        {latestAnalysis.summary}
                     </p>
@@ -152,38 +152,54 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
                  </div>
               </GlassCard>
 
-              {/* INSIGHTS GRID */}
-              <div className={cn("grid gap-4", isCompact ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
-                 <GlassCard className="p-5 space-y-3 border-white/5 bg-white/5">
-                    <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                       <Zap className="w-3 h-3 text-primary" />
-                       Инсайты
-                    </h5>
-                    <ul className="space-y-2">
-                       {(latestAnalysis.insights || []).slice(0, isCompact ? 2 : 4).map((insight, i) => (
-                         <li key={i} className="text-xs font-medium flex items-start gap-3">
-                            <ArrowRight className="w-3 h-3 text-primary mt-0.5 shrink-0" />
-                            {insight}
-                         </li>
-                       ))}
-                    </ul>
-                 </GlassCard>
+              {/* TACTICAL ACTIONS - Inline for compact */}
+              {isCompact && latestAnalysis.nextSteps && latestAnalysis.nextSteps.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                   {latestAnalysis.nextSteps.slice(0, 3).map((step: any, i: number) => (
+                     <div key={i} className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-center gap-3 group/step">
+                        <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover/step:bg-primary/20 transition-colors">
+                           <ArrowRight className="w-3 h-3 text-primary" />
+                        </div>
+                        <p className="text-[10px] font-bold leading-tight">{step}</p>
+                     </div>
+                   ))}
+                </div>
+              )}
 
-                 <GlassCard className="p-5 space-y-3 border-white/5 bg-white/5">
-                    <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                       <Target className="w-3 h-3 text-primary" />
-                       Следующие шаги
-                    </h5>
-                    <ul className="space-y-2">
-                       {(latestAnalysis.nextSteps || []).slice(0, isCompact ? 3 : 5).map((step, i) => (
-                         <li key={i} className="text-xs font-medium flex items-center gap-3">
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                            {step}
-                         </li>
-                       ))}
-                    </ul>
-                 </GlassCard>
-              </div>
+              {/* INSIGHTS GRID - Only Full Dashboard */}
+              {!isCompact && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <GlassCard className="p-5 space-y-3 border-white/5 bg-white/5">
+                      <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Zap className="w-3 h-3 text-primary" />
+                        Ключевой инсайт
+                      </h5>
+                      <ul className="space-y-2">
+                        {(latestAnalysis.insights || []).slice(0, 1).map((insight: any, i: number) => (
+                          <li key={i} className="text-xs font-medium flex items-start gap-3">
+                              <ArrowRight className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                              {insight}
+                          </li>
+                        ))}
+                      </ul>
+                  </GlassCard>
+
+                  <GlassCard className="p-5 space-y-3 border-white/5 bg-white/5">
+                      <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Target className="w-3 h-3 text-primary" />
+                        Следующие шаги
+                      </h5>
+                      <ul className="space-y-2">
+                        {(latestAnalysis.nextSteps || []).slice(0, 3).map((step: any, i: number) => (
+                          <li key={i} className="text-xs font-medium flex items-center gap-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                              {step}
+                          </li>
+                        ))}
+                      </ul>
+                  </GlassCard>
+                </div>
+              )}
             </div>
 
             {/* SECONDARY ACTION CARDS */}
