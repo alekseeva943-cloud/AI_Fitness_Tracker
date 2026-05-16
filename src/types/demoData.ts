@@ -53,6 +53,8 @@ export const INITIAL_DEMO_STATE: FitnessState = {
     { id: 'ex3', date: '2026-05-07T08:00:00Z', type: 'Силовая: Спина', duration: 75, caloriesBurned: 550 },
     { id: 'ex4', date: '2026-05-05T08:00:00Z', type: 'Йога', duration: 45, caloriesBurned: 150 },
     { id: 'ex5', date: '2026-05-02T08:00:00Z', type: 'Силовая: Грудь', duration: 60, caloriesBurned: 480 },
+    { id: 'ex6', date: '2026-04-30T08:00:00Z', type: 'Бокс', duration: 90, caloriesBurned: 800 },
+    { id: 'ex7', date: '2026-04-28T08:00:00Z', type: 'Силовая: Ноги', duration: 70, caloriesBurned: 600 },
   ],
   analyses: [],
   planEvents: [],

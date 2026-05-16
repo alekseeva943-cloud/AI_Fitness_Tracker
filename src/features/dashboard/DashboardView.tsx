@@ -653,13 +653,18 @@ export const DashboardView: React.FC = () => {
                           </div>
                         ) : (
                           <div className="text-center py-4">
-                            <p className="text-sm text-muted-foreground italic mb-6 leading-relaxed">
+                            <div className="mb-4 flex justify-center gap-2">
+                               {[1, 2, 3].map(i => (
+                                   <div key={i} className="w-2 h-2 rounded-full bg-primary/20 border border-primary/40 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+                               ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground italic mb-6 leading-relaxed max-w-[240px] mx-auto">
                               {summary?.goal.status === 'WRONG_DIRECTION' 
                                 ? "Текущая динамика направлена в обратную сторону. Для прогноза необходимо стабилизировать прогресс."
-                                : "Добавьте больше данных (минимум 3-5 замеров) для активации аналитического прогноза."}
+                                : "Добавьте минимум 3 полноценные тренировки и замеры веса для активации аналитического прогноза."}
                             </p>
-                            <GradientButton variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setGoalModalOpen(true); }} className="w-full">
-                               Изменить цель
+                            <GradientButton variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEntryType('workout'); setEntryModalOpen(true); }} className="w-full">
+                               Добавить тренировку
                             </GradientButton>
                           </div>
                         )}

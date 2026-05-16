@@ -84,12 +84,22 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 
   if (chartData.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center opacity-40 space-y-4">
-        <Activity className="w-12 h-12 text-muted-foreground" />
-        <p className="text-muted-foreground text-sm uppercase font-bold tracking-widest italic text-center">
-          Нет данных для анализа {METRICS[metricId || '']?.label || ''}
+      <div className="h-full flex flex-col items-center justify-center opacity-40 px-8 text-center space-y-4">
+        <div className="relative">
+          <Activity className="w-12 h-12 text-muted-foreground" />
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
+          />
+        </div>
+        <p className="text-muted-foreground text-sm uppercase font-black tracking-[0.2em] italic leading-relaxed">
+          График требует больше данных
           <br />
-          <span className="text-[10px] mt-2 block">Добавьте тренировки или замеры</span>
+          <span className="text-[10px] opacity-60 mt-2 block font-bold normal-case tracking-normal">
+            Добавьте минимум 3 тренировки и 2 замера веса,<br />
+            чтобы активировать интеллектуальный прогноз и визуализацию прогресса.
+          </span>
         </p>
       </div>
     );
@@ -104,7 +114,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     if (values.length === 0) return 0;
     const min = Math.min(...values);
-    return Math.max(0, min - Math.max(2, min * 0.05));
+    return Math.max(0, min - Math.max(1, min * 0.02));
   }, [chartData, goal]);
 
   const maxVal = useMemo(() => {
@@ -116,7 +126,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     if (values.length === 0) return 100;
     const max = Math.max(...values);
-    return max + Math.max(2, max * 0.05);
+    return max + Math.max(1, max * 0.02);
   }, [chartData, goal]);
 
   const trendInfo = useMemo(() => {
@@ -163,7 +173,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     >
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+          <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 20 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
@@ -188,8 +198,13 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               minTickGap={30}
             />
             <YAxis 
-              hide 
+              orientation="left"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#71717a', fontSize: 8, fontWeight: 900 }}
               domain={[minVal, maxVal]} 
+              tickFormatter={(val) => `${val}${propUnit ? ` ${propUnit}` : ''}`}
+              dx={5}
             />
             <Tooltip 
               content={<CustomTooltip />}
