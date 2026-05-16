@@ -395,9 +395,12 @@ export const DashboardView: React.FC = () => {
                            <span className="text-primary text-[8px]">Текущий</span>
                            <span className="text-primary text-sm font-bold">
                               {(() => {
-                                // weightHistory is sorted newest-first, so index 0 is newest
-                                const latest = [...weightHistory].find(h => h.value > 0);
-                                return latest?.value || activeGoal.currentValue || activeGoal.startValue || 0;
+                                return DataNormalizer.getLatestWeight({
+                                  profile,
+                                  goals,
+                                  workouts,
+                                  weightHistory
+                                } as any);
                               })()} {activeGoal.unit}
                            </span>
                         </div>
@@ -661,7 +664,7 @@ export const DashboardView: React.FC = () => {
                             <p className="text-xs text-muted-foreground italic mb-6 leading-relaxed max-w-[240px] mx-auto">
                               {summary?.goal.status === 'WRONG_DIRECTION' 
                                 ? "Текущая динамика направлена в обратную сторону. Для прогноза необходимо стабилизировать прогресс."
-                                : "Добавьте минимум 3 полноценные тренировки и замеры веса для активации аналитического прогноза."}
+                                : "Добавьте ещё немного данных (минимум 3 замера), чтобы я смог построить верный прогноз твоего прогресса."}
                             </p>
                             <GradientButton variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEntryType('workout'); setEntryModalOpen(true); }} className="w-full">
                                Добавить тренировку
@@ -753,7 +756,7 @@ export const DashboardView: React.FC = () => {
                         summary.goal.status === 'WRONG_DIRECTION'
                           ? "Внимание! Вы отклоняетесь от графика. Запустите глубокий анализ для поиска причин."
                           : "Система готова к анализу ваших тренировок. Перейдите в раздел аналитики."
-                      ) : "Добавьте данные (минимум 3 записи), чтобы ИИ смог составить рекомендации."}
+                      ) : "Добавьте ещё немного данных (минимум 3 замера), чтобы я смог построить верный прогноз твоего прогресса."}
                     </p>
                     
                     <div className="flex items-center justify-between pt-2 border-t border-white/5">

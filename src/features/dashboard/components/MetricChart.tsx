@@ -97,8 +97,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({
           График требует больше данных
           <br />
           <span className="text-[10px] opacity-60 mt-2 block font-bold normal-case tracking-normal">
-            Добавьте минимум 3 тренировки и 2 замера веса,<br />
-            чтобы активировать интеллектуальный прогноз и визуализацию прогресса.
+            Добавьте ещё немного данных (минимум 3 замера),<br />
+            чтобы я смог построить верный прогноз твоего прогресса.
           </span>
         </p>
       </div>
@@ -114,7 +114,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     if (values.length === 0) return 0;
     const min = Math.min(...values);
-    return Math.max(0, min - Math.max(1, min * 0.02));
+    return Math.max(0, min - Math.max(0.2, min * 0.015));
   }, [chartData, goal]);
 
   const maxVal = useMemo(() => {
@@ -126,7 +126,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     if (values.length === 0) return 100;
     const max = Math.max(...values);
-    return max + Math.max(1, max * 0.02);
+    return max + Math.max(0.2, max * 0.015);
   }, [chartData, goal]);
 
   const trendInfo = useMemo(() => {

@@ -12,7 +12,7 @@ export class AIActions {
     const store = useFitnessStore.getState();
     const summary = selectAnalyticsSummary(store);
     
-    if (!summary) throw new Error('Not enough data for deep analysis. Add at least 3 logs.');
+    if (!summary) throw new Error('Недостаточно данных для глубокого анализа. Добавьте ещё немного замеров (минимум 3).');
 
     store.setAnalysisRequestState({ status: 'loading', error: null });
 

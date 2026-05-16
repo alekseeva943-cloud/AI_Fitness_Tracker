@@ -95,12 +95,16 @@ export class DataNormalizer {
 
   /**
    * Get the absolute latest valid body weight.
+   * Priority: weightHistory > profile baseline > profile weight field
    */
   static getLatestWeight(state: FitnessState): number {
-    if (state.profile?.weight) return this.safeNum(state.profile.weight);
     const timeline = this.getWeightTimeline(state);
-    if (timeline.length === 0) return this.safeNum(state.profile?.baselines.find(b => b.id === 'weight')?.value, 0);
-    return timeline[timeline.length - 1].value;
+    if (timeline.length > 0) return timeline[timeline.length - 1].value;
+    
+    const baseline = state.profile?.baselines.find(b => b.id === 'weight')?.value;
+    if (baseline !== undefined) return this.safeNum(baseline);
+    
+    return this.safeNum(state.profile?.weight, 0);
   }
 
   // --- Workout Metrics Normalized Access ---
