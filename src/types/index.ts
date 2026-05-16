@@ -86,6 +86,22 @@ export interface WeightEntry {
   metrics?: Record<string, number>; // Additional metrics like bodyFat, muscleMass
 }
 
+export type PlanEventSource = 'USER' | 'AI';
+export type PlanEventType = 'WORKOUT' | 'NUTRITION' | 'RECOVERY' | 'REMINDER';
+
+export interface PlanEvent {
+  id: string;
+  title: string;
+  type: PlanEventType;
+  source: PlanEventSource;
+  date: string; // ISO string
+  duration?: number; // minutes
+  description?: string;
+  isCompleted: boolean;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
 export interface AIRecommendation {
   id: string;
   type: 'EXERCISE' | 'DIET' | 'REST' | 'MOTIVATION' | 'TRAINING' | 'NUTRITION' | 'RECOVERY' | 'CONSISTENCY';
@@ -109,6 +125,9 @@ export interface AIAnalysis {
   forecast?: string;
   recommendations: (AIRecommendation & { reason?: string })[];
   nextSteps?: string[];
+  tacticalPlan?: { title: string; description: string; isCompleted: boolean }[];
+  suggestedEvents?: Partial<PlanEvent>[];
+  followupQuestions?: string[];
   insights?: string[];
   motivation?: string;
 }
@@ -162,6 +181,7 @@ export interface FitnessState {
   activeGoalId: string | null;
   workouts: WorkoutEntry[];
   weightHistory: WeightEntry[];
+  planEvents: PlanEvent[];
   analyses: AIAnalysis[];
   isDemoMode?: boolean;
 }

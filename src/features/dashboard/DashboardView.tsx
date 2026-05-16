@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { RU } from "../../constants";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { GradientButton } from "../../components/ui/GradientButton";
-import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles, CheckCircle2, Brain } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Plus, Target, Dumbbell, Scale, Clock, Flame, Calendar, FileText, Trash2, ChevronLeft, ChevronRight, Activity, Heart, Ruler, Zap, Sparkles, CheckCircle2, Brain, ArrowRight } from "lucide-react";
 import { useFitnessStore, useGoals, useActiveGoalId, useWorkouts, useWeightHistory } from "../../store/useFitnessStore";
 import { METRICS } from "../../constants/metrics";
 import { THEME } from "../../constants/theme";
@@ -251,6 +252,66 @@ export const DashboardView: React.FC = () => {
         {activeGoal ? (
           <>
             <DashboardGrid summary={summary} activeGoal={activeGoal} />
+
+            {/* Tactical Blueprint / Today's AI Plan */}
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-0">
+               <motion.div 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 className="group cursor-pointer"
+                 onClick={() => navigate('/coaching')}
+               >
+                  <GlassCard className="p-6 bg-linear-to-r from-primary/10 via-background to-background border-primary/20 relative overflow-hidden flex flex-col md:flex-row items-center gap-8 group-hover:border-primary transition-all">
+                     <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform">
+                        <Brain className="w-32 h-32" />
+                     </div>
+                     <div className="flex items-center gap-5 relative z-10 shrink-0">
+                        <div className="w-14 h-14 rounded-2xl bg-primary text-black flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+                           <Calendar className="w-7 h-7" />
+                        </div>
+                        <div>
+                           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Tactical Blueprint</h3>
+                           <p className="text-xl font-bold font-display">Твой план на сегодня</p>
+                        </div>
+                     </div>
+
+                     <div className="flex-1 flex flex-wrap gap-3 relative z-10">
+                        {useFitnessStore.getState().planEvents
+                          .filter(e => {
+                            const d = new Date(e.date);
+                            const now = new Date();
+                            return d.toDateString() === now.toDateString();
+                          })
+                          .slice(0, 3)
+                          .map((event, i) => (
+                            <div key={i} className={cn(
+                              "px-4 py-2 rounded-xl border flex items-center gap-3 transition-all",
+                              event.isCompleted ? "bg-green-500/10 border-green-500/20 text-green-400 opacity-60" : "bg-white/5 border-white/10"
+                            )}>
+                               <div className={cn(
+                                 "w-1.5 h-1.5 rounded-full",
+                                 event.isCompleted ? "bg-green-500" : "bg-primary animate-pulse"
+                               )} />
+                               <span className="text-[10px] font-black uppercase tracking-tight">{event.title}</span>
+                            </div>
+                          ))}
+                        {useFitnessStore.getState().planEvents.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length === 0 && (
+                          <div className="text-muted-foreground/40 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2">
+                             Нет запланированных действий на сегодня
+                             <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        )}
+                     </div>
+
+                     <div className="relative z-10 shrink-0">
+                        <GradientButton variant="outline" size="sm" className="px-6 border-white/10 group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary">
+                           View Full Plan
+                           <ChevronRight className="w-4 h-4 ml-2" />
+                        </GradientButton>
+                     </div>
+                  </GlassCard>
+               </motion.div>
+            </div>
 
             {summary?.goal.isAchieved && activeGoal.status !== 'COMPLETED' && (
               <GlassCard className="p-8 bg-linear-to-br from-green-500/20 to-emerald-500/5 border-green-500/30 flex flex-col md:flex-row items-center justify-between gap-8 animate-in zoom-in-95 duration-1000 relative overflow-hidden">

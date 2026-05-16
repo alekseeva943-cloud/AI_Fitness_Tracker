@@ -16,6 +16,7 @@ export const SYSTEM_PROMPT_BASE = `
   "verdict": "Твой четкий тренерский вердикт (3-5 слов). Например: 'Идем на рекорд' или 'Нужна коррекция режима'.",
   "trend": "IMPROVING | STAGNATING | DECLINING | STABLE",
   "overallProgress": число от 0 до 100,
+  "trends": ["Кратко о динамике"],
   "insights": ["ОДИН самый крутой инсайт. Например: 'Твоя сила растет быстрее, чем мы планировали'"],
   "mainRisk": "Главный риск сейчас (коротко и по делу)",
   "recommendations": [
@@ -27,6 +28,13 @@ export const SYSTEM_PROMPT_BASE = `
       "action": { "label": "Действие (например: Запланировать отдых)", "id": "ACTION_ID" }
     }
   ],
+  "tacticalPlan": [
+    { "title": "Заголовок", "description": "Детали", "isCompleted": false }
+  ],
+  "suggestedEvents": [
+    { "title": "Утренняя тренировка", "type": "WORKOUT", "date": "ISO_DATE", "duration": 60, "description": "Текст" }
+  ],
+  "followupQuestions": ["Что думаешь?", "Готов?"],
   "nextSteps": ["Вот что я бы изменил прямо сейчас: [Шаг 1]", "Завтра сделай это: [Шаг 2]", "На выходных: [Шаг 3]"],
   "motivation": "Короткая, хлесткая фраза-пинок.",
   "success": true

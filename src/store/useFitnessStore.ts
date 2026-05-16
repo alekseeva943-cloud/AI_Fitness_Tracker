@@ -5,6 +5,7 @@ import { INITIAL_DEMO_STATE } from '../types/demoData';
 import { createProfileSlice, ProfileSlice } from './slices/profileSlice';
 import { createGoalsSlice, GoalsSlice } from './slices/goalsSlice';
 import { createEntriesSlice, EntriesSlice } from './slices/entriesSlice';
+import { createPlanSlice, PlanSlice } from './slices/planSlice';
 import { createAISlice, AISlice } from './slices/aiSlice';
 import { createThemeSlice, ThemeSlice } from './slices/themeSlice';
 import { logger } from '../lib/logger';
@@ -14,6 +15,7 @@ export type FitnessStore = FitnessState &
   ProfileSlice & 
   GoalsSlice & 
   EntriesSlice & 
+  PlanSlice &
   AISlice & 
   ThemeSlice & {
     initialize: () => void;
@@ -29,6 +31,7 @@ export const useFitnessStore = create<FitnessStore>()(
       ...createProfileSlice(set as any, get as any, api as any),
       ...createGoalsSlice(set as any, get as any, api as any),
       ...createEntriesSlice(set as any, get as any, api as any),
+      ...createPlanSlice(set as any, get as any, api as any),
       ...createAISlice(set as any, get as any, api as any),
       ...createThemeSlice(set as any, get as any, api as any),
 
@@ -42,6 +45,7 @@ export const useFitnessStore = create<FitnessStore>()(
           activeGoalId: null,
           workouts: [],
           weightHistory: [],
+          planEvents: [],
           analyses: [],
           isDemoMode: false
         });
@@ -89,6 +93,14 @@ export const useFitnessStore = create<FitnessStore>()(
             return g;
           });
 
+          const cleanedEvents = (state.planEvents || []).map(e => {
+            if (e.id === undefined || e.id === null || e.id === 'undefined' || e.id === '') {
+              needsIdCleanup = true;
+              return { ...e, id: generateId() };
+            }
+            return e;
+          });
+
           // Ensure activeGoalId is valid
           let activeGoalId = state.activeGoalId;
           const activeGoalExists = (state.goals || []).find(g => g.id === activeGoalId);
@@ -106,6 +118,7 @@ export const useFitnessStore = create<FitnessStore>()(
               workouts: cleanedWorkouts, 
               weightHistory: cleanedWeight,
               goals: cleanedGoals,
+              planEvents: cleanedEvents,
               activeGoalId: activeGoalId,
               _lastInit: now
             });
@@ -160,6 +173,7 @@ export const useFitnessStore = create<FitnessStore>()(
             goals: state?.goals || [],
             workouts: state?.workouts || [],
             weightHistory: state?.weightHistory || [],
+            planEvents: state?.planEvents || [],
             analyses: state?.analyses || [],
             activeGoalId: state?.activeGoalId || null,
           };

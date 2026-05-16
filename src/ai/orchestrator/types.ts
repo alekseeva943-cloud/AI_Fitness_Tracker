@@ -31,6 +31,9 @@ export interface AIResponse {
     };
   }[];
   nextSteps?: string[];
+  tacticalPlan?: { title: string; description: string; isCompleted: boolean }[];
+  suggestedEvents?: any[];
+  followupQuestions?: string[];
   motivation?: string;
   confidence?: number;
   reasoning?: string;

@@ -10,6 +10,7 @@ import { GoalsView } from './features/goals/GoalsView';
 import { WorkoutsView } from './features/entries/WorkoutsView';
 import { AnalyticsView } from './features/analytics/AnalyticsView';
 import { AIInsightsView } from './features/ai/AIInsightsView';
+import { CoachingView } from './features/coaching/CoachingView';
 import { ProfileView } from './features/profile/ProfileView';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppLayout } from './components/layout/AppLayout';
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/goals" element={<GoalsView />} />
             <Route path="/analytics" element={<AnalyticsView />} />
             <Route path="/workouts" element={<WorkoutsView />} />
+            <Route path="/coaching" element={<CoachingView />} />
             <Route path="/ai-chat" element={<AIInsightsView />} />
             <Route path="*" element={<DashboardView />} />
           </Routes>

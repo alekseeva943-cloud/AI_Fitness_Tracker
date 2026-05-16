@@ -55,5 +55,6 @@ export const INITIAL_DEMO_STATE: FitnessState = {
     { id: 'ex5', date: '2026-05-02T08:00:00Z', type: 'Силовая: Грудь', duration: 60, caloriesBurned: 480 },
   ],
   analyses: [],
+  planEvents: [],
   isDemoMode: true
 };

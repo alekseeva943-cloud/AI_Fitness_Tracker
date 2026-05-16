@@ -1,6 +1,6 @@
 import React from "react";
 import { GlassCard } from "../../../components/ui/GlassCard";
-import { Sparkles, TrendingUp, Apple, Dumbbell, AlertTriangle, Zap, CheckCircle2, MessageSquare, Brain, Target, ArrowRight, Quote, Plus, Activity } from "lucide-react";
+import { Sparkles, TrendingUp, Apple, Dumbbell, AlertTriangle, Zap, CheckCircle2, MessageSquare, Brain, Target, ArrowRight, Quote, Plus, Activity, Calendar } from "lucide-react";
 import { GradientButton } from "../../../components/ui/GradientButton";
 import { useFitnessStore } from "../../../store/useFitnessStore";
 import { useShallow } from 'zustand/shallow';
@@ -62,8 +62,21 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
   const handleRecommendationAction = (rec: any) => {
     if (!rec.action) return;
     
-    // In a real app, this would route to specific features
-    // For now, we'll simulate the interaction or provide visual feedback
+    // Check if it's a calendar action
+    if (rec.action.id === 'ADD_PLAN_EVENT' && rec.metadata?.event) {
+      useFitnessStore.getState().addPlanEvent({
+        id: Math.random().toString(36).substring(2, 11),
+        title: rec.metadata.event.title,
+        type: rec.metadata.event.type,
+        source: 'AI',
+        date: rec.metadata.event.date || new Date().toISOString(),
+        duration: rec.metadata.event.duration,
+        isCompleted: false,
+        createdAt: new Date().toISOString()
+      });
+      return;
+    }
+
     console.log(`Executing AI Action: ${rec.action.id}`, rec.action.label);
     
     // Example logic based on action ID
@@ -71,10 +84,23 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
       case 'CREATE_WORKOUT':
         // logic to open workout creation
         break;
-      case 'NUTRITION_LOG':
-        // logic to navigate to nutrition
+      case 'NAVIGATE_COACHING':
+        // navigate to coaching workspace
         break;
     }
+  };
+
+  const handleAddEvent = (event: any) => {
+    useFitnessStore.getState().addPlanEvent({
+      id: Math.random().toString(36).substring(2, 11),
+      title: event.title,
+      type: event.type,
+      source: 'AI',
+      date: event.date || new Date().toISOString(),
+      duration: event.duration,
+      isCompleted: false,
+      createdAt: new Date().toISOString()
+    });
   };
 
   return (
@@ -186,19 +212,70 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
                  </div>
               </GlassCard>
 
-              {/* TACTICAL ACTIONS - Inline for compact */}
-              {isCompact && latestAnalysis.nextSteps && latestAnalysis.nextSteps.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                   {latestAnalysis.nextSteps.slice(0, 3).map((step: any, i: number) => (
-                     <div key={i} className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-center gap-3 group/step">
-                        <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover/step:bg-primary/20 transition-colors">
-                           <ArrowRight className="w-3 h-3 text-primary" />
-                        </div>
-                        <p className="text-[10px] font-bold leading-tight">{step}</p>
-                     </div>
-                   ))}
-                </div>
-              )}
+                {/* TACTICAL ACTIONS - Inline for compact */}
+                {(isCompact || latestAnalysis.tacticalPlan) && (latestAnalysis.tacticalPlan || latestAnalysis.nextSteps) && (
+                  <div className={cn("grid gap-2", isCompact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
+                     {(latestAnalysis.tacticalPlan || []).map((step: any, i: number) => (
+                       <div key={i} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-start gap-3 group/step">
+                          <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover/step:bg-primary/20 transition-colors">
+                             <CheckCircle2 className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-tight">{step.title}</p>
+                            <p className="text-[9px] text-muted-foreground/60 leading-tight">{step.description}</p>
+                          </div>
+                       </div>
+                     ))}
+                     {!latestAnalysis.tacticalPlan && latestAnalysis.nextSteps?.slice(0, 3).map((step: any, i: number) => (
+                       <div key={i} className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-center gap-3 group/step">
+                          <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover/step:bg-primary/20 transition-colors">
+                             <ArrowRight className="w-3 h-3 text-primary" />
+                          </div>
+                          <p className="text-[10px] font-bold leading-tight">{step}</p>
+                       </div>
+                     ))}
+                  </div>
+                )}
+
+                {/* SUGGESTED EVENTS (Calendar Engine) */}
+                {latestAnalysis.suggestedEvents && latestAnalysis.suggestedEvents.length > 0 && (
+                  <div className="space-y-3">
+                    <h5 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 px-2 flex items-center gap-2">
+                       <Calendar className="w-3 h-3" />
+                       Запланировать в AI-календарь
+                    </h5>
+                    <div className={cn("grid gap-2", isCompact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
+                       {latestAnalysis.suggestedEvents.map((event: any, i: number) => (
+                         <GlassCard key={i} className="p-4 border-dashed border-white/10 flex items-center justify-between group hover:border-primary/30 transition-all bg-white/2 cursor-default">
+                           <div className="flex items-center gap-3 overflow-hidden">
+                             <div className={cn(
+                               "p-2 rounded-xl border shrink-0",
+                               event.type === 'WORKOUT' ? "bg-orange-500/10 border-orange-500/20 text-orange-400" :
+                               event.type === 'NUTRITION' ? "bg-green-500/10 border-green-500/20 text-green-400" :
+                               "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                             )}>
+                               {event.type === 'WORKOUT' ? <Activity className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+                             </div>
+                             <div className="truncate">
+                               <p className="text-[10px] font-black uppercase tracking-tight truncate">{event.title}</p>
+                               <p className="text-[8px] text-muted-foreground/50 uppercase font-black">{event.type} • {event.duration} min</p>
+                             </div>
+                           </div>
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleAddEvent(event);
+                             }}
+                             className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-black transition-all active:scale-90 shrink-0"
+                             title="Добавить в план"
+                           >
+                             <Plus className="w-4 h-4" />
+                           </button>
+                         </GlassCard>
+                       ))}
+                    </div>
+                  </div>
+                )}
 
               {/* INSIGHTS GRID - Only Full Dashboard */}
               {!isCompact && (

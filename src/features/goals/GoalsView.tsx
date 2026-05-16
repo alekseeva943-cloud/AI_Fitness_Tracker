@@ -374,107 +374,54 @@ export const GoalsView: React.FC = () => {
 
           return (
             <div className="space-y-8 py-4 max-h-[75vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/10">
-              {/* Header Card */}
+              {/* Header Card - Simplified */}
               <div className={cn(
-                "p-8 rounded-[2.5rem] border flex flex-col sm:flex-row items-center gap-6 group relative overflow-hidden transition-all duration-500",
-                selectedGoal.id === activeGoalId ? "bg-primary/20 border-primary/40 shadow-[0_0_20px_rgba(223,255,0,0.1)]" : "bg-secondary/30 border-white/5"
+                "p-6 rounded-[2rem] border flex items-center gap-4 group relative overflow-hidden transition-all duration-500",
+                selectedGoal.id === activeGoalId ? "bg-primary/10 border-primary/30 shadow-lg" : "bg-secondary/30 border-white/5"
               )}>
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-                   <Target className="w-20 h-20 text-primary" />
-                </div>
                 <div className={cn(
-                  "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg z-10 transition-all duration-500",
-                  selectedGoal.id === activeGoalId ? "bg-primary text-black scale-110 shadow-[0_0_20px_rgba(223,255,0,0.3)]" : "bg-primary/20 text-primary"
+                  "p-3 rounded-xl flex items-center justify-center transition-all duration-500",
+                  selectedGoal.id === activeGoalId ? "bg-primary text-black" : "bg-primary/20 text-primary"
                 )}>
-                  <Target className="w-10 h-10" />
+                  <Target className="w-6 h-6" />
                 </div>
-                <div className="flex-1 z-10 text-center sm:text-left">
-                  <div className="flex flex-col sm:flex-row items-center gap-2 mb-0.5">
-                     <h3 className="text-2xl font-bold font-display">{selectedGoal.title || 'Моя цель'}</h3>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                     <h3 className="text-xl font-bold font-display">{selectedGoal.title || 'Моя цель'}</h3>
                      {getStatusBadge(selectedGoal)}
                   </div>
-                  <p className="text-sm text-muted-foreground">{METRICS[baselineMetricId]?.label || 'Параметр'}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{METRICS[baselineMetricId]?.label || 'Параметр'}</p>
                 </div>
               </div>
 
-              {selectedGoal.id !== activeGoalId && (selectedGoal.status === 'ACTIVE' || selectedGoal.status === 'SECONDARY') && (
-                <GradientButton 
-                  variant="outline" 
-                  className="w-full h-12 flex items-center justify-center gap-2 border-primary/30 hover:border-primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveGoal(selectedGoal.id);
-                  }}
-                >
-                  <Star className="w-4 h-4 text-primary" />
-                  Сделать основной целью
-                </GradientButton>
-              )}
-
-              {selectedGoal.motivation && (
-                <div className="space-y-4">
-                   <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                      <Sparkles className="w-3 h-3 text-primary" />
-                      Мотивация
-                   </h4>
-                   <div className="p-6 bg-secondary/30 rounded-3xl border border-white/5 italic text-lg leading-relaxed text-primary/90">
-                      "{selectedGoal.motivation}"
-                   </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
-                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Старт</p>
-                  <p className="text-xl font-bold">{selectedGoal.startValue} {selectedGoal.unit}</p>
-                </div>
-                <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
-                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Текущий</p>
-                  <p className="text-xl font-bold text-primary">{latestValue} {selectedGoal.unit}</p>
-                </div>
-                <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 space-y-1">
-                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Целевой</p>
-                  <p className="text-xl font-bold">{selectedGoal.targetValue} {selectedGoal.unit}</p>
-                </div>
-                <div className="p-5 rounded-3xl bg-primary/5 border border-primary/20 space-y-1">
-                  <p className="text-[10px] uppercase font-bold tracking-widest text-primary">Разница</p>
-                  <p className="text-xl font-bold">
-                    {latestValue - selectedGoal.targetValue > 0 ? '+' : ''}
-                    {(latestValue - selectedGoal.targetValue).toFixed(1)} {selectedGoal.unit}
-                  </p>
-                </div>
+              {/* Quick Progress Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: 'Старт', value: selectedGoal.startValue },
+                  { label: 'Текущий', value: latestValue, highlight: true },
+                  { label: 'Цель', value: selectedGoal.targetValue },
+                  { label: 'Прогресс', value: `${Math.round(currentProgress)}%`, highlight: true }
+                ].map((stat, i) => (
+                  <div key={i} className={cn(
+                    "p-3 rounded-2xl border border-white/5",
+                    stat.highlight ? "bg-primary/5" : "bg-secondary/20"
+                  )}>
+                    <p className="text-[8px] uppercase font-black tracking-[0.2em] text-muted-foreground/40 mb-1">{stat.label}</p>
+                    <p className={cn("text-sm font-black", stat.highlight && "text-primary")}>{stat.value} {!stat.value.toString().includes('%') && selectedGoal.unit}</p>
+                  </div>
+                ))}
               </div>
 
-              {summary?.goal.estimatedCompletionDate && selectedGoal.status === 'ACTIVE' && (
-                <GlassCard className="p-6 bg-gradient-to-br from-primary/10 to-transparent border-primary/20 flex justify-between items-center relative overflow-hidden">
-                   <div className="absolute top-0 right-0 p-2 opacity-5 translate-x-1/4 -translate-y-1/4">
-                      <TrendingUp className="w-24 h-24 text-primary" />
-                   </div>
-                   <div className="space-y-1 text-left relative z-10">
-                      <p className="text-[10px] uppercase font-bold tracking-widest text-primary/60">Прогноз достижения цели</p>
-                      <p className="text-3xl font-display font-bold text-primary">~ {formatDate(summary.goal.estimatedCompletionDate)}</p>
-                      <p className="text-xs text-muted-foreground">При сохранении текущей интенсивности тренировок</p>
-                   </div>
-                   <div className="hidden sm:flex w-16 h-16 rounded-full bg-primary/20 items-center justify-center border border-primary/30 relative z-10">
-                      <TrendingUp className="w-8 h-8 text-primary" />
-                   </div>
-                </GlassCard>
-              )}
-
-              {/* AI Goal Actions */}
+              {/* Unified AI Coaching Workspace Block */}
               <AIGoalInsights goalId={selectedGoal.id} />
 
-              {/* Chart Section */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1 text-left">
-                    <h4 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground/60">Визуальный прогресс</h4>
-                    <p className="text-sm text-muted-foreground">Показатель: {METRICS[baselineMetricId]?.label || 'Вес'}</p>
-                  </div>
-                  <p className="text-2xl font-bold text-primary">{Math.round(currentProgress)}%</p>
+              {/* Data Layers (Collapsible or just secondary) */}
+              <div className="space-y-6 pt-6 border-t border-white/5 opacity-80 hover:opacity-100 transition-opacity">
+                <div className="flex items-center justify-between px-2">
+                  <h4 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Visual History & Data</h4>
                 </div>
-                
-                <div className="h-[250px] w-full bg-secondary/20 rounded-3xl p-4 border border-white/5">
+
+                <div className="h-[200px] w-full bg-secondary/10 rounded-3xl p-4 border border-white/5">
                   <MetricChart 
                     data={weightHistory} 
                     workouts={workouts}
@@ -490,16 +437,6 @@ export const GoalsView: React.FC = () => {
                     }}
                   />
                 </div>
-                
-                <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary shadow-[0_0_15px_rgba(223,255,0,0.5)] transition-all duration-1000"
-                    style={{ width: `${currentProgress}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-center text-muted-foreground uppercase font-bold tracking-widest leading-relaxed">
-                  Путь от {selectedGoal.startValue} {selectedGoal.unit} до {selectedGoal.targetValue} {selectedGoal.unit}
-                </p>
               </div>
 
               {/* AI Recommendations Section */}
