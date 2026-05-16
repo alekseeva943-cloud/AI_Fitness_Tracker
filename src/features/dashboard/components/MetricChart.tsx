@@ -82,7 +82,12 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     return buildChartTimeline(data, workouts, goal, metricId, forecastedDate);
   }, [data, goal, forecastedDate, propUnit, metricId, workouts]);
 
-  if (chartData.length === 0) {
+  const hasMinimumData = useMemo(() => {
+    const realPoints = chartData.filter(p => !p.isForecast && (p.current !== null || p.workout));
+    return realPoints.length >= 3;
+  }, [chartData]);
+
+  if (!hasMinimumData) {
     return (
       <div className="h-full flex flex-col items-center justify-center opacity-40 px-8 text-center space-y-4">
         <div className="relative">
@@ -97,8 +102,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({
           График требует больше данных
           <br />
           <span className="text-[10px] opacity-60 mt-2 block font-bold normal-case tracking-normal">
-            Добавьте ещё немного данных (минимум 3 замера),<br />
-            чтобы я смог построить верный прогноз твоего прогресса.
+            Пожалуйста, добавьте минимум 3 записи (тренировки или замеры),<br />
+            чтобы я смог визуализировать твой прогресс.
           </span>
         </p>
       </div>

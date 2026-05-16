@@ -664,7 +664,7 @@ export const DashboardView: React.FC = () => {
                             <p className="text-xs text-muted-foreground italic mb-6 leading-relaxed max-w-[240px] mx-auto">
                               {summary?.goal.status === 'WRONG_DIRECTION' 
                                 ? "Текущая динамика направлена в обратную сторону. Для прогноза необходимо стабилизировать прогресс."
-                                : "Добавьте ещё немного данных (минимум 3 замера), чтобы я смог построить верный прогноз твоего прогресса."}
+                                : "Добавьте минимум 3 записи (тренировки или замеры), чтобы я смог построить прогноз твоего прогресса."}
                             </p>
                             <GradientButton variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEntryType('workout'); setEntryModalOpen(true); }} className="w-full">
                                Добавить тренировку
@@ -756,7 +756,7 @@ export const DashboardView: React.FC = () => {
                         summary.goal.status === 'WRONG_DIRECTION'
                           ? "Внимание! Вы отклоняетесь от графика. Запустите глубокий анализ для поиска причин."
                           : "Система готова к анализу ваших тренировок. Перейдите в раздел аналитики."
-                      ) : "Добавьте ещё немного данных (минимум 3 замера), чтобы я смог построить верный прогноз твоего прогресса."}
+                      ) : "Добавьте минимум 3 записи (тренировки или замеры), чтобы я смог активировать глубокую аналитику."}
                     </p>
                     
                     <div className="flex items-center justify-between pt-2 border-t border-white/5">
