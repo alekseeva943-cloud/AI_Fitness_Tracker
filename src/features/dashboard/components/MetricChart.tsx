@@ -87,29 +87,6 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     return realPoints.length >= 3;
   }, [chartData]);
 
-  if (!hasMinimumData) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center opacity-40 px-8 text-center space-y-4">
-        <div className="relative">
-          <Activity className="w-12 h-12 text-muted-foreground" />
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
-          />
-        </div>
-        <p className="text-muted-foreground text-sm uppercase font-black tracking-[0.2em] italic leading-relaxed">
-          График требует больше данных
-          <br />
-          <span className="text-[10px] opacity-60 mt-2 block font-bold normal-case tracking-normal">
-            Пожалуйста, добавьте минимум 3 записи (тренировки или замеры),<br />
-            чтобы я смог визуализировать твой прогресс.
-          </span>
-        </p>
-      </div>
-    );
-  }
-
   const minVal = useMemo(() => {
     if (!chartData.length) return 0;
     const values: number[] = chartData.map(d => d.current).filter(v => v !== null && !isNaN(v));
@@ -161,6 +138,29 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     return { label, isPositive, isUp };
   }, [chartData, goal]);
+
+  if (!hasMinimumData) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center opacity-40 px-8 text-center space-y-4">
+        <div className="relative">
+          <Activity className="w-12 h-12 text-muted-foreground" />
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
+          />
+        </div>
+        <p className="text-muted-foreground text-sm uppercase font-black tracking-[0.2em] italic leading-relaxed">
+          График требует больше данных
+          <br />
+          <span className="text-[10px] opacity-60 mt-2 block font-bold normal-case tracking-normal">
+            Пожалуйста, добавьте минимум 3 записи (тренировки или замеры),<br />
+            чтобы я смог визуализировать твой прогресс.
+          </span>
+        </p>
+      </div>
+    );
+  }
 
   if (!data.length && !goal) return (
     <div className="w-full h-full min-h-[260px] flex flex-col items-center justify-center text-muted-foreground/40 italic text-xs">
