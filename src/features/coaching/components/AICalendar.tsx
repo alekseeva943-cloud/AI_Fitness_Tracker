@@ -61,11 +61,19 @@ export const AICalendar: React.FC = () => {
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
 
   const getEventColor = (type: string, status: string) => {
-    if (status === 'COMPLETED') return 'bg-green-500/10 border-green-500/20 text-green-400';
-    if (type === 'WORKOUT') return 'bg-orange-500/10 border-orange-500/20 text-orange-400';
-    if (type === 'NUTRITION') return 'bg-blue-500/10 border-blue-500/20 text-blue-400';
-    if (type === 'RECOVERY') return 'bg-purple-500/10 border-purple-500/20 text-purple-400';
-    return 'bg-white/5 border-white/10 text-white';
+    if (status === 'COMPLETED') return 'bg-white/5 border-white/10 text-muted-foreground/60';
+    if (type === 'WORKOUT') return 'bg-orange-500/5 border-orange-500/10 text-orange-400';
+    if (type === 'NUTRITION') return 'bg-blue-500/5 border-blue-500/10 text-blue-400';
+    if (type === 'RECOVERY') return 'bg-emerald-500/5 border-emerald-500/10 text-emerald-400';
+    return 'bg-white/5 border-white/10 text-white/80';
+  };
+
+  const getEventDot = (type: string, status: string) => {
+    if (status === 'COMPLETED') return 'bg-green-500/40';
+    if (type === 'WORKOUT') return 'bg-orange-500';
+    if (type === 'NUTRITION') return 'bg-blue-500';
+    if (type === 'RECOVERY') return 'bg-emerald-500';
+    return 'bg-primary';
   };
 
   const getEventIcon = (type: string) => {
@@ -184,13 +192,15 @@ export const AICalendar: React.FC = () => {
           })}
         </div>
 
-        {/* Content Body */}
+        {/* CONTENT BODY */}
         {view === 'month' ? (
-          <div className="flex-1 grid grid-cols-7 overflow-y-auto scrollbar-hide divide-x divide-y divide-white/5">
+          <div className="flex-1 grid grid-cols-7 overflow-y-auto scrollbar-hide divide-x divide-y divide-white/[0.03] border-t border-white/5">
             {days.map((day, i) => {
               const dayEvents = getEventsForDay(day);
               const isCurrentMonth = isSameMonth(day, monthStart);
               const isTodayDate = isToday(day);
+              const visibleEvents = dayEvents.slice(0, 4);
+              const moreCount = dayEvents.length - 4;
 
               return (
                 <div 
@@ -198,214 +208,192 @@ export const AICalendar: React.FC = () => {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, day)}
                   className={cn(
-                    "min-h-[160px] p-4 transition-all group relative",
-                    !isCurrentMonth && "bg-black/40 opacity-20",
-                    isCurrentMonth && "hover:bg-white/[0.015]",
-                    isTodayDate && "bg-primary/[0.02]"
+                    "min-h-[140px] p-4 transition-colors group relative flex flex-col gap-2",
+                    !isCurrentMonth && "bg-black/40 opacity-10 pointer-events-none",
+                    isCurrentMonth && "hover:bg-white/[0.01]",
+                    isTodayDate && "bg-primary/[0.01]"
                   )}
                 >
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between">
                      <span className={cn(
-                       "w-10 h-10 flex items-center justify-center rounded-2xl text-[13px] font-black transition-all border",
-                       isTodayDate ? "bg-primary border-primary/20 text-black shadow-lg shadow-primary/30" : "bg-white/5 border-white/5 text-muted-foreground group-hover:text-white"
+                       "text-[10px] font-black transition-all",
+                       isTodayDate ? "text-primary flex items-center gap-1.5" : "text-muted-foreground/40"
                      )}>
+                       {isTodayDate && <div className="w-1 h-1 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#dfff00]" />}
                        {format(day, 'd')}
                      </span>
                      <button 
                         onClick={() => { setAddModalInitialDate(day); setAddModalOpen(true); }}
-                        className="p-2.5 rounded-xl bg-white/5 text-muted-foreground/0 group-hover:text-muted-foreground/40 hover:bg-primary/20 hover:text-primary transition-all shadow-xl"
+                        className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-muted-foreground/40"
                       >
-                         <Plus className="w-4 h-4" />
+                         <Plus className="w-3 h-3" />
                       </button>
                   </div>
 
-                  <div className="space-y-2">
-                    {dayEvents.map(event => (
+                  <div className="flex-1 space-y-1">
+                    {visibleEvents.map(event => (
                       <div key={event.id} className="relative">
-                        <motion.div 
+                        <motion.button 
                           draggable
                           onDragStart={(e) => handleDragStart(e, event)}
                           onClick={() => setSelectedEvent(event)}
                           onMouseEnter={() => setHoveredEventId(event.id)}
                           onMouseLeave={() => setHoveredEventId(null)}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          whileHover={{ scale: 1.05, x: 2, zIndex: 50 }}
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ x: 2 }}
                           className={cn(
-                            "group/event relative px-3 py-2.5 rounded-xl text-[10px] font-black border transition-all cursor-grab active:cursor-grabbing flex items-center gap-2",
-                            getEventColor(event.type, event.status),
-                            event.status === 'COMPLETED' && "opacity-50 line-through grayscale"
+                            "w-full text-left px-2 py-1 rounded-md text-[9px] font-bold border transition-all flex items-center gap-2 truncate",
+                            getEventColor(event.type, event.status)
                           )}
                         >
-                          <div className={cn(
-                            "w-1.5 h-4 rounded-full shrink-0",
-                            event.status === 'COMPLETED' ? "bg-green-500" : 
-                            event.type === 'WORKOUT' ? "bg-orange-500" :
-                            event.type === 'NUTRITION' ? "bg-blue-500" : "bg-primary"
-                          )} />
+                          <div className={cn("w-1 h-1 rounded-full shrink-0", getEventDot(event.type, event.status))} />
                           <span className="truncate flex-1">{event.title}</span>
-                          {event.source === 'AI' && <Brain className="w-3 h-3 text-current opacity-40 shrink-0" />}
-                          
-                          {event.status === 'ACTIVE' && (
-                            <div className="absolute -right-1 top-0 flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                            </div>
-                          )}
-                        </motion.div>
+                        </motion.button>
 
-                        {/* Hover Preview Tooltip */}
                         <AnimatePresence>
                           {hoveredEventId === event.id && (
                             <motion.div
-                              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                              className="absolute top-full left-0 right-0 mt-2 p-4 glass border border-white/10 rounded-2xl z-[100] pointer-events-none shadow-2xl"
+                              initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                              className="absolute left-0 bottom-full mb-2 w-48 p-3 glass border border-white/10 rounded-xl z-[100] pointer-events-none shadow-2xl"
                             >
-                               <div className="flex items-center gap-2 mb-2">
-                                  {getEventIcon(event.type)}
-                                  <p className="text-[10px] font-black uppercase tracking-tight">{event.title}</p>
-                               </div>
-                               <div className="space-y-2">
-                                  <div className="flex items-center justify-between text-[8px] font-black uppercase text-muted-foreground/60">
-                                     <span>{event.duration} МИН</span>
-                                     <span>{event.metadata?.intensity || 'MEDIUM'} LOAD</span>
-                                  </div>
-                                  <p className="text-[9px] text-muted-foreground line-clamp-2 italic leading-relaxed">
-                                     {event.description || event.aiRationale || 'Детали в полном описании...'}
-                                  </p>
-                               </div>
+                               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">
+                                 {event.type} • {event.duration}m
+                               </p>
+                               <p className="text-[10px] font-bold text-white mb-1.5 leading-tight">{event.title}</p>
+                               <p className="text-[9px] text-muted-foreground/80 italic line-clamp-2">
+                                 {event.aiRationale || event.description || 'Genesis Performance Strategy'}
+                               </p>
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
                     ))}
+                    
+                    {moreCount > 0 && (
+                      <button className="w-full text-left px-2 py-1 text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest hover:text-primary transition-colors">
+                        + {moreCount} more
+                      </button>
+                    )}
                   </div>
-
-                  {/* Day cell bottom padding */}
-                  <div className="h-4" />
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-white/[0.01]">
-            <div className="grid grid-cols-[80px_fr_fr_fr_fr_fr_fr_fr] w-[1400px] md:w-auto h-full">
-               <div className="col-start-1 border-r border-white/5 flex flex-col pt-4">
+          <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-black/20">
+            <div className="flex h-full min-w-[1200px]">
+               {/* Time column */}
+               <div className="w-20 border-r border-white/5 flex flex-col pt-4 bg-black/40 backdrop-blur-sm sticky left-0 z-30">
                   {HOURS.map(hour => (
-                    <div key={hour} className="h-24 px-4 text-right">
-                       <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30">{hour}:00</span>
+                    <div key={hour} className="h-24 px-4 text-right flex items-start justify-end -mt-2">
+                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/30">{hour}:00</span>
                     </div>
                   ))}
                </div>
 
-               {days.map((day) => {
-                 const dayEvents = getEventsForDay(day);
-                 return (
-                   <div 
-                     key={day.toISOString()} 
-                     className={cn(
-                       "relative border-r border-white/5 group pt-4",
-                       isToday(day) && "bg-primary/[0.02]"
-                     )}
-                     onDragOver={(e) => e.preventDefault()}
-                     onDrop={(e) => handleDrop(e, day)}
-                   >
-                      {/* Hour slots background lines */}
-                      <div className="absolute inset-0 z-0 pointer-events-none">
-                         {HOURS.map(hour => (
-                           <div key={hour} className="h-24 border-b border-white/[0.03]" />
-                         ))}
-                      </div>
-
-                      {/* Current Hour indicator */}
-                      {isToday(day) && (
-                         <div 
-                           className="absolute left-0 right-0 h-0.5 bg-primary/40 z-10 pointer-events-none" 
-                           style={{ top: `${(getHours(new Date()) - 7 + getMinutes(new Date()) / 60) * 96 + 16}px` }} 
-                         >
-                            <div className="absolute -left-1.5 -top-1 w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_#dfff00]" />
+               {/* Days grid */}
+               <div className="flex-1 grid grid-cols-7 divide-x divide-white/[0.03]">
+                  {days.map((day) => {
+                    const dayEvents = getEventsForDay(day);
+                    return (
+                      <div 
+                        key={day.toISOString()} 
+                        className={cn(
+                          "relative group min-h-full",
+                          isToday(day) && "bg-primary/[0.01]"
+                        )}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => handleDrop(e, day)}
+                      >
+                         {/* Magnetic grid lines */}
+                         <div className="absolute inset-0 z-0 pointer-events-none divide-y divide-white/[0.02]">
+                            {HOURS.map(hour => (
+                              <div key={hour} className="h-24" />
+                            ))}
                          </div>
-                      )}
 
-                      {/* Timeline Events */}
-                      <div className="relative z-10 h-full p-2">
-                        {dayEvents.map(event => {
-                          const eventDate = parseISO(event.date);
-                          const hour = getHours(eventDate);
-                          const minute = getMinutes(eventDate);
-                          const startPos = (hour - 7 + minute / 60) * 96;
-                          const height = 90; // Default height for 1h block
+                         {/* Interactive drop slots */}
+                         <div className="absolute inset-0 z-10">
+                            {HOURS.map(hour => (
+                                <div 
+                                    key={hour} 
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => handleDrop(e, day, hour)}
+                                    className="h-24 hover:bg-primary/[0.02] transition-colors flex items-center justify-center group/slot"
+                                >
+                                    <button 
+                                        onClick={() => {
+                                            const d = startOfDay(day);
+                                            const date = setHours(d, hour);
+                                            setAddModalInitialDate(date);
+                                            setAddModalOpen(true);
+                                        }}
+                                        className="w-8 h-8 rounded-full bg-white/5 text-primary opacity-0 group-hover/slot:opacity-100 hover:scale-110 transition-all flex items-center justify-center border border-white/10"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                         </div>
 
-                          return (
-                            <motion.div
-                              key={event.id}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, event)}
-                              onClick={() => setSelectedEvent(event)}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              whileHover={{ scale: 1.02, x: 2 }}
-                              className={cn(
-                                "absolute left-2 right-2 rounded-2xl p-4 border transition-all cursor-grab active:cursor-grabbing group/wevent select-none",
-                                getEventColor(event.type, event.status),
-                                event.status === 'COMPLETED' && "opacity-50"
-                              )}
-                              style={{ top: `${startPos + 16}px`, height: `${height}px` }}
-                            >
-                               <div className="flex items-start justify-between">
-                                  <div className="space-y-1">
-                                     <div className="flex items-center gap-2">
-                                        <p className="text-[10px] font-black uppercase tracking-tight truncate max-w-[120px]">{event.title}</p>
-                                        {event.source === 'AI' && <Brain className="w-3 h-3 opacity-40 shrink-0" />}
+                         {/* Timeline Events */}
+                         <div className="relative z-20 h-full">
+                           {dayEvents.map(event => {
+                             const eventDate = parseISO(event.date);
+                             const hour = getHours(eventDate);
+                             const minute = getMinutes(eventDate);
+                             const startPos = (hour - 7 + minute / 60) * 96;
+                             const height = Math.max(48, (event.duration / 60) * 96);
+
+                             return (
+                               <motion.div
+                                 key={event.id}
+                                 draggable
+                                 onDragStart={(e) => handleDragStart(e, event)}
+                                 onClick={() => setSelectedEvent(event)}
+                                 initial={{ opacity: 0, x: -10 }}
+                                 animate={{ opacity: 1, x: 0 }}
+                                 whileHover={{ scale: 1.02, x: 4, zIndex: 50 }}
+                                 className={cn(
+                                   "absolute left-1 right-1 rounded-lg p-3 border transition-all cursor-grab active:cursor-grabbing group/wevent select-none shadow-xl",
+                                   getEventColor(event.type, event.status),
+                                   event.status === 'COMPLETED' && "opacity-50"
+                                 )}
+                                 style={{ top: `${startPos}px`, height: `${height}px` }}
+                               >
+                                  <div className="flex items-start justify-between gap-2 overflow-hidden">
+                                     <div className="space-y-0.5 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                           <div className={cn("w-1 h-1 rounded-full shrink-0", getEventDot(event.type, event.status))} />
+                                           <p className="text-[9px] font-black uppercase tracking-tight truncate">{event.title}</p>
+                                        </div>
+                                        <p className="text-[8px] font-bold opacity-40">{format(eventDate, 'HH:mm')} • {event.duration}m</p>
                                      </div>
-                                     <p className="text-[8px] font-bold opacity-60">{format(eventDate, 'HH:mm')} • {event.duration}m</p>
-                                  </div>
-                                  <div className="p-1 px-2 rounded-lg bg-white/5 border border-white/10">
-                                     {getEventIcon(event.type)}
-                                  </div>
-                               </div>
-
-                               <div className="mt-3 flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                     <div className="flex -space-x-1 grayscale">
-                                        <div className="w-4 h-4 rounded-full bg-white/10 border border-white/10" />
-                                        <div className="w-4 h-4 rounded-full bg-white/20 border border-white/10" />
+                                     <div className="shrink-0 scale-75 opacity-40 group-hover/wevent:opacity-100 transition-opacity">
+                                        {getEventIcon(event.type)}
                                      </div>
-                                     <div className="text-[7px] font-bold opacity-40 uppercase">Session Link</div>
                                   </div>
-                                  {event.metadata?.intensity === 'HIGH' && (
-                                     <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-                                  )}
-                               </div>
-                            </motion.div>
-                          );
-                        })}
+                               </motion.div>
+                             );
+                           })}
+                         </div>
 
-                        {/* Interactive drop slots */}
-                        {HOURS.map(hour => (
+                         {/* Today indicator */}
+                         {isToday(day) && (
                             <div 
-                                key={hour} 
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={(e) => handleDrop(e, day, hour)}
-                                className="h-24 hover:bg-white/[0.01] transition-colors flex items-center justify-center group/slot"
+                              className="absolute left-0 right-0 h-[1.5px] bg-primary z-40 pointer-events-none" 
+                              style={{ top: `${(getHours(new Date()) - 7 + getMinutes(new Date()) / 60) * 96}px` }} 
                             >
-                                <Plus 
-                                    onClick={() => {
-                                        const d = startOfDay(day);
-                                        const date = setHours(d, hour);
-                                        setAddModalInitialDate(date);
-                                        setAddModalOpen(true);
-                                    }}
-                                    className="w-5 h-5 text-primary/40 opacity-0 group-hover/slot:opacity-100 cursor-pointer hover:scale-125 transition-all" 
-                                />
+                               <div className="absolute -left-[5px] -top-1 w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_12px_#dfff00]" />
                             </div>
-                        ))}
+                         )}
                       </div>
-                   </div>
-                 );
-               })}
+                    );
+                  })}
+               </div>
             </div>
           </div>
         )}
