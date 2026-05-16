@@ -25,6 +25,10 @@ export interface AIResponse {
     text: string;
     priority: 'LOW' | 'MEDIUM' | 'HIGH';
     reason?: string;
+    action?: {
+      label: string;
+      id: string; // e.g. "NAVIGATE_NUTRITION", "CREATE_WORKOUT"
+    };
   }[];
   nextSteps?: string[];
   motivation?: string;

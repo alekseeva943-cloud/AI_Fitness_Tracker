@@ -91,11 +91,16 @@ export interface AIRecommendation {
   type: 'EXERCISE' | 'DIET' | 'REST' | 'MOTIVATION' | 'TRAINING' | 'NUTRITION' | 'RECOVERY' | 'CONSISTENCY';
   text: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  action?: {
+    label: string;
+    id: string;
+  };
 }
 
 export interface AIAnalysis {
   id: string;
   date: string;
+  goalId?: string; // Optional: link to a specific goal
   summary: string;
   verdict?: string;
   trend: 'IMPROVING' | 'STAGNATING' | 'DECLINING' | 'STABLE';

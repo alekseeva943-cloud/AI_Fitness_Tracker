@@ -1,6 +1,6 @@
 import React from "react";
 import { GlassCard } from "../../../components/ui/GlassCard";
-import { Sparkles, TrendingUp, Apple, Dumbbell, AlertTriangle, Zap, CheckCircle2, MessageSquare, Brain, Target, ArrowRight, Quote } from "lucide-react";
+import { Sparkles, TrendingUp, Apple, Dumbbell, AlertTriangle, Zap, CheckCircle2, MessageSquare, Brain, Target, ArrowRight, Quote, Plus, Activity } from "lucide-react";
 import { GradientButton } from "../../../components/ui/GradientButton";
 import { useFitnessStore } from "../../../store/useFitnessStore";
 import { selectAnalyticsSummary } from "../../analytics/selectors/fitnessSelectors";
@@ -42,6 +42,24 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
   };
 
   const latestAnalysis = analyses[0];
+
+  const handleRecommendationAction = (rec: any) => {
+    if (!rec.action) return;
+    
+    // In a real app, this would route to specific features
+    // For now, we'll simulate the interaction or provide visual feedback
+    console.log(`Executing AI Action: ${rec.action.id}`, rec.action.label);
+    
+    // Example logic based on action ID
+    switch (rec.action.id) {
+      case 'CREATE_WORKOUT':
+        // logic to open workout creation
+        break;
+      case 'NUTRITION_LOG':
+        // logic to navigate to nutrition
+        break;
+    }
+  };
 
   return (
     <div className={cn("space-y-6", isCompact && "space-y-4")}>
@@ -204,53 +222,101 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
 
             {/* SECONDARY ACTION CARDS */}
             {!isCompact && (
-              <div className="lg:col-span-4 space-y-4 h-full">
-                <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2">Рекомендации</h5>
+              <div className="lg:col-span-4 space-y-6 h-full">
+                <div className="flex items-center justify-between px-2">
+                  <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Приоритетные задачи</h5>
+                  <div className="flex gap-1">
+                    <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                    <div className="w-1 h-1 rounded-full bg-primary" />
+                    <div className="w-1 h-1 rounded-full bg-blue-500" />
+                  </div>
+                </div>
+                
                 <div className="flex flex-col gap-4">
-                    {(latestAnalysis.recommendations || []).slice(0, 3).map((rec: any, idx: number) => (
-                      <GlassCard 
-                        key={rec.id || idx} 
-                        delay={idx * 0.1}
-                        className="p-5 border-white/5 hover:bg-white/5 transition-all group"
+                    {(latestAnalysis.recommendations || []).slice(0, 4).map((rec: any, idx: number) => (
+                      <motion.div
+                        key={rec.id || idx}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                           <div className={cn(
-                             "p-2 rounded-xl bg-primary/10 text-primary",
-                             rec.type === AI_RECOMMENDATION_TYPE.NUTRITION && "bg-orange-500/10 text-orange-400",
-                             rec.type === AI_RECOMMENDATION_TYPE.RECOVERY && "bg-blue-500/10 text-blue-400"
-                           )}>
-                             {getIcon(rec.type)}
-                           </div>
-                           <div className={cn(
-                             "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border",
-                             rec.priority === AI_PRIORITY.HIGH ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                             rec.priority === AI_PRIORITY.MEDIUM ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
-                             "bg-green-500/10 text-green-400 border-green-500/20"
-                           )}>
-                             {rec.priority}
-                           </div>
-                        </div>
-                        <p className="text-xs font-bold leading-tight mb-2">{rec.text}</p>
-                        {rec.reason && (
-                          <p className="text-[9px] text-muted-foreground italic leading-tight">
-                            {rec.reason}
-                          </p>
-                        )}
-                      </GlassCard>
+                        <GlassCard 
+                          className={cn(
+                            "p-5 border-white/5 transition-all duration-300 group relative overflow-hidden active:scale-[0.98] select-none",
+                            rec.priority === AI_PRIORITY.HIGH ? "hover:border-red-500/30 hover:bg-red-500/5" :
+                            rec.priority === AI_PRIORITY.MEDIUM ? "hover:border-primary/30 hover:bg-primary/5" :
+                            "hover:border-blue-500/30 hover:bg-blue-500/5"
+                          )}
+                        >
+                          {/* Priority Indicator Line */}
+                          <div className={cn(
+                            "absolute left-0 top-0 bottom-0 w-1",
+                            rec.priority === AI_PRIORITY.HIGH ? "bg-red-500/50" :
+                            rec.priority === AI_PRIORITY.MEDIUM ? "bg-primary/50" :
+                            "bg-blue-500/50"
+                          )} />
+
+                          <div className="flex items-center justify-between mb-3">
+                             <div className={cn(
+                               "p-2 rounded-xl border transition-colors",
+                               rec.type === AI_RECOMMENDATION_TYPE.NUTRITION ? "bg-orange-500/10 text-orange-400 border-orange-500/20" :
+                               rec.type === AI_RECOMMENDATION_TYPE.RECOVERY ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                               "bg-primary/10 text-primary border-primary/20"
+                             )}>
+                               {getIcon(rec.type)}
+                             </div>
+                             
+                             <div className={cn(
+                               "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border",
+                               rec.priority === AI_PRIORITY.HIGH ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                               rec.priority === AI_PRIORITY.MEDIUM ? "bg-primary/10 text-primary border-primary/20" :
+                               "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                             )}>
+                               {rec.priority === AI_PRIORITY.HIGH ? '🔥 Critical' :
+                                rec.priority === AI_PRIORITY.MEDIUM ? '⚡ Suggested' : '💡 Optimizing'}
+                             </div>
+                          </div>
+
+                          <p className="text-xs font-black uppercase tracking-tight leading-tight mb-2 group-hover:text-primary transition-colors">{rec.text}</p>
+                          
+                          {rec.reason && (
+                            <p className="text-[10px] text-muted-foreground/80 font-medium leading-relaxed mb-4">
+                              {rec.reason}
+                            </p>
+                          )}
+
+                          {rec.action && (
+                            <button
+                              onClick={() => handleRecommendationAction(rec)}
+                              className={cn(
+                                "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-2 transition-all border",
+                                rec.priority === AI_PRIORITY.HIGH ? "bg-red-500 text-white border-red-400 shadow-lg shadow-red-500/20 hover:scale-[1.02]" :
+                                "bg-white/5 text-foreground hover:bg-white/10 border-white/10 hover:border-white/20"
+                              )}
+                            >
+                              {rec.action.label}
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </GlassCard>
+                      </motion.div>
                     ))}
                 </div>
 
                 {latestAnalysis.mainRisk && (
                   <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-5 bg-red-500/5 border border-red-500/20 rounded-[2rem] space-y-2"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6 bg-red-500/5 border border-red-500/20 rounded-[2.5rem] relative overflow-hidden group hover:bg-red-500/10 transition-colors"
                   >
-                      <div className="flex items-center gap-2 text-red-400">
-                         <AlertTriangle className="w-3 h-3" />
+                      <div className="absolute -right-2 -bottom-2 opacity-5 scale-150 rotate-12 transition-transform group-hover:scale-[1.7]">
+                        <AlertTriangle className="w-16 h-16 text-red-500" />
+                      </div>
+                      <div className="flex items-center gap-2 text-red-400 mb-3 relative z-10">
+                         <AlertTriangle className="w-3.5 h-3.5" />
                          <span className="text-[10px] font-black uppercase tracking-widest">Критический риск</span>
                       </div>
-                      <p className="text-xs font-bold leading-tight">{latestAnalysis.mainRisk}</p>
+                      <p className="text-sm font-bold leading-tight text-red-200/90 relative z-10">{latestAnalysis.mainRisk}</p>
                   </motion.div>
                 )}
               </div>

@@ -82,11 +82,30 @@ export class AIActions {
 
     if (!goal) return null;
 
+    const userMsg: ChatMessage = {
+      id: generateId(),
+      role: 'user',
+      content: question,
+      timestamp: new Date().toISOString()
+    };
+    
+    store.addChatMessage(userMsg, goalId);
+
     try {
       const response = await AIOrchestrator.executeAction(store, summary, {
         actionType: AIActionType.GOAL_STRATEGY,
-        userMessage: `Goal: ${goal.title}. Context: ${question}`
+        userMessage: `Goal: ${goal.title}. Context: ${question}. Focus on giving actionable advice.`
       });
+
+      const aiMsg: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: response.summary,
+        timestamp: new Date().toISOString(),
+        metadata: response
+      };
+
+      store.addChatMessage(aiMsg, goalId);
       return response;
     } catch (error) {
        logger.error('Goal insight failed', error);
