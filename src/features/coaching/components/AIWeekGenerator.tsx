@@ -25,20 +25,41 @@ export const AIWeekGenerator: React.FC = () => {
     setStep(0);
     setGeneratedWeek([]);
     
-    // Simulate generation steps
     for (let i = 0; i < steps.length; i++) {
       await new Promise(r => setTimeout(r, 800));
       setStep(i + 1);
     }
     
-    // Mock generated events
     const today = new Date();
     const mockEvents = [
-      { id: 'gen-1', title: 'Силовая: Грудь/Трицепс', type: 'WORKOUT', duration: 60, date: new Date(today.getTime() + 86400000).toISOString() },
-      { id: 'gen-2', title: 'Подсчет БЖУ: 180г Белка', type: 'NUTRITION', date: new Date(today.getTime() + 86400000).toISOString() },
-      { id: 'gen-3', title: 'Активное восстановление', type: 'WORKOUT', duration: 30, date: new Date(today.getTime() + 172800000).toISOString() },
-      { id: 'gen-4', title: 'Йога / Растяжка', type: 'WORKOUT', duration: 45, date: new Date(today.getTime() + 259200000).toISOString() },
-      { id: 'gen-5', title: 'Силовая: Спина/Бицепс', type: 'WORKOUT', duration: 60, date: new Date(today.getTime() + 345600000).toISOString() },
+      { 
+        id: 'gen-1', 
+        title: 'Силовая: Грудь/Трицепс', 
+        type: 'WORKOUT' as const, 
+        duration: 60, 
+        date: new Date(today.getTime() + 86400000).toISOString(),
+        aiRationale: 'Твой уровень энергии высок по воскресеньям. Последние 2 недели объем на грудные был ниже нормы.',
+        exercises: [
+          { name: 'Жим штанги лежа', sets: 4, reps: '8-10', weight: '85кг', rest: '90' },
+          { name: 'Жим гантелей под углом', sets: 3, reps: '12', weight: '30кг', rest: '60' },
+          { name: 'Разводка гантелей', sets: 3, reps: '15', weight: '14кг', rest: '45' }
+        ]
+      },
+      { 
+        id: 'gen-2', 
+        title: 'Загрузка нутриентов', 
+        type: 'NUTRITION' as const, 
+        date: new Date(today.getTime() + 86400000).toISOString(),
+        description: 'Важно поддержать анаболический фон после тяжелой тренировки.'
+      },
+      { 
+        id: 'gen-3', 
+        title: 'Активное восстановление', 
+        type: 'WORKOUT' as const, 
+        duration: 30, 
+        date: new Date(today.getTime() + 172800000).toISOString(),
+        description: 'Легкое кардио (пульс 110-120) для улучшения кровотока.'
+      },
     ];
     
     await new Promise(r => setTimeout(r, 500));
@@ -51,6 +72,7 @@ export const AIWeekGenerator: React.FC = () => {
       addPlanEvent({
         ...event,
         source: 'AI',
+        status: 'PLANNED',
         isCompleted: false,
         createdAt: new Date().toISOString()
       });
@@ -59,18 +81,18 @@ export const AIWeekGenerator: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-left">
       {!isGenerating && generatedWeek.length === 0 && (
         <GlassCard className="p-10 text-center border-dashed border-primary/20 bg-primary/5 group hover:border-primary/40 transition-all">
           <div className="w-20 h-20 rounded-3xl bg-primary text-black flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary/20 group-hover:scale-110 transition-transform">
             <Brain className="w-10 h-10" />
           </div>
-          <h3 className="text-2xl font-display font-bold mb-2">Tactical Generation</h3>
+          <h3 className="text-2xl font-display font-bold mb-2">Тактическая генерация</h3>
           <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">
-            AI проанализирует твой прогресс за последние 2 недели и составит оптимальный план действий.
+            ИИ проанализирует твой прогресс за последние 2 недели и составит оптимальный план действий.
           </p>
           <GradientButton onClick={handleGenerate} className="px-10 h-14 text-sm font-black uppercase tracking-widest">
-            Generate AI Week
+            СГЕНЕРИРОВАТЬ AI-НЕДЕЛЮ
           </GradientButton>
         </GlassCard>
       )}
@@ -85,9 +107,9 @@ export const AIWeekGenerator: React.FC = () => {
               <Brain className="w-6 h-6 text-primary absolute inset-0 m-auto animate-pulse" />
             </div>
             <div>
-              <h3 className="text-xl font-bold font-display uppercase tracking-widest text-primary">Strategizing...</h3>
+              <h3 className="text-xl font-bold font-display uppercase tracking-widest text-primary">Стратегирование...</h3>
               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mt-1 italic">
-                Optimizing for {useFitnessStore.getState().goals.find(g => g.status === 'ACTIVE')?.title || 'High Performance'}
+                Оптимизация для: {useFitnessStore.getState().goals.find(g => g.status === 'ACTIVE')?.title || 'Максимальной формы'}
               </p>
             </div>
           </div>
@@ -121,8 +143,8 @@ export const AIWeekGenerator: React.FC = () => {
             className="space-y-6"
           >
             <div className="flex items-center justify-between px-2">
-               <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-primary">New Strategy Blueprint</h3>
-               <button onClick={() => setGeneratedWeek([])} className="text-[10px] text-muted-foreground hover:text-white uppercase font-bold">Discard</button>
+               <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-primary">ЧЕРТЕЖ НОВОЙ СТРАТЕГИИ</h3>
+               <button onClick={() => setGeneratedWeek([])} className="text-[10px] text-muted-foreground hover:text-white uppercase font-bold">Сбросить</button>
             </div>
             
             <div className="grid gap-3">
@@ -132,7 +154,7 @@ export const AIWeekGenerator: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }}
                   key={event.id}
-                  className="p-5 rounded-[2rem] bg-primary/5 border border-primary/20 flex items-center justify-between group hover:bg-primary/10 transition-all"
+                  className="p-5 rounded-[2rem] bg-primary/5 border border-primary/20 flex items-center justify-between group hover:bg-primary/10 transition-all cursor-default"
                 >
                   <div className="flex items-center gap-5">
                     <div className={cn(
@@ -145,7 +167,7 @@ export const AIWeekGenerator: React.FC = () => {
                       <p className="text-lg font-bold font-display">{event.title}</p>
                       <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(event.date).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                        <span>• {event.duration || 'Daily'} min</span>
+                        <span>• {event.duration || 'Daily'} мин</span>
                       </div>
                     </div>
                   </div>
@@ -157,7 +179,7 @@ export const AIWeekGenerator: React.FC = () => {
             </div>
 
             <GradientButton onClick={applyPlan} className="w-full h-14 text-sm font-black uppercase tracking-widest group">
-              Apply Strategy to Calendar
+              ПРИМЕНИТЬ СТРАТЕГИЮ К КАЛЕНДАРЮ
               <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </GradientButton>
           </motion.div>

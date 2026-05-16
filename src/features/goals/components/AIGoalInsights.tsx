@@ -57,10 +57,12 @@ export const AIGoalInsights: React.FC<AIGoalInsightsProps> = ({ goalId }) => {
       title: event.title || 'AI Task',
       type: event.type || 'WORKOUT',
       source: 'AI',
+      status: 'PLANNED',
       date: event.date || new Date().toISOString(),
       duration: event.duration,
       description: event.description,
       isCompleted: false,
+      isAI: true,
       createdAt: new Date().toISOString()
     });
   };

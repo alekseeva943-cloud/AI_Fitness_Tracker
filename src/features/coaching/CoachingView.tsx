@@ -13,6 +13,10 @@ import { cn, formatDate } from '../../lib/utils';
 import { AICalendar } from './components/AICalendar';
 import { AIWeekGenerator } from './components/AIWeekGenerator';
 
+import { AIWeeklyReview } from './components/AIWeeklyReview';
+
+import { AICoachingChat } from './components/AICoachingChat';
+
 export const CoachingView: React.FC = () => {
   const navigate = useNavigate();
   const profile = useFitnessStore(state => state.profile);
@@ -22,13 +26,13 @@ export const CoachingView: React.FC = () => {
   const togglePlanEvent = useFitnessStore(state => state.togglePlanEvent);
   const removePlanEvent = useFitnessStore(state => state.removePlanEvent);
   
-  const [activeTab, setActiveTab] = useState<'plan' | 'chat' | 'history'>('plan');
+  const [activeTab, setActiveTab] = useState<'plan' | 'review' | 'chat' | 'history'>('plan');
   const [loading, setLoading] = useState(false);
   
   const latestAnalysis = analyses[0];
 
   return (
-    <div className="min-h-screen pb-20 space-y-8 animate-in fade-in duration-700">
+    <div className="min-h-screen pb-20 space-y-8 animate-in fade-in duration-700 text-left">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
@@ -37,7 +41,7 @@ export const CoachingView: React.FC = () => {
             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 hover:text-primary transition-colors mb-2"
           >
             <ChevronLeft className="w-4 h-4" />
-            Вернуться в Dashboard
+            Вернуться в Дашборд
           </button>
           <div className="flex items-center gap-4">
              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 relative">
@@ -45,17 +49,18 @@ export const CoachingView: React.FC = () => {
                 <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary border-4 border-background animate-pulse" />
              </div>
              <div>
-                <h1 className="text-4xl font-display font-medium tracking-tight">AI Coaching Workspace</h1>
-                <p className="text-muted-foreground text-sm uppercase font-black tracking-widest mt-1 opacity-60">Personal Strategist & Execution Engine</p>
+                <h1 className="text-4xl font-display font-medium tracking-tight italic">AI Coaching Workspace</h1>
+                <p className="text-muted-foreground text-sm uppercase font-black tracking-widest mt-1 opacity-60">Персональный стратег и движок достижений</p>
              </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/5 rounded-2xl">
           {[
-            { id: 'plan', label: 'Tactical Plan', icon: <Calendar className="w-3.5 h-3.5" /> },
-            { id: 'chat', label: 'Coach Session', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-            { id: 'history', label: 'Memory Layer', icon: <Clock className="w-3.5 h-3.5" /> },
+            { id: 'plan', label: 'Тактический план', icon: <Calendar className="w-3.5 h-3.5" /> },
+            { id: 'review', label: 'Еженедельный обзор', icon: <Star className="w-3.5 h-3.5" /> },
+            { id: 'chat', label: 'Сессия с коучем', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+            { id: 'history', label: 'Память коуча', icon: <Clock className="w-3.5 h-3.5" /> },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -96,7 +101,7 @@ export const CoachingView: React.FC = () => {
                            <div className="p-2 rounded-xl bg-primary text-black">
                              <Target className="w-4 h-4" />
                            </div>
-                           <h3 className="text-[10px] uppercase font-black tracking-widest text-primary">Active Strategy</h3>
+                           <h3 className="text-[10px] uppercase font-black tracking-widest text-primary">Активная стратегия</h3>
                          </div>
                          <h4 className="text-2xl font-bold font-display">
                            {goals.find(g => g.status === 'ACTIVE')?.title || 'Стабилизация веса'}
@@ -109,18 +114,18 @@ export const CoachingView: React.FC = () => {
 
                    <GlassCard className="p-8 border-white/5 bg-secondary/20 flex flex-col justify-between">
                       <div className="space-y-1">
-                         <h3 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40">Execution Efficiency</h3>
+                         <h3 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40">Эффективность выполнения</h3>
                          <div className="flex items-end gap-2">
                             <span className="text-5xl font-display font-black text-primary">
-                               {Math.round((planEvents.filter(e => e.isCompleted).length / (planEvents.length || 1)) * 100)}%
+                               {Math.round((planEvents.filter(e => e.status === 'COMPLETED').length / (planEvents.length || 1)) * 100)}%
                             </span>
-                            <span className="text-muted-foreground font-black uppercase text-[10px] pb-2">Compliance</span>
+                            <span className="text-muted-foreground font-black uppercase text-[10px] pb-2">Дисциплина</span>
                          </div>
                       </div>
                       <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mt-4">
                          <div 
                            className="h-full bg-primary transition-all duration-1000"
-                           style={{ width: `${(planEvents.filter(e => e.isCompleted).length / (planEvents.length || 1)) * 100}%` }}
+                           style={{ width: `${(planEvents.filter(e => e.status === 'COMPLETED').length / (planEvents.length || 1)) * 100}%` }}
                          />
                       </div>
                    </GlassCard>
@@ -129,14 +134,14 @@ export const CoachingView: React.FC = () => {
                 <div className="grid grid-cols-1 gap-8">
                    <div className="space-y-4">
                       <div className="flex items-center justify-between px-2">
-                         <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Performance Calendar</h3>
+                         <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Календарь прогресса</h3>
                       </div>
                       <AICalendar />
                    </div>
 
                    <div className="space-y-4">
                       <div className="flex items-center justify-between px-2">
-                         <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Strategic Adaptation</h3>
+                         <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Стратегическая адаптация</h3>
                       </div>
                       <AIWeekGenerator />
                    </div>
@@ -144,64 +149,12 @@ export const CoachingView: React.FC = () => {
               </motion.div>
             )}
 
+            {activeTab === 'review' && (
+              <AIWeeklyReview />
+            )}
+
             {activeTab === 'chat' && (
-              <motion.div 
-                key="chat"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="h-[70vh] flex flex-col glass rounded-[3rem] border border-white/5 overflow-hidden"
-              >
-                 <div className="p-6 border-b border-white/5 bg-primary/5 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary text-black flex items-center justify-center shadow-lg shadow-primary/20">
-                       <Brain className="w-5 h-5" />
-                    </div>
-                    <div>
-                       <h3 className="text-sm font-black uppercase tracking-widest">Live Coaching Session</h3>
-                       <p className="text-[10px] text-muted-foreground/60">Persistent context • Adaptive strategy • Real-time planning</p>
-                    </div>
-                 </div>
-
-                 <div className="flex-1 p-8 overflow-y-auto space-y-6 scrollbar-hide">
-                    {/* Placeholder for real chat content */}
-                    <div className="max-w-2xl mx-auto space-y-8">
-                       <div className="space-y-4">
-                          <div className="flex items-start gap-4">
-                             <div className="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center shrink-0">
-                                <Brain className="w-4 h-4" />
-                             </div>
-                             <div className="bg-white/5 border border-white/5 p-6 rounded-[2rem] rounded-tl-none">
-                                <p className="text-sm leading-relaxed text-muted-foreground font-medium">
-                                   Добро пожаловать в Coaching Workspace. Тут мы строим твою долгосрочную стратегию. 
-                                   Я помню все твои метрики и готов помочь адаптировать план.
-                                </p>
-                             </div>
-                          </div>
-                          <div className="flex items-start gap-4 flex-row-reverse">
-                             <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center shrink-0">
-                                <User className="w-4 h-4" />
-                             </div>
-                             <div className="bg-primary text-black p-6 rounded-[2rem] rounded-tr-none shadow-xl shadow-primary/10">
-                                <p className="text-sm font-bold">Как мне повысить выносливость на следующей неделе?</p>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="p-6 border-t border-white/5 bg-black/40">
-                    <div className="relative max-w-3xl mx-auto">
-                       <input 
-                         type="text" 
-                         className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 px-8 text-xs font-bold focus:outline-none focus:border-primary/40 focus:bg-white/10 transition-all placeholder:text-muted-foreground/20 shadow-inner"
-                         placeholder="Твое сообщение коучу..."
-                       />
-                       <button className="absolute right-2 top-2 bottom-2 aspect-square bg-primary text-black rounded-full flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-95 transition-all">
-                          <ArrowRight className="w-5 h-5" />
-                       </button>
-                    </div>
-                 </div>
-              </motion.div>
+              <AICoachingChat />
             )}
 
             {activeTab === 'history' && (
@@ -214,7 +167,7 @@ export const CoachingView: React.FC = () => {
               >
                  {/* Behavioral Patterns Section */}
                  <div className="space-y-4">
-                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-primary px-2">Behavioral Patterns & Insights</h3>
+                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-primary px-2">Поведенческие паттерны и инсайты</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        {useFitnessStore.getState().aiMemory.patterns.map((pattern: any) => (
                          <GlassCard key={pattern.id} className="p-6 border-white/5 hover:border-primary/20 transition-all flex items-start gap-4">
@@ -231,14 +184,14 @@ export const CoachingView: React.FC = () => {
                        ))}
                        {useFitnessStore.getState().aiMemory.patterns.length === 0 && (
                           <div className="col-span-full py-12 text-center opacity-40">
-                             <p className="text-xs uppercase font-black tracking-widest">No patterns detected yet</p>
+                             <p className="text-xs uppercase font-black tracking-widest">Паттерны еще не обнаружены</p>
                           </div>
                        )}
                     </div>
                  </div>
 
                  <div className="space-y-4">
-                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40 px-2">Memory Layer: Strategy Log</h3>
+                    <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40 px-2">Слой памяти: Лог стратегий</h3>
                     <div className="grid gap-4">
                        {analyses.map((analysis, i) => (
                          <GlassCard key={analysis.id} className="p-6 border-white/5 hover:border-white/10 transition-all">
@@ -276,13 +229,13 @@ export const CoachingView: React.FC = () => {
         {/* Sidebar Context Layer */}
         <div className="lg:col-span-4 space-y-8">
            <GlassCard className="p-8 space-y-6 border-white/5 sticky top-8">
-              <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Coach Context</h3>
+              <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Контекст Коуча</h3>
               
               <div className="space-y-4">
                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                     <div className="space-y-0.5">
-                       <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Sleep Quality</p>
-                       <p className="text-sm font-black text-primary">{profile?.sleepAverage || 7.5}h Avg</p>
+                       <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Качество сна</p>
+                       <p className="text-sm font-black text-primary">{profile?.sleepAverage || 7.5}ч в ср.</p>
                     </div>
                     <div className="p-2 rounded-xl bg-primary/10 text-primary">
                        <Clock className="w-4 h-4" />
@@ -291,7 +244,7 @@ export const CoachingView: React.FC = () => {
 
                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                     <div className="space-y-0.5">
-                       <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Stress Level</p>
+                       <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Уровень стресса</p>
                        <p className="text-sm font-black text-orange-400">{profile?.stressLevel || 4}/10</p>
                     </div>
                     <div className="p-2 rounded-xl bg-orange-400/10 text-orange-400">
@@ -301,8 +254,8 @@ export const CoachingView: React.FC = () => {
 
                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                     <div className="space-y-0.5">
-                       <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Compliance</p>
-                       <p className="text-sm font-black text-green-400">High</p>
+                       <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Дисциплина</p>
+                       <p className="text-sm font-black text-green-400">Высокая</p>
                     </div>
                     <div className="p-2 rounded-xl bg-green-400/10 text-green-400">
                        <CheckCircle2 className="w-4 h-4" />
@@ -311,7 +264,7 @@ export const CoachingView: React.FC = () => {
               </div>
 
               <div className="pt-6 border-t border-white/5 space-y-4">
-                 <h4 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Live Insights</h4>
+                 <h4 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Живые инсайты</h4>
                  <div className="space-y-3">
                     <div className="flex gap-3">
                        <div className="w-1 h-auto rounded-full bg-primary/40 shrink-0" />
@@ -330,7 +283,7 @@ export const CoachingView: React.FC = () => {
 
               <GradientButton className="w-full py-4 text-[10px] font-black uppercase tracking-widest group">
                  <Sparkles className="w-4 h-4 mr-2" />
-                 Generate New Tactics
+                 СГЕНЕРИРОВАТЬ ТАКТИКУ
                  <ChevronRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
               </GradientButton>
            </GlassCard>

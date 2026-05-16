@@ -69,9 +69,11 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
         title: rec.metadata.event.title,
         type: rec.metadata.event.type,
         source: 'AI',
+        status: 'PLANNED',
         date: rec.metadata.event.date || new Date().toISOString(),
         duration: rec.metadata.event.duration,
         isCompleted: false,
+        isAI: true,
         createdAt: new Date().toISOString()
       });
       return;
@@ -96,9 +98,11 @@ export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> =
       title: event.title,
       type: event.type,
       source: 'AI',
+      status: 'PLANNED',
       date: event.date || new Date().toISOString(),
       duration: event.duration,
       isCompleted: false,
+      isAI: true,
       createdAt: new Date().toISOString()
     });
   };

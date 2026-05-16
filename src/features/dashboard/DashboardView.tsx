@@ -22,6 +22,9 @@ import { DemoModeBanner } from "../../components/DemoModeBanner";
 import { BaselineParameters } from "../profile/components/BaselineParameters";
 import { ModalFooter } from "../../components/ui/ModalFooter";
 
+import { AIEventDetailsModal } from "../coaching/components/AIEventDetailsModal";
+import { PlanEvent } from "../../types";
+
 export const DashboardView: React.FC = () => {
   const navigate = useNavigate();
   const goals = useGoals();
@@ -67,6 +70,7 @@ export const DashboardView: React.FC = () => {
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
   const [entryType, setEntryType] = useState<'workout' | 'weight'>('workout');
   const [chartMetric, setChartMetric] = useState<string>('weight');
+  const [selectedPlanEvent, setSelectedPlanEvent] = useState<PlanEvent | null>(null);
 
   const [isWeightHistoryModalOpen, setWeightHistoryModalOpen] = useState(false);
   const [isWeightDetailModalOpen, setWeightDetailModalOpen] = useState(false);
@@ -289,10 +293,10 @@ export const DashboardView: React.FC = () => {
                           .map((event, i) => (
                             <div 
                               key={i} 
-                              onClick={() => useFitnessStore.getState().togglePlanEvent(event.id)}
+                              onClick={() => setSelectedPlanEvent(event)}
                               className={cn(
                                 "p-4 rounded-3xl border flex items-center justify-between gap-4 transition-all cursor-pointer",
-                                event.isCompleted 
+                                event.status === 'COMPLETED' 
                                   ? "bg-green-500/10 border-green-500/20 text-green-400 opacity-60" 
                                   : "bg-white/5 border-white/10 hover:border-primary/40 hover:bg-white/10"
                               )}
@@ -300,9 +304,9 @@ export const DashboardView: React.FC = () => {
                                <div className="flex items-center gap-3">
                                   <div className={cn(
                                     "w-8 h-8 rounded-xl flex items-center justify-center border",
-                                    event.isCompleted ? "bg-green-500/20 border-green-500/40" : "bg-white/5 border-white/10"
+                                    event.status === 'COMPLETED' ? "bg-green-500/20 border-green-500/40" : "bg-white/5 border-white/10"
                                   )}>
-                                     {event.isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
+                                     {event.status === 'COMPLETED' ? <CheckCircle2 className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
                                   </div>
                                   <div>
                                      <p className="text-[10px] font-black uppercase tracking-tight leading-none mb-1">{event.title}</p>
@@ -311,7 +315,7 @@ export const DashboardView: React.FC = () => {
                                      </p>
                                   </div>
                                </div>
-                               {!event.isCompleted && (
+                               {event.status !== 'COMPLETED' && (
                                   <div className="w-5 h-5 rounded-full border border-primary/20 flex items-center justify-center">
                                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                                   </div>
@@ -332,7 +336,7 @@ export const DashboardView: React.FC = () => {
                           onClick={() => navigate('/coaching')} 
                           className="w-full xl:px-10 h-16 text-xs font-black uppercase tracking-widest border border-white/10 hover:border-primary/40"
                         >
-                           Full Workspace
+                           Рабочая область
                            <ChevronRight className="w-5 h-5 ml-4" />
                         </GradientButton>
                      </div>
@@ -1107,6 +1111,15 @@ export const DashboardView: React.FC = () => {
         }}
         onDelete={(id) => handleDeleteWorkout(id)}
       />
+
+      <AnimatePresence>
+        {selectedPlanEvent && (
+          <AIEventDetailsModal 
+            event={selectedPlanEvent} 
+            onClose={() => setSelectedPlanEvent(null)} 
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };

@@ -88,16 +88,30 @@ export interface WeightEntry {
 
 export type PlanEventSource = 'USER' | 'AI';
 export type PlanEventType = 'WORKOUT' | 'NUTRITION' | 'RECOVERY' | 'REMINDER';
+export type PlanEventStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'SKIPPED' | 'RESCHEDULED';
+
+export interface ExercisePlan {
+  name: string;
+  sets: number;
+  reps: string;
+  weight?: string;
+  rest?: string;
+  notes?: string;
+}
 
 export interface PlanEvent {
   id: string;
   title: string;
   type: PlanEventType;
   source: PlanEventSource;
+  status: PlanEventStatus;
   date: string; // ISO string
   duration?: number; // minutes
   description?: string;
   isCompleted: boolean;
+  isAI?: boolean;
+  exercises?: ExercisePlan[];
+  aiRationale?: string;
   metadata?: {
     intensity?: 'LOW' | 'MEDIUM' | 'HIGH';
     targetMuscle?: string;

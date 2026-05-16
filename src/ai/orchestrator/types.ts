@@ -5,6 +5,7 @@ export enum AIActionType {
   RECOVERY_ANALYSIS = 'RECOVERY_ANALYSIS',
   PLATEAU_BREAKER = 'PLATEAU_BREAKER',
   NUTRITION_AUDIT = 'NUTRITION_AUDIT',
+  COACH_CHAT = 'COACH_CHAT',
 }
 
 export interface AIActionOptions {
