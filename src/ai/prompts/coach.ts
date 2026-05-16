@@ -183,9 +183,28 @@ export const DASHBOARD_COACH_PROMPT = `
 - стратегия
 
 Фокус:
-- 1 главный инсайт
+- 1 ключевой инсайт
 - 1 главный риск
-- 1 следующее действие
+- 1 следующее действие (actionable recommendation)
 
 Без воды.
+
+ОБЯЗАТЕЛЬНАЯ СТРУКТУРА JSON:
+{
+  "summary": "Твой основной ответ/анализ (2-4 предложения).",
+  "verdict": "Твой краткий тренерский вердикт (например: 'Нужна коррекция' или 'Идем по плану').",
+  "trend": "IMPROVING | STAGNATING | DECLINING | STABLE",
+  "recommendations": [
+    {
+      "type": "training | nutrition | recovery",
+      "text": "Конкретный совет к действию.",
+      "priority": "HIGH | MEDIUM | LOW",
+      "reason": "Почему это важно сейчас.",
+      "action": { "label": "Текст кнопки (например: 'Снизить вес' или 'Добавить отдых')", "id": "ACTION_ID" }
+    }
+  ],
+  "insights": ["Твой ключевой инсайт по данным"],
+  "mainRisk": "Главный риск сейчас",
+  "overallProgress": 0
+}
 `;

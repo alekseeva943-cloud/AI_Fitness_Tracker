@@ -86,102 +86,124 @@ export const AIAnalyst: React.FC = () => {
                 className="space-y-6"
               >
                 {/* Summary & Trend Card */}
-                <GlassCard className="p-8 relative overflow-hidden">
-                   <div className="absolute top-0 right-0 p-8 opacity-5">
-                      <TrendingUp className="w-32 h-32" />
-                   </div>
+                <GlassCard className="p-10 relative overflow-hidden bg-[#0F172A] border-white/5">
+                   {/* Abstract background graphics */}
+                   <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] rounded-full -mr-32 -mt-32" />
+                   <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full -ml-24 -mb-24" />
                    
-                   <div className="relative z-10 space-y-6">
+                   <div className="relative z-10 space-y-8">
                       <div className="flex items-center justify-between">
                         <div className={cn(
-                          "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                          currentAnalysis.trend === AI_TREND.IMPROVING ? "bg-green-500/10 text-green-400 border-green-500/20" :
-                          currentAnalysis.trend === AI_TREND.DECLINING ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                          "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                          "px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border backdrop-blur-sm",
+                          currentAnalysis.trend === AI_TREND.IMPROVING ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                          currentAnalysis.trend === AI_TREND.DECLINING ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
+                          "bg-amber-500/10 text-amber-400 border-amber-500/20"
                         )}>
-                          Тренд: {
-                            currentAnalysis.trend === AI_TREND.IMPROVING ? 'Улучшение' :
-                            currentAnalysis.trend === AI_TREND.DECLINING ? 'Регресс' : 'Стагнация'
+                          Status: {
+                            currentAnalysis.trend === AI_TREND.IMPROVING ? 'OPTIMIZING' :
+                            currentAnalysis.trend === AI_TREND.DECLINING ? 'REGRESSING' : 'STABILIZING'
                           }
                         </div>
-                        <span className="text-[10px] font-mono opacity-50">{formatDate(currentAnalysis.date)}</span>
+                        <div className="flex items-center gap-3">
+                           <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+                              <Calendar className="w-3 h-3 text-white/30" />
+                              <span className="text-[10px] font-mono text-white/40">{formatDate(currentAnalysis.date)}</span>
+                           </div>
+                        </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <h3 className="text-3xl font-display font-black italic uppercase tracking-tighter">Резюме коуча</h3>
-                        <p className="text-lg text-foreground/90 leading-relaxed italic border-l-4 border-primary pl-4 py-1">
-                          "{currentAnalysis.summary}"
+ 
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                           <div className="h-0.5 w-12 bg-primary/50" />
+                           <h3 className="text-sm font-black uppercase tracking-[0.4em] text-primary italic">Intelligence Summary</h3>
+                        </div>
+                        <p className="text-3xl font-display font-medium text-white leading-tight tracking-tight">
+                          {currentAnalysis.summary.startsWith('"') ? currentAnalysis.summary : `"${currentAnalysis.summary}"`}
                         </p>
                       </div>
-
-                      {currentAnalysis.explanation && (
-                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-2">
-                          <h4 className="text-[10px] uppercase font-black tracking-widest text-primary flex items-center gap-2">
-                            <Info className="w-3 h-3" /> Обоснование
-                          </h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{currentAnalysis.explanation}</p>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ 
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {currentAnalysis.mainRisk && (
-                          <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-1">
-                            <p className="text-[10px] uppercase font-black tracking-widest text-red-400 flex items-center gap-2">
-                              <AlertTriangle className="w-3 h-3" /> Основной риск
-                            </p>
-                            <p className="text-sm font-medium">{currentAnalysis.mainRisk}</p>
+                          <div className="p-6 bg-rose-500/5 border border-rose-500/10 rounded-3xl space-y-2 group hover:bg-rose-500/10 transition-colors">
+                            <div className="flex items-center gap-2">
+                               <AlertTriangle className="w-4 h-4 text-rose-400" />
+                               <p className="text-[10px] uppercase font-black tracking-widest text-rose-400/60">Risk Assessment</p>
+                            </div>
+                            <p className="text-sm font-bold text-rose-100/90 leading-relaxed">{currentAnalysis.mainRisk}</p>
                           </div>
                         )}
-                        {currentAnalysis.forecast && (
-                          <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl space-y-1">
-                            <p className="text-[10px] uppercase font-black tracking-widest text-primary flex items-center gap-2">
-                              <Zap className="w-3 h-3" /> Прогноз
-                            </p>
-                            <p className="text-sm font-medium">{currentAnalysis.forecast}</p>
+                        {currentAnalysis.verdict && (
+                          <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl space-y-2 group hover:bg-primary/10 transition-colors">
+                            <div className="flex items-center gap-2">
+                               <Zap className="w-4 h-4 text-primary" />
+                               <p className="text-[10px] uppercase font-black tracking-widest text-primary/60">Final Verdict</p>
+                            </div>
+                            <p className="text-sm font-bold text-white leading-relaxed">{currentAnalysis.verdict}</p>
                           </div>
                         )}
                       </div>
                    </div>
                 </GlassCard>
+ 
+                {/* Tactical Actions Section */}
+                <div className="space-y-4">
+                   <div className="flex items-center gap-3">
+                      <Zap className="w-5 h-5 text-primary" />
+                      <h3 className="text-xs font-black uppercase tracking-[0.3em]">Tactical Recommendations</h3>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {currentAnalysis.recommendations.map((rec, idx) => (
+                       <motion.div
+                         key={rec.id || idx}
+                         initial={{ opacity: 0, scale: 0.98 }}
+                         animate={{ opacity: 1, scale: 1 }}
+                         transition={{ delay: idx * 0.1 }}
+                         className="relative p-6 bg-white/[0.03] border border-white/5 rounded-[2.5rem] space-y-5 hover:bg-white/[0.05] transition-all overflow-hidden group"
+                       >
+                         {/* Background Icon */}
+                         <div className="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:scale-125 transition-transform duration-700">
+                            {rec.type === AI_RECOMMENDATION_TYPE.NUTRITION ? <Activity className="w-24 h-24" /> : <TrendingUp className="w-24 h-24" />}
+                         </div>
 
-                {/* Recommendations Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentAnalysis.recommendations.map((rec, idx) => (
-                    <motion.div
-                      key={rec.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4 hover:bg-white/10 transition-all group"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className={cn(
-                          "p-3 rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform",
-                          rec.type === AI_RECOMMENDATION_TYPE.NUTRITION && "bg-orange-500/10 text-orange-400",
-                          rec.type === AI_RECOMMENDATION_TYPE.RECOVERY && "bg-blue-500/10 text-blue-400",
-                          rec.type === AI_RECOMMENDATION_TYPE.CONSISTENCY && "bg-purple-500/10 text-purple-400"
-                        )}>
-                           <Activity className="w-5 h-5" />
-                        </div>
-                        <div className={cn(
-                          "px-2 py-0.5 rounded text-[8px] font-black border",
-                          rec.priority === AI_PRIORITY.HIGH ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                          rec.priority === AI_PRIORITY.MEDIUM ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
-                          "bg-green-500/10 text-green-400 border-green-500/20"
-                        )}>
-                          {rec.priority}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-sm font-bold leading-tight line-clamp-3">{rec.text}</p>
-                        {rec.reason && (
-                          <p className="text-[10px] text-muted-foreground italic border-l border-white/20 pl-2">
-                            {rec.reason}
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
+                         <div className="flex justify-between items-center relative z-10">
+                           <div className={cn(
+                             "w-10 h-10 rounded-2xl flex items-center justify-center border",
+                             rec.type === AI_RECOMMENDATION_TYPE.NUTRITION ? "bg-orange-500/10 text-orange-400 border-orange-500/20" :
+                             rec.type === AI_RECOMMENDATION_TYPE.RECOVERY ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                             "bg-primary/10 text-primary border-primary/20"
+                           )}>
+                              <Activity className="w-5 h-5" />
+                           </div>
+                           <div className={cn(
+                             "px-2.5 py-1 rounded-full text-[8px] font-black tracking-widest border uppercase",
+                             rec.priority === AI_PRIORITY.HIGH ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
+                             rec.priority === AI_PRIORITY.MEDIUM ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                             "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                           )}>
+                             {rec.priority}
+                           </div>
+                         </div>
+                         <div className="space-y-3 relative z-10">
+                            <div className="space-y-1">
+                               <p className="text-sm font-bold text-white leading-snug group-hover:text-primary transition-colors">{rec.text}</p>
+                               {rec.reason && (
+                                 <p className="text-[10px] text-white/30 italic leading-relaxed">
+                                   {rec.reason}
+                                 </p>
+                               )}
+                            </div>
+                            
+                            {rec.action && (
+                               <button className="w-full py-2.5 rounded-2xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2">
+                                  {rec.action.label}
+                                  <ChevronRight className="w-3 h-3" />
+                               </button>
+                            )}
+                         </div>
+                       </motion.div>
+                     ))}
+                   </div>
                 </div>
               </motion.div>
             ) : (

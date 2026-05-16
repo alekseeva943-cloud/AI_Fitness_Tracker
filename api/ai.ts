@@ -23,26 +23,26 @@ export default async function handler(req: any, res: any) {
       systemPrompt
     } = req.body || {};
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-
       console.error(
-        '[AI API ERROR] OPENAI_API_KEY is missing'
+        '[AI API ERROR] No API key found (OPENAI_API_KEY or GEMINI_API_KEY)'
       );
 
       return res.status(500).json({
         success: false,
-        error: 'OpenAI API key not configured'
+        error: 'AI API key not configured'
       });
     }
 
     const openai = new OpenAI({
-      apiKey
+      apiKey,
+      baseURL: process.env.OPENAI_API_KEY ? undefined : "https://generativelanguage.googleapis.com/v1beta/openai/"
     });
 
     console.log(
-      `[OPENAI START] Action: ${actionType}`
+      `[OPENAI START] Action: ${actionType} using ${process.env.OPENAI_API_KEY ? 'OpenAI' : 'Gemini'}`
     );
 
     // =========================================
@@ -57,17 +57,19 @@ export default async function handler(req: any, res: any) {
     // OPENAI REQUEST
     // =========================================
 
+    const finalSystemPrompt = isConversationalMode 
+      ? (systemPrompt || 'Ты элитный fitness coach. Отвечай только на русском языке.')
+      : `${systemPrompt || 'Ты элитный fitness coach.'} ВАЖНО: Твой ответ ДОЛЖЕН быть в формате JSON. ГОВОРИ ТОЛЬКО НА РУССКОМ ЯЗЫКЕ.`;
+
     const completion =
       await openai.chat.completions.create({
 
-        model: 'gpt-4o-mini',
+        model: process.env.OPENAI_API_KEY ? 'gpt-4o-mini' : 'gemini-1.5-flash',
 
         messages: [
           {
             role: 'system',
-            content:
-              systemPrompt ||
-              'Ты элитный fitness coach. Отвечай только на русском языке.'
+            content: finalSystemPrompt
           },
           {
             role: 'user',
