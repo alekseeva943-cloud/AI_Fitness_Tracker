@@ -22,13 +22,15 @@ import { GradientButton } from '../../../components/ui/GradientButton';
 export const AICalendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week'>('month');
-  const [selectedEvent, setSelectedEvent] = useState<PlanEvent | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalInitialDate, setAddModalInitialDate] = useState<Date | undefined>();
   const [draggedEvent, setDraggedEvent] = useState<PlanEvent | null>(null);
 
   const planEvents = useFitnessStore(state => state.planEvents);
   const updatePlanEvent = useFitnessStore(state => state.updatePlanEvent);
+
+  const selectedEvent = planEvents.find(e => e.id === selectedEventId) || null;
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -236,7 +238,7 @@ export const AICalendar: React.FC = () => {
                         <motion.button 
                           draggable
                           onDragStart={(e) => handleDragStart(e, event)}
-                          onClick={() => setSelectedEvent(event)}
+                          onClick={() => setSelectedEventId(event.id)}
                           onMouseEnter={() => setHoveredEventId(event.id)}
                           onMouseLeave={() => setHoveredEventId(null)}
                           initial={{ opacity: 0, y: 5 }}
@@ -244,7 +246,8 @@ export const AICalendar: React.FC = () => {
                           whileHover={{ x: 2 }}
                           className={cn(
                             "w-full text-left px-2 py-1 rounded-md text-[9px] font-bold border transition-all flex items-center gap-2 truncate",
-                            getEventColor(event.type, event.status)
+                            getEventColor(event.type, event.status),
+                            hoveredEventId === event.id && "ring-1 ring-primary/30"
                           )}
                         >
                           <div className={cn("w-1 h-1 rounded-full shrink-0", getEventDot(event.type, event.status))} />
@@ -252,20 +255,33 @@ export const AICalendar: React.FC = () => {
                         </motion.button>
 
                         <AnimatePresence>
-                          {hoveredEventId === event.id && (
+                          {hoveredEventId === event.id && !selectedEventId && (
                             <motion.div
                               initial={{ opacity: 0, scale: 0.95, y: 5 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                              className="absolute left-0 bottom-full mb-2 w-48 p-3 glass border border-white/10 rounded-xl z-[100] pointer-events-none shadow-2xl"
+                              className="absolute left-0 bottom-full mb-3 w-[280px] p-4 glass border border-white/20 rounded-2xl z-[100] pointer-events-none shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
                             >
-                               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">
-                                 {event.type} • {event.duration}m
-                               </p>
-                               <p className="text-[10px] font-bold text-white mb-1.5 leading-tight">{event.title}</p>
-                               <p className="text-[9px] text-muted-foreground/80 italic line-clamp-2">
-                                 {event.aiRationale || event.description || 'Genesis Performance Strategy'}
-                               </p>
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary/60">
+                                    {event.type}
+                                  </p>
+                                  <p className="text-[9px] font-black text-muted-foreground/40">{event.duration} MIN</p>
+                                </div>
+                                <p className="text-xs font-bold text-white mb-2 leading-tight">{event.title}</p>
+                                {event.exercises && (
+                                   <div className="flex flex-wrap gap-1 mb-3">
+                                      {event.exercises.slice(0, 3).map((ex, i) => (
+                                         <span key={i} className="px-1.5 py-0.5 rounded bg-white/5 text-[7px] text-muted-foreground font-black uppercase">{ex.name}</span>
+                                      ))}
+                                      {event.exercises.length > 3 && <span className="text-[7px] text-muted-foreground/40 font-black">+{event.exercises.length - 3}</span>}
+                                   </div>
+                                )}
+                                <div className="pt-2 border-t border-white/5">
+                                   <p className="text-[10px] text-muted-foreground/80 italic leading-relaxed line-clamp-2">
+                                     {event.aiRationale || event.description || 'Genesis Performance Strategy'}
+                                   </p>
+                                </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -353,7 +369,7 @@ export const AICalendar: React.FC = () => {
                                  key={event.id}
                                  draggable
                                  onDragStart={(e) => handleDragStart(e, event)}
-                                 onClick={() => setSelectedEvent(event)}
+                                 onClick={() => setSelectedEventId(event.id)}
                                  initial={{ opacity: 0, x: -10 }}
                                  animate={{ opacity: 1, x: 0 }}
                                  whileHover={{ scale: 1.02, x: 4, zIndex: 50 }}
@@ -410,11 +426,11 @@ export const AICalendar: React.FC = () => {
       </div>
 
       <AnimatePresence>
-        {selectedEvent && (
+        {selectedEvent && selectedEventId && (
           <AIEventDetailsModal 
-            key="details"
+            key={selectedEventId}
             event={selectedEvent} 
-            onClose={() => setSelectedEvent(null)} 
+            onClose={() => setSelectedEventId(null)} 
           />
         )}
         {isAddModalOpen && (

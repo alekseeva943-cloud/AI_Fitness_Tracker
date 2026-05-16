@@ -154,7 +154,7 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
               <button type="button" onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-all"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto scrollbar-hide p-8 space-y-6">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-8 space-y-6 min-h-0">
               {/* Type Selection */}
               <div className="flex gap-2">
                  {(['WORKOUT', 'NUTRITION', 'RECOVERY', 'REMINDER'] as PlanEventType[]).map(type => (

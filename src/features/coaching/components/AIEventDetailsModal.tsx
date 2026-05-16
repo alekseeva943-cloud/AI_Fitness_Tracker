@@ -68,15 +68,29 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
             
             await new Promise(r => setTimeout(r, 1500));
             
+            const lowerInput = userMsg.toLowerCase();
+            const hasHistory = chatMessages.length > 0;
+            const userIsCorrecting = lowerInput.includes('не писал') || lowerInput.includes('не было') || lowerInput.includes('ошибка');
+
+            if (userIsCorrecting) {
+                console.log('[AI CORRECTION DETECTED]');
+                return `Да, ты прав. Я допустил ошибку в ссылке на историю. Давай опираться только на текущие данные тренировки и твои реальные отзывы.\n\nПо этому воркауту: ${event.title} — что именно тебя сейчас беспокоит?`;
+            }
+
             let aiResponse = "Я проанализировал твой текущий прогресс. Для этой сессии я бы советовал придерживаться плана, но если чувствуешь забитость, давай снизим нагрузку на 10%.";
             
-            const lowerInput = userMsg.toLowerCase();
             if (lowerInput.includes('замен') || lowerInput.includes('чем')) {
-                aiResponse = "В прошлый раз ты говорил, что штанга давит на кисти. Поэтому сегодня я бы заменил жим штанги на жим гантелей нейтральным хватом. Это безопаснее для суставов при твоем текущем объеме.";
+                aiResponse = "Если чувствуешь дискомфорт в суставах, я бы заменил жим штанги на жим гантелей нейтральным хватом. Это безопаснее для связок. Либо можем перейти в Смит для лучшей стабилизации.";
             } else if (lowerInput.includes('болят') || lowerInput.includes('болит')) {
-                aiResponse = "Понял тебя. При боли в суставах мы немедленно меняем протокол. Я помню твою старую жалобу на плечо, поэтому давай сегодня полностью исключим осевую нагрузку и перейдем на сведение в кроссовере с низким весом.";
+                aiResponse = "Понял тебя. При боли в суставах мы немедленно меняем протокол. Я рекомендую сегодня полностью исключить осевую нагрузку и перейти на сведение в кроссовере с низким весом, чтобы поддержать пампинг без риска для локтя.";
             } else if (lowerInput.includes('вес') || lowerInput.includes('тяжело')) {
-                aiResponse = "Твой сон за последние 2 дня был ниже 7 часов, и recovery score сегодня просел. Это напрямую влияет на силовой потенциал. Я бы советовал снизить рабочий вес на 10% и сфокусируемся на темпе 3-0-1.";
+                aiResponse = "Если сегодня тяжело, это нормально. Твой recovery score может быть ниже обычного. Я бы советовал снизить рабочий вес на 10-15% и сфокусироваться на темпе 3-1-1 для максимального контроля.";
+            }
+
+            // Real grounding if it was in history
+            const previouslySaidJoints = chatMessages.some(m => m.content.toLowerCase().includes('сустав') || m.content.toLowerCase().includes('болит'));
+            if (previouslySaidJoints && !userIsCorrecting) {
+                aiResponse = "Я помню, ты упоминал дискомфорт в суставах в нашей беседе. Поэтому сегодня я особенно настаиваю на плавном темпе и исключении рывков.";
             }
 
             console.log('[AI RESPONSE RECEIVED]');
@@ -106,7 +120,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/90 backdrop-blur-md"
+        className="absolute inset-0 bg-black/95 backdrop-blur-xl"
       />
       
       <motion.div
@@ -115,9 +129,9 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-full max-w-2xl h-[85vh] flex flex-col bg-transparent"
       >
-        <GlassCard className="border-white/10 overflow-hidden flex flex-col h-full shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <GlassCard className="border-white/10 overflow-hidden flex flex-col h-full shadow-[0_0_80px_rgba(0,0,0,0.8)]">
           {/* Header */}
-          <div className="p-8 pb-6 flex items-start justify-between bg-white/[0.02]">
+          <div className="p-8 pb-6 flex items-start justify-between bg-white/[0.02] shrink-0">
              <div className="space-y-4">
                 <div className="flex items-center gap-4">
                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -131,7 +145,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                             {format(new Date(event.date), 'EEEE, HH:mm', { locale: ru })}
                          </div>
                          <div className="flex items-center gap-1.5 text-primary text-[9px] font-black uppercase tracking-widest">
-                            <Zap className="w-3 h-3" />
+                            <Zap className="w-3 h-3 shadow-[0_0_8px_rgba(223,255,0,0.5)]" />
                             {event.source === 'AI' ? 'AI Optimized' : 'Precision Manual'}
                          </div>
                       </div>
@@ -141,7 +155,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
              <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
           </div>
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide px-8 py-6 space-y-10">
+          <div className="flex-1 overflow-y-auto scrollbar-hide px-8 py-6 space-y-10 min-h-0">
             {/* AI Coach Insights Banner - if AI event */}
             {event.aiRationale && (
                 <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10 flex gap-4 relative overflow-hidden group">
@@ -284,6 +298,13 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                                    </div>
 
                                    <div className="space-y-3">
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-primary/40">Strategic Why</p>
+                                      <p className="text-[10px] text-muted-foreground/80 leading-relaxed italic">
+                                         "Это базовое движение выбрано для создания максимального механического напряжения в начале сессии, пока твои гликогеновые депо полны."
+                                      </p>
+                                   </div>
+
+                                   <div className="space-y-3">
                                       <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Genesis Replacements</p>
                                       <div className="flex flex-wrap gap-2">
                                          {['Smith Machine', 'Dumbbells', 'Machine Press'].map(tag => (
@@ -408,20 +429,16 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                 <GradientButton 
                   variant="outline" 
                   onClick={() => setIsEditing(true)}
-                  className="w-14 h-14 p-0 flex items-center justify-center border-white/10 hover:border-primary/40"
+                  className="w-14 h-14 p-0 flex items-center justify-center border-white/10 hover:border-primary/40 group/edit"
+                  title="Изменить тренировку"
                 >
-                   <Edit3 className="w-5 h-5" />
+                   <Edit3 className="w-5 h-5 group-hover/edit:text-primary transition-colors" />
                 </GradientButton>
-                <GradientButton 
-                  variant="outline" 
-                  onClick={() => setIsEditing(true)}
-                  className="w-14 h-14 p-0 flex items-center justify-center border-white/10 hover:border-primary/40"
-                >
-                   <Calendar className="w-5 h-5" />
-                </GradientButton>
+
                 <button 
                   onClick={handleRemove} 
                   className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-black transition-all"
+                  title="Удалить"
                 >
                    <Trash2 className="w-5 h-5" />
                 </button>
