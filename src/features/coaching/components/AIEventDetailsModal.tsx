@@ -22,7 +22,7 @@ interface AIEventDetailsModalProps {
 }
 
 type ChatStatus = 'idle' | 'thinking' | 'retrieving_context' | 'generating' | 'completed' | 'failed';
-type TabType = 'GUIDANCE' | 'CHAT';
+type TabType = 'TECHNIQUE' | 'COACH';
 
 export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event, onClose }) => {
   const updatePlanEvent = useFitnessStore(state => state.updatePlanEvent);
@@ -31,7 +31,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
   const profile = useFitnessStore(state => state.profile);
   
   const [expandedExercise, setExpandedExercise] = useState<number | null>(0);
-  const [activeTab, setActiveTab] = useState<TabType>('GUIDANCE');
+  const [activeTab, setActiveTab] = useState<TabType>('TECHNIQUE');
   const [isEditing, setIsEditing] = useState(false);
   
   // Exercise-specific chat states
@@ -133,181 +133,172 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
       >
         <GlassCard className="border-white/10 overflow-hidden flex flex-col h-full shadow-[0_40px_120px_rgba(0,0,0,1)] rounded-[3rem]">
           {/* Header */}
-          <div className="p-12 pb-8 flex items-start justify-between bg-white/[0.02] shrink-0 border-b border-white/5">
-             <div className="flex items-center gap-8">
-                <div className="w-20 h-20 rounded-[2.5rem] bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_40px_rgba(223,255,0,0.1)]">
-                   {event.type === 'WORKOUT' ? <Dumbbell className="w-10 h-10" /> : 
-                    event.type === 'NUTRITION' ? <Utensils className="w-10 h-10" /> : <Calendar className="w-10 h-10" />}
+          <div className="p-10 pb-6 flex items-start justify-between bg-white/[0.01] shrink-0 border-b border-white/5">
+             <div className="flex items-center gap-6">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                   {event.type === 'WORKOUT' ? <Dumbbell className="w-8 h-8" /> : 
+                    event.type === 'NUTRITION' ? <Utensils className="w-8 h-8" /> : <Calendar className="w-8 h-8" />}
                 </div>
                 <div>
-                   <div className="flex items-center gap-3 mb-2">
-                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary italic">Strategic Session</span>
-                     <div className="w-1 h-1 rounded-full bg-white/20" />
-                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">{event.type}</span>
+                   <div className="flex items-center gap-2 mb-1">
+                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Оптимизировано ИИ</span>
+                     <div className="w-1 h-1 rounded-full bg-white/10" />
+                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
+                        {event.type === 'WORKOUT' ? 'Силовая тренировка' : event.type === 'NUTRITION' ? 'Питание' : 'Восстановление'}
+                     </span>
                    </div>
-                   <h2 className="text-4xl font-display font-bold tracking-tight uppercase text-white leading-none">{event.title}</h2>
-                   <div className="flex items-center gap-6 mt-4">
-                      <div className="flex items-center gap-2.5 text-white/40">
+                   <h2 className="text-3xl font-display font-bold tracking-tight text-white leading-none">{event.title}</h2>
+                   <div className="flex items-center gap-6 mt-3 text-white/40">
+                      <div className="flex items-center gap-2">
                          <Clock className="w-4 h-4" />
-                         <span className="text-[11px] font-black uppercase tracking-widest leading-none">
+                         <span className="text-[11px] font-bold uppercase tracking-widest leading-none">
                              {format(new Date(event.date), 'EEEE, HH:mm', { locale: ru })}
                          </span>
                       </div>
-                      <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60 text-[10px] font-black uppercase tracking-widest leading-none">
-                         {event.duration} MIN DURATION
+                      <div className="text-[11px] font-bold uppercase tracking-widest leading-none">
+                         {event.duration} МИНУТ
                       </div>
                    </div>
                 </div>
              </div>
-             <button onClick={onClose} className="p-4 hover:bg-white/5 rounded-[1.5rem] transition-all text-white/20 hover:text-white"><X className="w-8 h-8" /></button>
+             <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-xl transition-all text-white/20 hover:text-white"><X className="w-6 h-6" /></button>
           </div>
 
-          <div className="flex-1 overflow-hidden flex min-h-0">
+          <div className="flex-1 overflow-hidden flex min-h-0 bg-black/40">
              {/* Left Rail: Exercises */}
-             <div className="w-[380px] border-r border-white/5 overflow-y-auto scrollbar-hide py-10 px-8 space-y-4 bg-white/[0.01]">
-                <div className="flex items-center justify-between mb-8 px-2">
-                   <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-white/20">Protocol Steps</h3>
-                   <span className="text-[10px] font-black text-primary uppercase">{event.exercises?.length || 0} ITEMS</span>
+             <div className="w-[340px] border-r border-white/5 overflow-y-auto scrollbar-hide py-8 px-6 space-y-3 shrink-0">
+                <div className="flex items-center justify-between mb-4 px-2">
+                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 italic">Протокол занятия</h3>
+                   <span className="text-[9px] font-black text-primary uppercase">{event.exercises?.length || 0} пунктов</span>
                 </div>
                 
                 {event.exercises?.map((ex, idx) => (
                   <button 
                     key={idx}
-                    onClick={() => { setExpandedExercise(idx); setActiveTab('GUIDANCE'); }}
+                    onClick={() => { setExpandedExercise(idx); setActiveTab('TECHNIQUE'); }}
                     className={cn(
-                      "w-full text-left p-6 rounded-[2rem] border transition-all duration-300 group relative overflow-hidden",
-                      expandedExercise === idx ? "bg-primary border-primary shadow-[0_20px_40px_rgba(223,255,0,0.15)]" : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                      "w-full text-left p-5 rounded-2xl border transition-all duration-200 group relative",
+                      expandedExercise === idx ? "bg-white/[0.05] border-primary/40 shadow-lg" : "bg-white/[0.02] border-white/5 hover:border-white/10"
                     )}
                   >
-                    <div className={cn(
-                      "absolute top-0 left-0 w-1 h-full transition-all",
-                      expandedExercise === idx ? "bg-black/20" : "bg-transparent group-hover:bg-primary/20"
-                    )} />
                     <h4 className={cn(
-                      "text-sm font-bold uppercase tracking-tight mb-2 transition-colors",
-                      expandedExercise === idx ? "text-black" : "text-white group-hover:text-primary"
+                      "text-xs font-bold uppercase tracking-tight mb-2 transition-colors",
+                      expandedExercise === idx ? "text-primary" : "text-white/80 group-hover:text-white"
                     )}>{ex.name}</h4>
-                    <div className="flex items-center gap-4">
-                       <span className={cn(
-                         "text-[10px] font-black uppercase tracking-widest",
-                         expandedExercise === idx ? "text-black/40" : "text-white/20"
-                       )}>{ex.sets} × {ex.reps}</span>
-                       <span className={cn(
-                         "text-[10px] font-black uppercase tracking-widest",
-                         expandedExercise === idx ? "text-black/60" : "text-primary"
-                       )}>{ex.weight || 'BW'}</span>
+                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-white/20">
+                       <span>{ex.sets} × {ex.reps}</span>
+                       <span className={cn(expandedExercise === idx ? "text-primary/60" : "")}>{ex.weight || 'СВ'}</span>
                     </div>
                   </button>
                 ))}
              </div>
 
-             {/* Right Content: Coaching Details */}
-             <div className="flex-1 overflow-y-auto scrollbar-hide p-12 bg-black/20">
+             {/* Right Content */}
+             <div className="flex-1 overflow-y-auto p-12 bg-white/[0.01]">
                 {expandedExercise !== null && event.exercises?.[expandedExercise] ? (
-                  <div className="max-w-2xl mx-auto space-y-12">
-                     <div className="flex items-center justify-between">
-                        <div className="flex gap-2 p-1.5 bg-black/40 rounded-2xl border border-white/5">
+                  <div className="max-w-2xl mx-auto space-y-10">
+                     <div className="flex items-center justify-between border-b border-white/5 pb-8">
+                        <div className="space-y-1">
+                           <h3 className="text-2xl font-bold text-white uppercase tracking-tight">{event.exercises[expandedExercise].name}</h3>
+                           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/20">Целевая интенсивность: Высокая</p>
+                        </div>
+                        <div className="flex gap-1 p-1 bg-black/40 rounded-xl border border-white/5">
                            <button 
-                              onClick={() => setActiveTab('GUIDANCE')}
+                              onClick={() => setActiveTab('TECHNIQUE')}
                               className={cn(
-                                "px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                activeTab === 'GUIDANCE' ? "bg-white text-black" : "text-white/30 hover:text-white"
+                                "px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeTab === 'TECHNIQUE' ? "bg-white text-black" : "text-white/20 hover:text-white"
                               )}
-                           >Execution</button>
+                           >Техника</button>
                            <button 
-                              onClick={() => setActiveTab('CHAT')}
+                              onClick={() => setActiveTab('COACH')}
                               className={cn(
-                                "px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                                activeTab === 'CHAT' ? "bg-primary text-black" : "text-white/30 hover:text-white"
+                                "px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                                activeTab === 'COACH' ? "bg-primary text-black" : "text-white/20 hover:text-white"
                               )}
                            >
-                              <MessageCircle className="w-3 h-3" />
-                              Counsel
+                              Коуч
                            </button>
                         </div>
                      </div>
 
                      <AnimatePresence mode="wait">
-                       {activeTab === 'GUIDANCE' ? (
+                       {activeTab === 'TECHNIQUE' ? (
                          <motion.div 
-                           key="guidance"
-                           initial={{ opacity: 0, x: 20 }}
-                           animate={{ opacity: 1, x: 0 }}
-                           exit={{ opacity: 0, x: -20 }}
-                           className="space-y-12"
+                           key="tech"
+                           initial={{ opacity: 0, y: 10 }}
+                           animate={{ opacity: 1, y: 0 }}
+                           exit={{ opacity: 0, y: -10 }}
+                           className="space-y-10"
                          >
-                            {/* Detailed Technique System */}
-                            <div className="grid grid-cols-1 gap-12">
-                               {/* Preparation */}
-                               <section className="space-y-6">
-                                  <div className="flex items-center gap-4">
-                                     <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black text-white/40 uppercase tracking-widest">01 preparation</div>
-                                     <div className="h-px flex-1 bg-white/5" />
-                                  </div>
-                                  <div className="space-y-4">
-                                     <p className="text-sm font-medium text-white/90 leading-relaxed italic">
-                                        "{event.exercises[expandedExercise].name === 'Приседания со штангой' ? 'Установи гриф на стойках на уровне плеч. Подсядь под него, сводя лопатки и создавая "полку" из трапеций. Плотно упрись всей стопой в пол.' : 'Займи исходное положение, проверь устойчивость опорных точек. Сфокусируй взгляд перед собой.'}"
-                                     </p>
-                                  </div>
-                               </section>
+                            <section className="space-y-6">
+                               <div className="flex items-center gap-4">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-primary italic">01. Подготовка</span>
+                                  <div className="h-px flex-1 bg-white/5" />
+                               </div>
+                               <p className="text-sm font-medium text-white/60 leading-relaxed">
+                                  {event.exercises[expandedExercise].name === 'Приседания со штангой' 
+                                    ? 'Установи штангу на уровне ключиц. Сведи лопатки и создай жесткую платформу из мышц спины. Ноги на ширине плеч, носки слегка развернуты.' 
+                                    : event.exercises[expandedExercise].name.includes('Жим')
+                                    ? 'Ляг на скамью, обеспечь 3 точки опоры: лопатки, таз и стопы. Сохраняй естественный прогиб в пояснице, не отрывая таз.'
+                                    : 'Прими устойчивое исходное положение. Проверь хват и симметрию расположения веса. Сфокусируй взгляд.'}
+                               </p>
+                            </section>
 
-                               {/* Execution */}
-                               <section className="space-y-6">
-                                  <div className="flex items-center gap-4">
-                                     <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest">02 execution</div>
-                                     <div className="h-px flex-1 bg-white/5" />
+                            <section className="space-y-6">
+                               <div className="flex items-center gap-4">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-primary italic">02. Выполнение</span>
+                                  <div className="h-px flex-1 bg-white/5" />
+                               </div>
+                               <ul className="space-y-4">
+                                  {(event.exercises[expandedExercise].technique?.steps || [
+                                    'Контролируемое опускание в течение 3 секунд.',
+                                    'Пиковая концентрация и растяжение в нижней точке.',
+                                    'Мощное выжимание на выдохе, сохраняя темп.',
+                                    'Не делай полной блокировки суставов в верхней точке.'
+                                  ]).map((step, i) => (
+                                    <li key={i} className="flex gap-4 group">
+                                       <span className="text-[10px] font-black text-white/10 mt-1">{i + 1}</span>
+                                       <p className="text-sm text-white/80 font-medium leading-relaxed">{step}</p>
+                                    </li>
+                                  ))}
+                               </ul>
+                            </section>
+
+                            <div className="grid grid-cols-2 gap-6">
+                               <div className="p-6 rounded-2xl bg-red-400/5 border border-red-400/10 space-y-3">
+                                  <div className="flex items-center gap-2">
+                                     <AlertTriangle className="w-4 h-4 text-red-500" />
+                                     <span className="text-[10px] font-black uppercase tracking-widest text-red-400/60">Ошибки</span>
                                   </div>
-                                  <ul className="space-y-5">
-                                     {(event.exercises[expandedExercise].technique?.steps || [
-                                       'Глубокий вдох для стабилизации кора перед началом движения.',
-                                       'Контролируемое опускание в течение 3 секунд.',
-                                       'Мощное выжимание на выдохе без потери темпа.',
-                                       'Пиковая концентрация в верхней точке (1 секунда).'
-                                     ]).map((step, i) => (
-                                       <li key={i} className="flex gap-6 group">
-                                          <span className="text-[10px] font-black text-primary/40 mt-1">{String(i+1).padStart(2, '0')}</span>
-                                          <p className="text-sm text-white/70 font-medium leading-relaxed group-hover:text-white transition-colors">{step}</p>
-                                       </li>
-                                     ))}
+                                  <ul className="text-[11px] font-medium text-red-200/40 space-y-1.5">
+                                     <li>• Слишком большой темп</li>
+                                     <li>• Отрыв пяток от пола</li>
+                                     <li>• Задержка дыхания</li>
                                   </ul>
-                               </section>
-
-                               {/* Mistakes & Safety */}
-                               <div className="grid grid-cols-2 gap-8">
-                                  <section className="space-y-4 p-8 rounded-[2.5rem] bg-red-400/5 border border-red-400/10">
-                                     <div className="flex items-center gap-3 mb-2">
-                                        <AlertTriangle className="w-5 h-5 text-red-500" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-red-400/60">Common Mistakes</p>
-                                     </div>
-                                     <ul className="space-y-2">
-                                        <li className="text-[11px] font-medium text-red-200/60">• Отрыв пяток / лопаток</li>
-                                        <li className="text-[11px] font-medium text-red-200/60">• Сведение коленей внутрь</li>
-                                        <li className="text-[11px] font-medium text-red-200/60">• Чрезмерный прогиб спины</li>
-                                     </ul>
-                                  </section>
-                                  <section className="space-y-4 p-8 rounded-[2.5rem] bg-emerald-400/5 border border-emerald-400/10">
-                                     <div className="flex items-center gap-3 mb-2">
-                                        <Zap className="w-5 h-5 text-emerald-500" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60">Coaching Note</p>
-                                     </div>
-                                     <p className="text-[11px] font-medium text-emerald-200/80 leading-relaxed italic">
-                                        "Сегодня сфокусируйся на глубине. Лучше сделать меньше повторений, но с идеальной амплитудой. Контроль — это сила."
-                                     </p>
-                                  </section>
+                               </div>
+                               <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 space-y-3">
+                                  <div className="flex items-center gap-2">
+                                     <Zap className="w-4 h-4 text-primary" />
+                                     <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">Совет</span>
+                                  </div>
+                                  <p className="text-[11px] font-medium text-primary/80 italic leading-relaxed">
+                                     "Фокусируйся на связи мозг-мышцы. Представь, как целевая мышца сокращается под нагрузкой."
+                                  </p>
                                </div>
                             </div>
                          </motion.div>
                        ) : (
                          <motion.div 
-                           key="chat"
-                           initial={{ opacity: 0, x: -20 }}
-                           animate={{ opacity: 1, x: 0 }}
-                           exit={{ opacity: 0, x: 20 }}
+                           key="coach"
+                           initial={{ opacity: 0, y: 10 }}
+                           animate={{ opacity: 1, y: 0 }}
+                           exit={{ opacity: 0, y: -10 }}
                            className="flex flex-col h-[500px]"
                          >
-                            <div className="flex-1 overflow-y-auto scrollbar-hide space-y-6 pb-8">
-                               <div className="p-6 rounded-[2rem] bg-white/5 border border-white/5 text-[11px] text-white/40 italic leading-relaxed">
-                                  Это инкапсулированный поток обсуждения для <b>{event.exercises[expandedExercise].name}</b>. Я помню контекст всей тренировки и твое состояние.
+                            <div className="flex-1 overflow-y-auto scrollbar-hide space-y-6 pb-6 pr-4">
+                               <div className="p-6 rounded-2xl bg-white/5 border border-white/5 text-[11px] text-white/40 italic leading-relaxed">
+                                  Я анализирую твою тренировку в контексте <b>{event.exercises[expandedExercise].name}</b>. Спрашивай про замену, вес или ощущения.
                                </div>
 
                                {(chatThreads[expandedExercise] || []).map((msg, mi) => (
@@ -316,63 +307,61 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                                    msg.role === 'user' ? "items-end" : "items-start"
                                  )}>
                                     <div className={cn(
-                                       "p-6 rounded-[2rem] text-sm font-medium max-w-[85%] leading-relaxed shadow-xl",
-                                       msg.role === 'user' ? "bg-white text-black rounded-tr-none" : "bg-primary text-black rounded-tl-none"
+                                       "p-5 rounded-2xl text-sm font-medium max-w-[90%] leading-relaxed shadow-lg",
+                                       msg.role === 'user' ? "bg-white text-black" : "bg-primary text-black"
                                     )}>
                                        {msg.content}
                                        {msg.action === 'REPLACEMENT_APPLIED' && (
-                                         <div className="mt-4 pt-4 border-t border-black/10 flex items-center gap-2">
-                                            <CheckCircle2 className="w-4 h-4" />
-                                            <span className="text-[10px] font-black uppercase">Modification Applied</span>
+                                         <div className="mt-3 pt-3 border-t border-black/10 flex items-center gap-2">
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                            <span className="text-[9px] font-black uppercase">Изменения применены</span>
                                          </div>
                                        )}
                                     </div>
-                                    <span className="text-[9px] font-black text-white/20 uppercase mt-2 px-2">
-                                       {msg.role === 'user' ? 'You' : 'Genesis Coach'}
+                                    <span className="text-[9px] font-black text-white/10 uppercase mt-2 px-1">
+                                       {msg.role === 'user' ? 'Вы' : 'Интеллект Genesis'}
                                     </span>
                                  </div>
                                ))}
 
                                {chatStatuses[expandedExercise] === 'thinking' || chatStatuses[expandedExercise] === 'generating' && (
-                                  <div className="flex gap-2 p-6 bg-white/5 rounded-[2rem] w-fit">
-                                     <div className="flex gap-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-                                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-                                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
-                                     </div>
+                                  <div className="flex gap-1.5 p-5 bg-white/5 rounded-2xl w-fit">
+                                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
                                   </div>
                                )}
                             </div>
 
-                            <div className="pt-6 border-t border-white/5 bg-black/20 px-4 -mx-4">
-                               <form onSubmit={(e) => handleAskCoach(expandedExercise!, e)} className="relative mb-6">
+                            <div className="pt-6 border-t border-white/5">
+                               <form onSubmit={(e) => handleAskCoach(expandedExercise!, e)} className="relative mb-4">
                                   <input 
                                     value={chatInputs[expandedExercise!] || ''}
                                     onChange={e => setChatInputs(prev => ({ ...prev, [expandedExercise!]: e.target.value }))}
-                                    placeholder="Need replacement / weight check / technique question?..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-[1.5rem] px-8 py-5 text-sm focus:outline-none focus:border-primary focus:bg-white/10 transition-all text-white placeholder:text-white/20"
+                                    placeholder="Задать вопрос коучу..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-sm focus:outline-none focus:border-primary transition-all text-white placeholder:text-white/20"
                                   />
                                   <button 
                                      type="submit"
-                                     className="absolute right-3 top-3 bottom-3 px-6 rounded-xl bg-primary text-black font-black uppercase text-[10px] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
+                                     className="absolute right-2 top-2 bottom-2 px-6 rounded-lg bg-primary text-black font-black uppercase text-[10px] hover:opacity-90 active:scale-95 transition-all"
                                   >
                                      Engage
                                   </button>
-                               </form>
+                                </form>
                                
-                               <div className="flex flex-wrap gap-3 pb-4">
+                               <div className="flex flex-wrap gap-2">
                                   <button 
-                                      onClick={() => setChatInputs(prev => ({ ...prev, [expandedExercise!]: 'Чем заменить на гантели?' }))}
-                                      className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/40 hover:text-primary hover:border-primary transition-all uppercase"
-                                  >Заменить на гантели</button>
+                                      onClick={() => setChatInputs(prev => ({ ...prev, [expandedExercise!]: 'Чем заменить?' }))}
+                                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-white/20 hover:text-primary transition-all uppercase"
+                                  >Как заменить?</button>
                                   <button 
-                                      onClick={() => setChatInputs(prev => ({ ...prev, [expandedExercise!]: 'Тяжело идет, что делать?' }))}
-                                      className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/40 hover:text-primary hover:border-primary transition-all uppercase"
-                                  >Тяжелый вес</button>
+                                      onClick={() => setChatInputs(prev => ({ ...prev, [expandedExercise!]: 'Слишком тяжело.' }))}
+                                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-white/20 hover:text-primary transition-all uppercase"
+                                  >Снизить вес</button>
                                   <button 
-                                      onClick={() => setChatInputs(prev => ({ ...prev, [expandedExercise!]: 'Напомни технику?' }))}
-                                      className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/40 hover:text-primary hover:border-primary transition-all uppercase"
-                                  >Освежить технику</button>
+                                      onClick={() => setChatInputs(prev => ({ ...prev, [expandedExercise!]: 'Болят суставы.' }))}
+                                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-white/20 hover:text-red-400 transition-all uppercase"
+                                  >Болят суставы</button>
                                </div>
                             </div>
                          </motion.div>
@@ -380,23 +369,20 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                      </AnimatePresence>
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-center space-y-6 opacity-30">
-                     <Brain className="w-16 h-16 text-white" />
-                     <div className="space-y-2">
-                        <h4 className="text-xl font-bold text-white uppercase tracking-tight">Select Protocol Phase</h4>
-                        <p className="text-sm font-medium text-white/60">Choose an exercise from the left rail to begin coaching.</p>
-                     </div>
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
+                     <Brain className="w-12 h-12 text-white mb-4" />
+                     <p className="text-sm font-bold text-white uppercase tracking-tight">Выберите этап протокола</p>
                   </div>
                 )}
              </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="p-12 border-t border-white/5 bg-black/60 flex items-center justify-between shrink-0">
-             <div className="flex items-center gap-8">
+          <div className="p-10 border-t border-white/5 bg-black/60 flex items-center justify-between shrink-0">
+             <div className="flex items-center gap-10">
                 <div className="flex flex-col">
-                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 mb-1">Status Control</span>
-                   <div className="flex gap-2">
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">Текущий статус</span>
+                   <div className="flex gap-1.5">
                       {(['PLANNED', 'COMPLETED', 'SKIPPED'] as const).map(s => (
                         <button
                           key={s}
@@ -406,7 +392,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                             event.status === s ? "bg-white text-black" : "bg-white/5 text-white/30 hover:text-white"
                           )}
                         >
-                          {s}
+                          {s === 'PLANNED' ? 'Запланировано' : s === 'COMPLETED' ? 'Выполнено' : 'Пропущено'}
                         </button>
                       ))}
                    </div>
@@ -416,26 +402,26 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
              <div className="flex items-center gap-6">
                <GradientButton 
                  onClick={() => { handleStatusChange('COMPLETED'); onClose(); }}
-                 className="px-12 py-4 text-[11px] font-black uppercase tracking-[0.4em] rounded-[1.5rem] shadow-2xl shadow-primary/20"
+                 className="px-10 py-4 text-[10px] font-black uppercase tracking-[0.4em] rounded-2xl shadow-xl shadow-primary/10"
                >
-                  Finalize Session
+                  Завершить тренировку
                </GradientButton>
                
                <div className="h-10 w-px bg-white/5" />
 
-               <div className="flex gap-4">
+               <div className="flex gap-3">
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="p-5 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-primary/40 hover:bg-primary/20 transition-all group"
+                    className="p-4 rounded-xl bg-white/5 border border-white/10 text-white/20 hover:text-white hover:bg-white/10 transition-all"
                   >
-                     <Edit3 className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                     <Edit3 className="w-5 h-5" />
                   </button>
 
                   <button 
                     onClick={handleRemove} 
-                    className="p-5 rounded-[1.5rem] bg-red-500/5 border border-red-500/10 flex items-center justify-center text-red-500/40 hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/20 transition-all group"
+                    className="p-4 rounded-xl bg-red-500/5 border border-red-500/10 text-red-500/20 hover:text-red-500 hover:bg-red-500/10 transition-all"
                   >
-                     <Trash2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                     <Trash2 className="w-5 h-5" />
                   </button>
                </div>
              </div>

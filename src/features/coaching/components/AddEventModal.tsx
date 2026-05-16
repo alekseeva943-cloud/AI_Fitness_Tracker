@@ -322,44 +322,44 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
                                  <Trash2 className="w-3.5 h-3.5" />
                               </button>
                            </div>
-                           <div className="grid grid-cols-4 gap-2">
-                              <div className="space-y-1">
-                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Sets</p>
-                                 <input 
-                                    type="number" 
-                                    value={ex.sets}
-                                    onChange={e => updateExercise(idx, 'sets', parseInt(e.target.value))}
-                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
-                                 />
-                              </div>
-                              <div className="space-y-1">
-                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Reps</p>
-                                 <input 
-                                    type="text" 
-                                    value={ex.reps}
-                                    onChange={e => updateExercise(idx, 'reps', e.target.value)}
-                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
-                                 />
-                              </div>
-                              <div className="space-y-1">
-                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Weight</p>
-                                 <input 
-                                    type="text" 
-                                    value={ex.weight}
-                                    onChange={e => updateExercise(idx, 'weight', e.target.value)}
-                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
-                                 />
-                              </div>
-                              <div className="space-y-1">
-                                 <p className="text-[8px] font-black uppercase text-muted-foreground/40">Rest</p>
-                                 <input 
-                                    type="text" 
-                                    value={ex.rest}
-                                    onChange={e => updateExercise(idx, 'rest', e.target.value)}
-                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
-                                 />
-                              </div>
-                           </div>
+                              <div className="grid grid-cols-4 gap-2">
+                               <div className="space-y-1">
+                                  <p className="text-[8px] font-black uppercase text-muted-foreground/40">Подходы</p>
+                                  <input 
+                                     type="number" 
+                                     value={ex.sets}
+                                     onChange={e => updateExercise(idx, 'sets', parseInt(e.target.value))}
+                                     className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                  />
+                               </div>
+                               <div className="space-y-1">
+                                  <p className="text-[8px] font-black uppercase text-muted-foreground/40">Повторы</p>
+                                  <input 
+                                     type="text" 
+                                     value={ex.reps}
+                                     onChange={e => updateExercise(idx, 'reps', e.target.value)}
+                                     className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                  />
+                               </div>
+                               <div className="space-y-1">
+                                  <p className="text-[8px] font-black uppercase text-muted-foreground/40">Вес</p>
+                                  <input 
+                                     type="text" 
+                                     value={ex.weight}
+                                     onChange={e => updateExercise(idx, 'weight', e.target.value)}
+                                     className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                  />
+                               </div>
+                               <div className="space-y-1">
+                                  <p className="text-[8px] font-black uppercase text-muted-foreground/40">Отдых</p>
+                                  <input 
+                                     type="text" 
+                                     value={ex.rest}
+                                     onChange={e => updateExercise(idx, 'rest', e.target.value)}
+                                     className="w-full bg-white/5 border border-white/5 rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                                  />
+                               </div>
+                            </div>
                         </div>
                       ))}
                       {formData.exercises.length === 0 && (
