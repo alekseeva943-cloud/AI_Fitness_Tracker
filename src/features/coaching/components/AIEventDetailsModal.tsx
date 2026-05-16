@@ -40,6 +40,14 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
   const [chatInputs, setChatInputs] = useState<Record<number, string>>({});
   const [chatThreads, setChatThreads] = useState<Record<number, { role: 'user' | 'ai', content: string, action?: string }[]>>({});
   const [chatStatuses, setChatStatuses] = useState<Record<number, ChatStatus>>({});
+  const chatScrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom of chat
+  React.useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatThreads, chatStatuses, activeTab]);
 
   const handleStatusChange = (status: PlanEvent['status']) => {
     setPlanEventStatus(event.id, status);
@@ -82,7 +90,11 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
         if (response.success) {
             setChatThreads(prev => ({
                 ...prev,
-                [idx]: [...(prev[idx] || []), { role: 'ai', content: response.summary }]
+                [idx]: [...(prev[idx] || []), { 
+                    role: 'ai', 
+                    content: response.summary,
+                    action: response.recommendations?.[0]?.action?.id 
+                }]
             }));
         } else {
              throw new Error('AI Error');
@@ -274,7 +286,10 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                               exit={{ opacity: 0, y: -5 }}
                               className="flex flex-col h-[520px] bg-[#131D31]/40 rounded-2xl border border-white/5 overflow-hidden"
                             >
-                               <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6">
+                               <div 
+                                 ref={chatScrollRef}
+                                 className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6 scroll-smooth"
+                               >
                                   <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-white/40 font-medium leading-relaxed">
                                      Коуч на связи для <b>{event.exercises[expandedExercise].name}</b>. Спрашивай экспертное мнение по технике, весам или альтернативам.
                                   </div>

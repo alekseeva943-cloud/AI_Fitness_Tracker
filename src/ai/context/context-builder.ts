@@ -7,277 +7,776 @@ export interface AIUserContext {
   profile: UserProfile | null;
   activeGoals: any[];
   currentGoal: any | null;
+
   analytics: {
     goal: any;
+
     trends: {
       velocity: number;
       actualDirection: 'up' | 'down' | 'stable';
       isTrendMatchingGoal: boolean;
     };
+
     overallProgress: number;
   };
+
   activity: {
     workoutDiversity: Record<string, number>;
     recentWorkouts: any[];
     totalWorkouts: number;
     weeklyFrequency: number;
   };
+
   metrics: {
     weightHistory: any[];
     latestBaselines: any[];
   };
+
   memory: {
     recentAnalyses: any[];
   };
+
   systemMemory?: any;
 }
 
 export class AIContextBuilder {
-  static async buildUserContext(state: FitnessState, analytics: any): Promise<AIUserContext> {
+
+  static async buildUserContext(
+    state: FitnessState,
+    analytics: any
+  ): Promise<AIUserContext> {
+
     console.group('[AI CONTEXT TRACE]');
-    logger.log('ai', '[AI CONTEXT START] Initializing context assembly...');
+
+    logger.log(
+      'ai',
+      '[AI CONTEXT START] Initializing context assembly...'
+    );
 
     const context: any = {
+
       profile: null,
+
       activeGoals: [],
+
       currentGoal: null,
+
       analytics: {
-        goal: { status: 'UNKNOWN', velocity: 0 },
-        trends: { velocity: 0, actualDirection: 'stable', isTrendMatchingGoal: true },
+        goal: {
+          status: 'UNKNOWN',
+          velocity: 0
+        },
+
+        trends: {
+          velocity: 0,
+          actualDirection: 'stable',
+          isTrendMatchingGoal: true
+        },
+
         overallProgress: 0
       },
+
       activity: {
         workoutDiversity: {},
         recentWorkouts: [],
         totalWorkouts: 0,
         weeklyFrequency: 0
       },
+
       metrics: {
         weightHistory: [],
         latestBaselines: []
       },
+
       memory: {
         recentAnalyses: []
       },
+
       systemMemory: null
     };
 
-    // SECTION: PROFILE
+    // =========================================
+    // PROFILE
+    // =========================================
+
     try {
-      context.profile = state.profile || null;
-      logger.log('ai', '[STEP SUCCESS] Profile mapped');
+
+      context.profile =
+        state.profile || null;
+
+      logger.log(
+        'ai',
+        '[STEP SUCCESS] Profile mapped'
+      );
+
     } catch (e) {
-      console.error('[CONTEXT SECTION FAILED] profile', e);
+
+      console.error(
+        '[CONTEXT SECTION FAILED] profile',
+        e
+      );
     }
 
-    // SECTION: GOALS
+    // =========================================
+    // GOALS
+    // =========================================
+
     try {
-      context.activeGoals = state.goals?.filter(g => g.status === 'ACTIVE') || [];
-      const goal = state.goals?.find(g => g.id === state.activeGoalId) || null;
-      
+
+      context.activeGoals =
+        state.goals?.filter(
+          g => g.status === 'ACTIVE'
+        ) || [];
+
+      const goal =
+        state.goals?.find(
+          g => g.id === state.activeGoalId
+        ) || null;
+
       if (goal) {
-        const currentMetric = METRICS[goal.metricId] || METRICS.weight;
+
+        const currentMetric =
+          METRICS[goal.metricId] ||
+          METRICS.weight;
+
         context.currentGoal = {
+
           title: goal.title,
+
           type: goal.type,
+
           metricLabel: currentMetric.label,
+
           targetValue: goal.targetValue,
+
           unit: currentMetric.unit,
+
           startValue: goal.startValue,
+
           description: goal.motivation,
-          progress: (analytics?.goal?.completionPercentage ?? 0) / 100,
+
+          progress:
+            (analytics?.goal?.completionPercentage ?? 0) / 100,
         };
       }
-      logger.log('ai', '[STEP SUCCESS] Goals mapped');
+
+      logger.log(
+        'ai',
+        '[STEP SUCCESS] Goals mapped'
+      );
+
     } catch (e) {
-      console.error('[CONTEXT SECTION FAILED] goals', e);
+
+      console.error(
+        '[CONTEXT SECTION FAILED] goals',
+        e
+      );
     }
 
-      // SECTION: ANALYTICS
-    try {
-      console.log('[AI SAFE CHECK] Analytics raw input:', analytics);
-      
-      // ROOT LEVEL DEFENSE
-      const rootAnalytics = analytics || {};
-      const goalObj = rootAnalytics.goal || {};
-      
-      // The user reported "Cannot read properties of undefined (reading 'overallProgress')"
-      // We will check EVERY possible location where overallProgress might hide
-      const summaryObj = rootAnalytics.summary || rootAnalytics || {};
-      const progressVal = summaryObj.overallProgress ?? (rootAnalytics as any).overallProgress ?? (goalObj as any).completionPercentage ?? 0;
+    // =========================================
+    // ANALYTICS
+    // =========================================
 
-      context.analytics.goal = goalObj;
-      
-      const vel = goalObj.velocity ?? (rootAnalytics as any).weight?.velocity ?? 0;
+    try {
+
+      console.log(
+        '[AI SAFE CHECK] Analytics raw input:',
+        analytics
+      );
+
+      const rootAnalytics =
+        analytics || {};
+
+      const goalObj =
+        rootAnalytics.goal || {};
+
+      const summaryObj =
+        rootAnalytics.summary ||
+        rootAnalytics ||
+        {};
+
+      const progressVal =
+        summaryObj.overallProgress ??
+        rootAnalytics.overallProgress ??
+        goalObj.completionPercentage ??
+        0;
+
+      context.analytics.goal =
+        goalObj;
+
+      const velocity =
+        goalObj.velocity ??
+        rootAnalytics.weight?.velocity ??
+        0;
+
       context.analytics.trends = {
-        velocity: vel,
-        actualDirection: vel < 0 ? 'down' : (vel > 0 ? 'up' : 'stable'),
-        isTrendMatchingGoal: goalObj.status !== 'WRONG_DIRECTION' && goalObj.status !== 'STAGNANT',
+
+        velocity,
+
+        actualDirection:
+          velocity < 0
+            ? 'down'
+            : velocity > 0
+              ? 'up'
+              : 'stable',
+
+        isTrendMatchingGoal:
+          goalObj.status !== 'WRONG_DIRECTION' &&
+          goalObj.status !== 'STAGNANT',
       };
-      
-      context.analytics.overallProgress = typeof progressVal === 'number' ? progressVal : 0;
-      
-      console.log('[AI SAFE CHECK] Context Analytics mapped:', context.analytics);
-      logger.log('ai', '[STEP SUCCESS] Analytics mapped');
+
+      context.analytics.overallProgress =
+        typeof progressVal === 'number'
+          ? progressVal
+          : 0;
+
+      console.log(
+        '[AI SAFE CHECK] Context Analytics mapped:',
+        context.analytics
+      );
+
+      logger.log(
+        'ai',
+        '[STEP SUCCESS] Analytics mapped'
+      );
+
     } catch (e) {
-      console.error('[CONTEXT SECTION FAILED] analytics critical error:', e);
-      // Fallback already partially handled by initial object if this catch is hit
+
+      console.error(
+        '[CONTEXT SECTION FAILED] analytics',
+        e
+      );
     }
 
-    // SECTION: ACTIVITY
-    try {
-      const workoutDiversity = (state.workouts || []).reduce((acc: Record<string, number>, w) => {
-        const cat = w.category || 'OTHER';
-        acc[cat] = (acc[cat] || 0) + 1;
-        return acc;
-      }, {});
+    // =========================================
+    // ACTIVITY
+    // =========================================
 
-      const recentWorkouts = (state.workouts || []).slice(0, 5).map(w => ({
-        type: w.type,
-        category: w.category,
-        duration: w.duration,
-        intensity: w.heartRate ? (w.heartRate > 150 ? 'HIGH' : 'MODERATE') : 'UNKNOWN',
-        calories: w.caloriesBurned,
-        date: w.date
-      }));
+    try {
+
+      const workoutDiversity =
+        (state.workouts || []).reduce(
+          (acc: Record<string, number>, w) => {
+
+            const category =
+              w.category || 'OTHER';
+
+            acc[category] =
+              (acc[category] || 0) + 1;
+
+            return acc;
+
+          },
+          {}
+        );
+
+      const recentWorkouts =
+        (state.workouts || [])
+          .slice(0, 5)
+          .map(w => ({
+
+            type: w.type,
+
+            category: w.category,
+
+            duration: w.duration,
+
+            intensity:
+              w.heartRate
+                ? w.heartRate > 150
+                  ? 'HIGH'
+                  : 'MODERATE'
+                : 'UNKNOWN',
+
+            calories: w.caloriesBurned,
+
+            date: w.date
+          }));
 
       context.activity = {
+
         workoutDiversity,
+
         recentWorkouts,
-        totalWorkouts: state.workouts?.length || 0,
-        weeklyFrequency: (state.workouts || []).filter(w => {
-          const d = new Date(w.date);
-          const weekAgo = new Date();
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          return d > weekAgo;
-        }).length
+
+        totalWorkouts:
+          state.workouts?.length || 0,
+
+        weeklyFrequency:
+          (state.workouts || []).filter(w => {
+
+            const d = new Date(w.date);
+
+            const weekAgo = new Date();
+
+            weekAgo.setDate(
+              weekAgo.getDate() - 7
+            );
+
+            return d > weekAgo;
+
+          }).length
       };
-      logger.log('ai', '[STEP SUCCESS] Activity mapped');
+
+      logger.log(
+        'ai',
+        '[STEP SUCCESS] Activity mapped'
+      );
+
     } catch (e) {
-      console.error('[CONTEXT SECTION FAILED] activity', e);
+
+      console.error(
+        '[CONTEXT SECTION FAILED] activity',
+        e
+      );
     }
 
-    // SECTION: METRICS
+    // =========================================
+    // METRICS
+    // =========================================
+
     try {
+
       context.metrics = {
-        weightHistory: (state.weightHistory || []).slice(-5).map(w => ({ date: w.date, value: w.value })),
-        latestBaselines: state.profile?.baselines?.slice(-5) || []
+
+        weightHistory:
+          (state.weightHistory || [])
+            .slice(-5)
+            .map(w => ({
+              date: w.date,
+              value: w.value
+            })),
+
+        latestBaselines:
+          state.profile?.baselines?.slice(-5) || []
       };
-      logger.log('ai', '[STEP SUCCESS] Metrics mapped');
+
+      logger.log(
+        'ai',
+        '[STEP SUCCESS] Metrics mapped'
+      );
+
     } catch (e) {
-      console.error('[CONTEXT SECTION FAILED] metrics', e);
+
+      console.error(
+        '[CONTEXT SECTION FAILED] metrics',
+        e
+      );
     }
 
-    // SECTION: MEMORY
+    // =========================================
+    // MEMORY
+    // =========================================
+
     try {
+
       context.memory = {
-        recentAnalyses: (state.analyses || []).slice(0, 3).map(a => ({
-          date: a.date,
-          summary: a.summary,
-          trend: a.trend
-        }))
+
+        recentAnalyses:
+          (state.analyses || [])
+            .slice(0, 3)
+            .map(a => ({
+
+              date: a.date,
+
+              summary: a.summary,
+
+              trend: a.trend
+            }))
       };
-      context.systemMemory = await AIMemoryManager.updateMemory(state.analyses || []).catch(e => {
-        console.error('[MEMORY UPDATE FAILED]', e);
-        return null;
-      });
-      logger.log('ai', '[STEP SUCCESS] Memory mapped');
+
+      context.systemMemory =
+        await AIMemoryManager
+          .updateMemory(state.analyses || [])
+          .catch(e => {
+
+            console.error(
+              '[MEMORY UPDATE FAILED]',
+              e
+            );
+
+            return null;
+          });
+
+      logger.log(
+        'ai',
+        '[STEP SUCCESS] Memory mapped'
+      );
+
     } catch (e) {
-      console.error('[CONTEXT SECTION FAILED] memory', e);
+
+      console.error(
+        '[CONTEXT SECTION FAILED] memory',
+        e
+      );
     }
 
-    console.log('[CONTEXT SHAPE]', JSON.stringify(context, null, 2));
+    console.log(
+      '[CONTEXT SHAPE]',
+      JSON.stringify(context, null, 2)
+    );
+
     console.groupEnd();
 
     return context as AIUserContext;
   }
 
-  static formatContextForPrompt(context: AIUserContext, activityContext?: any): string {
-    const { profile, currentGoal, analytics, activity, metrics, memory, systemMemory } = context;
+  static formatContextForPrompt(
+    context: AIUserContext,
+    activityContext?: any
+  ): string {
 
-    let prompt = `--- PROFILE ---\n`;
+    const {
+      profile,
+      currentGoal,
+      analytics,
+      activity,
+      metrics,
+      memory,
+      systemMemory
+    } = context;
+
+    let prompt = `
+=== PROFILE ===
+`;
+
+    // =========================================
+    // PROFILE
+    // =========================================
+
     if (profile) {
-      prompt += `User: ${profile.displayName} (${profile.age}y, ${profile.gender}, ${profile.height}cm, Body: ${profile.bodyType})\n`;
-      prompt += `Fitness Level: ${profile.fitnessLevel}, Activity Level: ${profile.activityLevel}\n`;
-      if (profile.injuries?.length) prompt += `Injuries: ${profile.injuries.join(', ')}\n`;
-      prompt += `Sleep: ${profile.sleepAverage}h, Stress: ${profile.stressLevel}/10\n`;
-      if (profile.nutritionNotes) prompt += `Nutrition: ${profile.nutritionNotes}\n`;
-      if (profile.recoveryNotes) prompt += `Recovery: ${profile.recoveryNotes}\n`;
-      if (profile.motivation) prompt += `Motivation: ${profile.motivation}\n`;
-      if (profile.lifestyleNotes) prompt += `Lifestyle: ${profile.lifestyleNotes}\n`;
+
+      prompt += `
+Имя: ${profile.displayName}
+Возраст: ${profile.age}
+Пол: ${profile.gender}
+Рост: ${profile.height} см
+Телосложение: ${profile.bodyType}
+
+Уровень подготовки: ${profile.fitnessLevel}
+Активность: ${profile.activityLevel}
+`;
+
+      if (profile.injuries?.length) {
+
+        prompt += `
+Травмы/ограничения:
+${profile.injuries.join(', ')}
+`;
+      }
+
+      prompt += `
+Сон: ${profile.sleepAverage}ч
+Стресс: ${profile.stressLevel}/10
+`;
+
+      if (profile.nutritionNotes) {
+
+        prompt += `
+Питание:
+${profile.nutritionNotes}
+`;
+      }
+
+      if (profile.recoveryNotes) {
+
+        prompt += `
+Восстановление:
+${profile.recoveryNotes}
+`;
+      }
+
+      if (profile.motivation) {
+
+        prompt += `
+Мотивация:
+${profile.motivation}
+`;
+      }
     }
+
+    // =========================================
+    // CURRENT WORKOUT CONTEXT
+    // =========================================
 
     if (activityContext) {
-      prompt += `\n--- CURRENT ACTIVITY CONTEXT ---\n`;
+
+      prompt += `
+
+=== ТЕКУЩИЙ WORKOUT CONTEXT ===
+`;
+
+      // WORKOUT
+
       if (activityContext.workout) {
-        prompt += `Current Workout: ${activityContext.workout.title} (${activityContext.workout.type})\n`;
-        prompt += `Duration: ${activityContext.workout.duration}min, Goal: ${activityContext.workout.description}\n`;
+
+        prompt += `
+Текущая тренировка:
+${activityContext.workout.title}
+
+Тип:
+${activityContext.workout.type}
+
+Длительность:
+${activityContext.workout.duration} мин
+
+Цель тренировки:
+${activityContext.workout.description}
+`;
       }
+
+      // EXERCISE
+
       if (activityContext.exercise) {
-        prompt += `CURRENT FOCUS EXERCISE: ${activityContext.exercise.name}\n`;
-        prompt += `Protocol: ${activityContext.exercise.sets} sets x ${activityContext.exercise.reps} reps @ ${activityContext.exercise.weight || 'Bodyweight'}\n`;
-        if (activityContext.exercise.notes) prompt += `Trainer Notes: ${activityContext.exercise.notes}\n`;
+
+        prompt += `
+
+=== ACTIVE EXERCISE ===
+
+Упражнение:
+${activityContext.exercise.name}
+
+Подходы:
+${activityContext.exercise.sets}
+
+Повторения:
+${activityContext.exercise.reps}
+
+Вес:
+${activityContext.exercise.weight || 'Собственный вес'}
+`;
+
+        if (activityContext.exercise.notes) {
+
+          prompt += `
+Тренерские заметки:
+${activityContext.exercise.notes}
+`;
+        }
       }
+
+      // =========================================
+      // CONVERSATION HISTORY
+      // =========================================
+
       if (activityContext.chatHistory?.length) {
-        prompt += `\nRecent Interaction on this item:\n`;
-        activityContext.chatHistory.slice(-5).forEach((m: any) => {
-          prompt += `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}\n`;
+
+        prompt += `
+
+=== АКТИВНЫЙ ДИАЛОГ С КОУЧЕМ ===
+`;
+
+        const recentMessages =
+          activityContext.chatHistory.slice(-10);
+
+        recentMessages.forEach((m: any) => {
+
+          if (m.role === 'user') {
+
+            prompt += `
+
+Пользователь:
+${m.content}
+`;
+
+          } else {
+
+            prompt += `
+
+Коуч:
+${m.content}
+`;
+          }
         });
+
+        prompt += `
+
+=== ПРАВИЛА ДИАЛОГА ===
+
+- Отвечай ИМЕННО на последний вопрос пользователя.
+- Не меняй тему разговора.
+- Не уходи в общие рекомендации.
+- Если пользователь спрашивает:
+  "как?"
+  "почему?"
+  "чем заменить?"
+  трактуй вопрос в контексте предыдущего ответа коуча.
+
+- Если обсуждается упражнение:
+  объясняй:
+  - технику,
+  - дыхание,
+  - положение суставов,
+  - ошибки,
+  - ощущения в мышцах,
+  - контроль веса.
+
+- Если пользователь пишет про боль:
+  адаптируй упражнение безопасно.
+
+- Если пользователь просит замену:
+  предложи 2-3 реальные альтернативы
+  и объясни почему они подходят.
+`;
       }
     }
 
-    prompt += `\n--- ACTIVE GOAL ---\n`;
+    // =========================================
+    // GOAL
+    // =========================================
+
+    prompt += `
+
+=== ACTIVE GOAL ===
+`;
+
     if (currentGoal) {
-      prompt += `Goal: "${currentGoal.title}"\n`;
-      prompt += `Target: ${currentGoal.targetValue} ${currentGoal.unit} (Start: ${currentGoal.startValue}, Progress: ${Math.round((currentGoal.progress ?? 0) * 100)}%)\n`;
+
+      prompt += `
+Цель:
+${currentGoal.title}
+
+Текущий прогресс:
+${Math.round((currentGoal.progress ?? 0) * 100)}%
+
+Целевое значение:
+${currentGoal.targetValue} ${currentGoal.unit}
+
+Старт:
+${currentGoal.startValue}
+`;
+
     } else {
-      prompt += `No active goal.\n`;
+
+      prompt += `
+Активная цель отсутствует.
+`;
     }
 
-    prompt += `\n--- ANALYTICS ---\n`;
-    if (analytics && analytics.goal) {
-      prompt += `Status: ${analytics.goal.status || 'UNKNOWN'}\n`;
-      prompt += `Velocity: ${analytics.goal.velocity ?? 0} ${currentGoal?.unit || ''}/week\n`;
-      if (analytics.trends) {
-        prompt += `Trend: ${analytics.trends.actualDirection || 'stable'} (Matching target: ${analytics.trends.isTrendMatchingGoal ? 'YES' : 'NO'})\n`;
-      }
+    // =========================================
+    // ANALYTICS
+    // =========================================
+
+    prompt += `
+
+=== ANALYTICS ===
+`;
+
+    if (analytics?.goal) {
+
+      prompt += `
+Статус:
+${analytics.goal.status || 'UNKNOWN'}
+
+Скорость:
+${analytics.goal.velocity ?? 0}
+
+Направление:
+${analytics.trends?.actualDirection || 'stable'}
+`;
+
     } else {
-      prompt += `Analytics data currently unavailable.\n`;
+
+      prompt += `
+Analytics unavailable.
+`;
     }
 
-    prompt += `\n--- RECENT ACTIVITY ---\n`;
+    // =========================================
+    // ACTIVITY
+    // =========================================
+
+    prompt += `
+
+=== RECENT ACTIVITY ===
+`;
+
     if (activity) {
-      prompt += `Workouts/week: ${activity.weeklyFrequency ?? 0}, Total: ${activity.totalWorkouts ?? 0}\n`;
-      if (activity.workoutDiversity) {
-        prompt += `Types: ${Object.entries(activity.workoutDiversity).map(([k, v]) => `${k}:${v}`).join(', ')}\n`;
-      }
+
+      prompt += `
+Тренировок за неделю:
+${activity.weeklyFrequency ?? 0}
+
+Всего тренировок:
+${activity.totalWorkouts ?? 0}
+`;
+
       if (activity.recentWorkouts?.length) {
-        prompt += `Last 3 sessions: ${activity.recentWorkouts.slice(0, 3).map(w => `${w.type}(${w.duration}min)`).join(', ')}\n`;
+
+        prompt += `
+Последние тренировки:
+${activity.recentWorkouts
+  .slice(0, 3)
+  .map(w => `${w.type} (${w.duration} мин)`)
+  .join(', ')}
+`;
       }
     }
 
-    prompt += `\n--- RECENT METRICS ---\n`;
-    if (metrics) {
-      if (metrics.weightHistory?.length) {
-        prompt += `Weight: ${metrics.weightHistory.map(w => w.value).join(' -> ')}\n`;
-      }
-      if (metrics.latestBaselines?.length) {
-        prompt += `Baselines: ${metrics.latestBaselines.map(b => `${b.name}:${b.value}${b.unit}`).join(', ')}\n`;
-      }
+    // =========================================
+    // METRICS
+    // =========================================
+
+    prompt += `
+
+=== RECENT METRICS ===
+`;
+
+    if (metrics?.weightHistory?.length) {
+
+      prompt += `
+История веса:
+${metrics.weightHistory
+  .map(w => w.value)
+  .join(' → ')}
+`;
     }
+
+    // =========================================
+    // MEMORY
+    // =========================================
 
     if (memory?.recentAnalyses?.length) {
-      prompt += `\n--- PREVIOUS AI INSIGHTS ---\n`;
-      prompt += memory.recentAnalyses.map(a => `- ${a.date}: ${a.summary} (Trend: ${a.trend})`).join('\n');
+
+      prompt += `
+
+=== PREVIOUS AI INSIGHTS ===
+`;
+
+      prompt += memory.recentAnalyses
+        .map(
+          a => `
+- ${a.summary}
+`
+        )
+        .join('\n');
     }
 
+    // =========================================
+    // LONG TERM MEMORY
+    // =========================================
+
     if (systemMemory) {
-      prompt += `\n--- LONG-TERM AI MEMORY ---\n`;
+
+      prompt += `
+
+=== LONG TERM MEMORY ===
+`;
+
       if (systemMemory.longTermInsights?.length) {
-        prompt += `Key Insights: ${systemMemory.longTermInsights.join('; ')}\n`;
+
+        prompt += `
+Ключевые инсайты:
+${systemMemory.longTermInsights.join('; ')}
+`;
       }
+
       if (systemMemory.recurringIssues?.length) {
-        prompt += `Recurring Patterns/Issues: ${systemMemory.recurringIssues.join('; ')}\n`;
+
+        prompt += `
+Повторяющиеся проблемы:
+${systemMemory.recurringIssues.join('; ')}
+`;
       }
     }
 
