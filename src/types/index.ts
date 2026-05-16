@@ -96,7 +96,21 @@ export interface ExercisePlan {
   reps: string;
   weight?: string;
   rest?: string;
+  tempo?: string;
+  technique?: {
+    steps: string[];
+    coachTip: string;
+  };
   notes?: string;
+}
+
+export interface NutritionPlan {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  recommendedFoods: string[];
+  timing?: string;
 }
 
 export interface PlanEvent {
@@ -111,6 +125,7 @@ export interface PlanEvent {
   isCompleted: boolean;
   isAI?: boolean;
   exercises?: ExercisePlan[];
+  nutrition?: NutritionPlan;
   aiRationale?: string;
   metadata?: {
     intensity?: 'LOW' | 'MEDIUM' | 'HIGH';

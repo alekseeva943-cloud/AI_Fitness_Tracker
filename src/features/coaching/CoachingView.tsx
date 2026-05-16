@@ -16,6 +16,8 @@ import { AIWeekGenerator } from './components/AIWeekGenerator';
 import { AIWeeklyReview } from './components/AIWeeklyReview';
 
 import { AICoachingChat } from './components/AICoachingChat';
+import { ExecutionScoreEngine } from './components/ExecutionScoreEngine';
+import { ProfileMetricEditModal } from './components/ProfileMetricEditModal';
 
 export const CoachingView: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ export const CoachingView: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'plan' | 'review' | 'chat' | 'history'>('plan');
   const [loading, setLoading] = useState(false);
+  const [editingMetric, setEditingMetric] = useState<'sleep' | 'stress' | 'readiness' | null>(null);
   
   const latestAnalysis = analyses[0];
 
@@ -112,23 +115,7 @@ export const CoachingView: React.FC = () => {
                       </div>
                    </GlassCard>
 
-                   <GlassCard className="p-8 border-white/5 bg-secondary/20 flex flex-col justify-between">
-                      <div className="space-y-1">
-                         <h3 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40">Эффективность выполнения</h3>
-                         <div className="flex items-end gap-2">
-                            <span className="text-5xl font-display font-black text-primary">
-                               {Math.round((planEvents.filter(e => e.status === 'COMPLETED').length / (planEvents.length || 1)) * 100)}%
-                            </span>
-                            <span className="text-muted-foreground font-black uppercase text-[10px] pb-2">Дисциплина</span>
-                         </div>
-                      </div>
-                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mt-4">
-                         <div 
-                           className="h-full bg-primary transition-all duration-1000"
-                           style={{ width: `${(planEvents.filter(e => e.status === 'COMPLETED').length / (planEvents.length || 1)) * 100}%` }}
-                         />
-                      </div>
-                   </GlassCard>
+                   <ExecutionScoreEngine events={planEvents} />
                 </div>
 
                 <div className="grid grid-cols-1 gap-8">
@@ -232,32 +219,41 @@ export const CoachingView: React.FC = () => {
               <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Контекст Коуча</h3>
               
               <div className="space-y-4">
-                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                 <div 
+                   onClick={() => setEditingMetric('sleep')}
+                   className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all group"
+                 >
                     <div className="space-y-0.5">
                        <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Качество сна</p>
                        <p className="text-sm font-black text-primary">{profile?.sleepAverage || 7.5}ч в ср.</p>
                     </div>
-                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
                        <Clock className="w-4 h-4" />
                     </div>
                  </div>
 
-                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                 <div 
+                   onClick={() => setEditingMetric('stress')}
+                   className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all group"
+                 >
                     <div className="space-y-0.5">
                        <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Уровень стресса</p>
                        <p className="text-sm font-black text-orange-400">{profile?.stressLevel || 4}/10</p>
                     </div>
-                    <div className="p-2 rounded-xl bg-orange-400/10 text-orange-400">
+                    <div className="p-2 rounded-xl bg-orange-400/10 text-orange-400 group-hover:scale-110 transition-transform">
                        <Zap className="w-4 h-4" />
                     </div>
                  </div>
 
-                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                 <div 
+                   onClick={() => setEditingMetric('readiness')}
+                   className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all group"
+                 >
                     <div className="space-y-0.5">
                        <p className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">Дисциплина</p>
                        <p className="text-sm font-black text-green-400">Высокая</p>
                     </div>
-                    <div className="p-2 rounded-xl bg-green-400/10 text-green-400">
+                    <div className="p-2 rounded-xl bg-green-400/10 text-green-400 group-hover:scale-110 transition-transform">
                        <CheckCircle2 className="w-4 h-4" />
                     </div>
                  </div>
@@ -281,7 +277,10 @@ export const CoachingView: React.FC = () => {
                  </div>
               </div>
 
-              <GradientButton className="w-full py-4 text-[10px] font-black uppercase tracking-widest group">
+              <GradientButton 
+                onClick={() => setActiveTab('plan')}
+                className="w-full py-4 text-[10px] font-black uppercase tracking-widest group"
+              >
                  <Sparkles className="w-4 h-4 mr-2" />
                  СГЕНЕРИРОВАТЬ ТАКТИКУ
                  <ChevronRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
@@ -289,6 +288,15 @@ export const CoachingView: React.FC = () => {
            </GlassCard>
         </div>
       </div>
+
+      <AnimatePresence>
+         {editingMetric && (
+            <ProfileMetricEditModal 
+               metric={editingMetric} 
+               onClose={() => setEditingMetric(null)} 
+            />
+         )}
+      </AnimatePresence>
     </div>
   );
 };
