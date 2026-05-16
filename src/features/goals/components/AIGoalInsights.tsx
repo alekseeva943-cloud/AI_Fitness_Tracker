@@ -10,12 +10,14 @@ interface AIGoalInsightsProps {
   goalId: string;
 }
 
+const EMPTY_MESSAGES: any[] = [];
+
 export const AIGoalInsights: React.FC<AIGoalInsightsProps> = ({ goalId }) => {
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const goalChatMessages = useFitnessStore(state => state.goalChatMessages[goalId] || []);
+  const goalChatMessages = useFitnessStore(state => state.goalChatMessages[goalId] ?? EMPTY_MESSAGES);
   const addChatMessage = useFitnessStore(state => state.addChatMessage);
 
   const questions = [

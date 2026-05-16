@@ -3,6 +3,7 @@ import { GlassCard } from "../../../components/ui/GlassCard";
 import { Sparkles, TrendingUp, Apple, Dumbbell, AlertTriangle, Zap, CheckCircle2, MessageSquare, Brain, Target, ArrowRight, Quote, Plus, Activity } from "lucide-react";
 import { GradientButton } from "../../../components/ui/GradientButton";
 import { useFitnessStore } from "../../../store/useFitnessStore";
+import { useShallow } from 'zustand/shallow';
 import { selectAnalyticsSummary } from "../../analytics/selectors/fitnessSelectors";
 import { AIActions } from "../../../ai/orchestrator/ai-actions";
 import { cn, formatDate } from "../../../lib/utils";
@@ -14,9 +15,24 @@ interface AIRecommendationsSectionProps {
 }
 
 export const AIRecommendationsSection: React.FC<AIRecommendationsSectionProps> = ({ variant = 'dashboard' }) => {
-  const state = useFitnessStore();
-  const summary = selectAnalyticsSummary(state);
-  const { analyses, analysisRequest, profile } = state;
+  const analyses = useFitnessStore(state => state.analyses);
+  const analysisRequest = useFitnessStore(state => state.analysisRequest);
+  const profile = useFitnessStore(state => state.profile);
+  const goals = useFitnessStore(state => state.goals);
+  const activeGoalId = useFitnessStore(state => state.activeGoalId);
+  const workouts = useFitnessStore(state => state.workouts);
+  const weightHistory = useFitnessStore(state => state.weightHistory);
+
+  const summary = React.useMemo(() => {
+    return selectAnalyticsSummary({
+      profile,
+      activeGoalId,
+      goals,
+      workouts,
+      weightHistory,
+      analyses
+    } as any);
+  }, [profile, activeGoalId, goals, workouts, weightHistory, analyses]);
   
   const loading = analysisRequest.status === 'loading';
   const error = analysisRequest.error;

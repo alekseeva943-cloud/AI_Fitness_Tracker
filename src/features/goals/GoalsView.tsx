@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFitnessStore, useGoals, useActiveGoalId } from '../../store/useFitnessStore';
+import { useShallow } from 'zustand/shallow';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GradientButton } from '../../components/ui/GradientButton';
 import { Modal } from '../../components/ui/Modal';
@@ -22,7 +23,8 @@ import { GoalAchievementReport } from './components/GoalAchievementReport';
 export const GoalsView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const goals = useGoals().filter(g => g.status !== 'ARCHIVED');
+  const allGoals = useGoals();
+  const goals = React.useMemo(() => allGoals.filter(g => g.status !== 'ARCHIVED'), [allGoals]);
   const activeGoalId = useActiveGoalId();
   const weightHistory = useFitnessStore((state) => state.weightHistory);
   const workouts = useFitnessStore((state) => state.workouts);
@@ -30,8 +32,18 @@ export const GoalsView: React.FC = () => {
   const addGoal = useFitnessStore((state) => state.addGoal);
   const updateGoal = useFitnessStore((state) => state.updateGoal);
   const setActiveGoal = useFitnessStore((state) => state.setActiveGoal);
-  const state = useFitnessStore();
-  const summary = selectAnalyticsSummary(state);
+  const profile = useFitnessStore((state) => state.profile);
+  const analyses = useFitnessStore(state => state.analyses);
+  const summary = React.useMemo(() => {
+    return selectAnalyticsSummary({
+      profile,
+      activeGoalId,
+      goals: allGoals,
+      workouts,
+      weightHistory,
+      analyses
+    } as any);
+  }, [profile, activeGoalId, allGoals, workouts, weightHistory, analyses]);
 
   const [isModalOpen, setModalOpen] = useState(false);
   const [isDetailOpen, setDetailOpen] = useState(false);
@@ -142,7 +154,7 @@ export const GoalsView: React.FC = () => {
                   <input 
                      type="number"
                      step="0.1"
-                     value={state.profile?.weight || ''}
+                     value={profile?.weight || ''}
                      onChange={(e) => useFitnessStore.getState().updateProfile({ weight: parseFloat(e.target.value) })}
                      className="w-12 bg-transparent text-primary font-bold text-xs border-none focus:outline-hidden"
                   />
@@ -326,7 +338,7 @@ export const GoalsView: React.FC = () => {
           const baselineMetricId = selectedGoal.metricId || 'weight';
           
           // Latest value for 'Current' display
-          const latestValue = DataNormalizer.getLatestMetricValue(state, baselineMetricId);
+          const latestValue = DataNormalizer.getLatestMetricValue(useFitnessStore.getState(), baselineMetricId);
           const isAchieved = selectedGoal.status === 'COMPLETED';
 
           if (isAchieved) {

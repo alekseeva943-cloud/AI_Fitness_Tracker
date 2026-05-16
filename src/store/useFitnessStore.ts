@@ -18,6 +18,7 @@ export type FitnessStore = FitnessState &
   ThemeSlice & {
     initialize: () => void;
     resetData: () => void;
+    _lastInit?: number;
   };
 
 const generateId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11);
@@ -54,13 +55,18 @@ export const useFitnessStore = create<FitnessStore>()(
 
       initialize: () => {
         try {
-          logger.store('Initializing store state');
+          const now = Date.now();
           const state = get();
           
-          // Cleanup step: Ensure all workouts and weight history have unique IDs
+          // Rate limit initialization to once per second to prevent rapid loops
+          if (state._lastInit && now - state._lastInit < 1000) {
+            return;
+          }
+          
           let needsIdCleanup = false;
+          // Use more strict checks for missing IDs
           const cleanedWorkouts = (state.workouts || []).map(w => {
-            if (!w.id || w.id === 'undefined') {
+            if (w.id === undefined || w.id === null || w.id === 'undefined' || w.id === '') {
               needsIdCleanup = true;
               return { ...w, id: generateId() };
             }
@@ -68,7 +74,7 @@ export const useFitnessStore = create<FitnessStore>()(
           });
 
           const cleanedWeight = (state.weightHistory || []).map(w => {
-            if (!w.id || w.id === 'undefined') {
+            if (w.id === undefined || w.id === null || w.id === 'undefined' || w.id === '') {
               needsIdCleanup = true;
               return { ...w, id: generateId() };
             }
@@ -76,7 +82,7 @@ export const useFitnessStore = create<FitnessStore>()(
           });
 
           const cleanedGoals = (state.goals || []).map(g => {
-            if (!g.id || g.id === 'undefined') {
+            if (g.id === undefined || g.id === null || g.id === 'undefined' || g.id === '') {
               needsIdCleanup = true;
               return { ...g, id: generateId() };
             }
@@ -100,8 +106,11 @@ export const useFitnessStore = create<FitnessStore>()(
               workouts: cleanedWorkouts, 
               weightHistory: cleanedWeight,
               goals: cleanedGoals,
-              activeGoalId: activeGoalId
+              activeGoalId: activeGoalId,
+              _lastInit: now
             });
+          } else {
+            set({ _lastInit: now });
           }
 
           // If the user has already loaded some data (even 1 entry), don't auto-populate demo data

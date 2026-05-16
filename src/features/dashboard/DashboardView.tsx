@@ -39,9 +39,23 @@ export const DashboardView: React.FC = () => {
   const removeWeightEntry = useFitnessStore((state) => state.removeWeightEntry);
   const resetData = useFitnessStore((state) => state.resetData);
 
-  const stateForSummary = useFitnessStore();
-  const summary = selectAnalyticsSummary(stateForSummary);
-  const latestAnalysis = stateForSummary.analyses[0];
+  const allAnalyses = useFitnessStore(state => state.analyses);
+  const profile = useFitnessStore(state => state.profile);
+  
+  // Explicitly select only what is needed for summary calculation
+  // This avoids re-calculating on unrelated state changes (like chat messages)
+  const summary = React.useMemo(() => {
+    return selectAnalyticsSummary({
+      profile,
+      activeGoalId,
+      goals,
+      workouts,
+      weightHistory,
+      analyses: allAnalyses
+    } as any);
+  }, [profile, activeGoalId, goals, workouts, weightHistory, allAnalyses]);
+
+  const latestAnalysis = allAnalyses[0];
   const activeGoal = goals.find(g => g.id === activeGoalId);
 
   const [isGoalModalOpen, setGoalModalOpen] = useState(false);
@@ -66,8 +80,12 @@ export const DashboardView: React.FC = () => {
   };
 
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    // initialize is already called in App.tsx
+    // only call if specific data is missing
+    if (!profile || !goals.length) {
+       initialize();
+    }
+  }, [initialize, profile, goals.length]);
 
   const handleGoalSubmit = (data: any) => {
     if (data.id) {
