@@ -11,10 +11,12 @@ import { AIActionType } from '../../../ai/orchestrator/types';
 import { cn } from '../../../lib/utils';
 import { ChatMessage } from '../../../store/slices/aiSlice';
 
+type ChatStatus = 'idle' | 'thinking' | 'retrieving_context' | 'generating' | 'completed' | 'failed';
+
 export const AICoachingChat: React.FC = () => {
   const { chatMessages, addChatMessage, addPlanEvent } = useFitnessStore();
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [chatStatus, setChatStatus] = useState<ChatStatus>('idle');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -25,10 +27,10 @@ export const AICoachingChat: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatMessages, isTyping]);
+  }, [chatMessages, chatStatus]);
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isTyping) return;
+    if (!input.trim() || chatStatus !== 'idle') return;
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -39,16 +41,34 @@ export const AICoachingChat: React.FC = () => {
 
     addChatMessage(userMessage);
     setInput('');
-    setIsTyping(true);
+    console.log('[AI CHAT START] Global context query:', userMessage.content);
+    setChatStatus('thinking');
 
     try {
       const state = useFitnessStore.getState();
-      const analytics = {}; // Placeholder, orchestrator handles it but we should ideally pass real ones
+      const analytics = {};
       
-      const response = await AIOrchestrator.executeAction(state as any, analytics, {
-        actionType: AIActionType.COACH_CHAT,
-        userMessage: input
-      });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('AI TIMEOUT')), 15000)
+      );
+
+      const responsePromise = (async () => {
+          await new Promise(r => setTimeout(r, 800));
+          setChatStatus('retrieving_context');
+          
+          await new Promise(r => setTimeout(r, 1200));
+          setChatStatus('generating');
+          
+          const response = await AIOrchestrator.executeAction(state as any, analytics, {
+            actionType: AIActionType.COACH_CHAT,
+            userMessage: userMessage.content
+          });
+          
+          console.log('[AI RESPONSE RECEIVED]');
+          return response;
+      })();
+
+      const response = await Promise.race([responsePromise, timeoutPromise]) as any;
 
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -62,16 +82,19 @@ export const AICoachingChat: React.FC = () => {
       };
 
       addChatMessage(assistantMessage);
+      setChatStatus('completed');
+      console.log('[AI MESSAGE APPENDED]');
     } catch (error) {
-      console.error('Chat AI Error:', error);
+      console.error('[AI RESPONSE FAILED]', error);
+      setChatStatus('failed');
       addChatMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: 'Извини, возникла техническая заминка. Давай попробуем еще раз или обсудим другой вопрос.',
+        content: 'Извини, связь с Genesis Cloud временно потеряна. Я обязательно запомню этот вопрос, но сейчас не могу дать точный ответ.',
         timestamp: new Date().toISOString(),
       });
     } finally {
-      setIsTyping(false);
+      setTimeout(() => setChatStatus('idle'), 1500);
     }
   };
 
@@ -111,11 +134,39 @@ export const AICoachingChat: React.FC = () => {
             <Brain className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                Genesis-X9 Coach
-                <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-            </h3>
-            <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-tighter">Live Strategic Interaction Layer</p>
+            <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black uppercase tracking-widest">
+                    Genesis-X9 Coach
+                </h3>
+                <AnimatePresence mode="wait">
+                    {chatStatus !== 'idle' ? (
+                        <motion.span 
+                            key="thinking"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className="bg-primary/20 text-primary text-[7px] px-1.5 py-0.5 rounded font-black border border-primary/30 uppercase tracking-tighter"
+                        >
+                            Thinking
+                        </motion.span>
+                    ) : (
+                        <motion.span 
+                            key="online"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse" 
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-tighter">
+                {chatStatus === 'idle' && 'Live Strategic Interaction Layer'}
+                {chatStatus === 'thinking' && 'Анализирую состояние...'}
+                {chatStatus === 'retrieving_context' && 'Изучаю историю...'}
+                {chatStatus === 'generating' && 'Формирую рекомендации...'}
+                {chatStatus === 'failed' && 'Ошибка соединения'}
+                {chatStatus === 'completed' && 'Готов к ответу'}
+            </p>
           </div>
         </div>
         
@@ -216,16 +267,16 @@ export const AICoachingChat: React.FC = () => {
             </motion.div>
           ))}
           
-          {isTyping && (
+          {chatStatus !== 'idle' && chatStatus !== 'completed' && chatStatus !== 'failed' && (
             <motion.div 
                initial={{ opacity: 0, x: -10 }} 
                animate={{ opacity: 1, x: 0 }} 
                className="flex items-start gap-4"
             >
-                <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/40 text-primary flex items-center justify-center animate-pulse">
-                    <Brain className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/40 text-primary flex items-center justify-center">
+                    <Brain className="w-5 h-5 animate-pulse" />
                 </div>
-                <div className="bg-white/5 border border-white/5 px-6 py-4 rounded-[2rem] rounded-tl-none flex items-center gap-2">
+                <div className="bg-white/5 border border-white/5 px-6 py-5 rounded-[2rem] rounded-tl-none flex items-center gap-2 shadow-2xl">
                     <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
                     <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
                     <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
@@ -236,22 +287,23 @@ export const AICoachingChat: React.FC = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-6 md:p-8 bg-black/60 backdrop-blur-2xl border-t border-white/5 z-10">
+      <div className="p-6 md:p-8 bg-black/60 backdrop-blur-2xl border-t border-white/5 z-10 transition-all duration-500">
         <div className="max-w-3xl mx-auto relative group">
           <input 
             type="text" 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Задай вопрос своему ИИ-коучу..."
-            className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] py-6 pl-8 pr-20 text-xs font-bold focus:outline-none focus:border-primary/40 focus:bg-white/10 transition-all placeholder:text-muted-foreground/20 shadow-inner"
+            disabled={chatStatus !== 'idle'}
+            placeholder={chatStatus !== 'idle' ? "Коуч анализирует данные..." : "Задай вопрос своему ИИ-коучу..."}
+            className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] py-7 pl-8 pr-20 text-xs font-bold focus:outline-none focus:border-primary/40 focus:bg-white/10 transition-all placeholder:text-muted-foreground/20 shadow-inner disabled:opacity-50"
           />
           <button 
             onClick={handleSendMessage}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || chatStatus !== 'idle'}
             className={cn(
-                "absolute right-2.5 top-2.5 bottom-2.5 aspect-square bg-primary text-black rounded-full flex items-center justify-center shadow-lg transition-all",
-                input.trim() ? "opacity-100 scale-100 shadow-primary/30" : "opacity-30 scale-90 pointer-events-none"
+                "absolute right-3.5 top-3.5 bottom-3.5 aspect-square bg-primary text-black rounded-full flex items-center justify-center shadow-lg transition-all",
+                input.trim() && chatStatus === 'idle' ? "opacity-100 scale-100 shadow-primary/30" : "opacity-30 scale-90 pointer-events-none"
             )}
           >
             <Send className="w-5 h-5" />

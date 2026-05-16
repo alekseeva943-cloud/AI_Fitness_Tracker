@@ -21,6 +21,8 @@ interface AIEventDetailsModalProps {
   onClose: () => void;
 }
 
+type ChatStatus = 'idle' | 'thinking' | 'retrieving_context' | 'generating' | 'completed' | 'failed';
+
 export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event, onClose }) => {
   const setPlanEventStatus = useFitnessStore(state => state.setPlanEventStatus);
   const removePlanEvent = useFitnessStore(state => state.removePlanEvent);
@@ -28,7 +30,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
   const [isEditing, setIsEditing] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
+  const [chatStatus, setChatStatus] = useState<ChatStatus>('idle');
 
   const handleStatusChange = (status: PlanEvent['status']) => {
     setPlanEventStatus(event.id, status);
@@ -41,29 +43,60 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
 
   const handleAskCoach = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || chatStatus !== 'idle') return;
 
     const userMsg = chatInput;
     setChatMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setChatInput('');
-    setIsTyping(true);
+    
+    console.log('[AI CHAT START] Query:', userMsg);
+    setChatStatus('thinking');
 
-    // AI Simulation logic for Coach personality
-    setTimeout(() => {
-        let aiResponse = "Анализирую твой запрос... Для этой сессии я рекомендую придерживаться плана, но если чувствуешь дискомфорт, мы можем снизить нагрузку.";
-        
-        const lowerInput = userMsg.toLowerCase();
-        if (lowerInput.includes('замен') || lowerInput.includes('чем')) {
-            aiResponse = "Для этого упражнения отличной заменой будут гантели или тренажер Смита. Это позволит лучше контролировать траекторию при твоем текущем уровне усталости.";
-        } else if (lowerInput.includes('болят') || lowerInput.includes('болит')) {
-            aiResponse = "Понял тебя. При боли в суставах мы немедленно меняем протокол. Я рекомендую исключить осевую нагрузку сегодня. Давай заменим жим штанги на сведение в кроссовере.";
-        } else if (lowerInput.includes('вес') || lowerInput.includes('тяжело')) {
-            aiResponse = "Твой сон за последние 2 дня был ниже 7 часов. Это напрямую влияет на силовой потенциал. Давай снизим рабочий вес на 10% и сфокусируемся на темпе 3-0-1.";
-        }
+    // AI Simulation logic with state transitions
+    try {
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('AI TIMEOUT')), 12000)
+        );
 
+        const responsePromise = (async () => {
+            await new Promise(r => setTimeout(r, 800));
+            setChatStatus('retrieving_context');
+            console.log('[AI CONTEXT READY]');
+            
+            await new Promise(r => setTimeout(r, 1200));
+            setChatStatus('generating');
+            
+            await new Promise(r => setTimeout(r, 1500));
+            
+            let aiResponse = "Я проанализировал твой текущий прогресс. Для этой сессии я бы советовал придерживаться плана, но если чувствуешь забитость, давай снизим нагрузку на 10%.";
+            
+            const lowerInput = userMsg.toLowerCase();
+            if (lowerInput.includes('замен') || lowerInput.includes('чем')) {
+                aiResponse = "В прошлый раз ты говорил, что штанга давит на кисти. Поэтому сегодня я бы заменил жим штанги на жим гантелей нейтральным хватом. Это безопаснее для суставов при твоем текущем объеме.";
+            } else if (lowerInput.includes('болят') || lowerInput.includes('болит')) {
+                aiResponse = "Понял тебя. При боли в суставах мы немедленно меняем протокол. Я помню твою старую жалобу на плечо, поэтому давай сегодня полностью исключим осевую нагрузку и перейдем на сведение в кроссовере с низким весом.";
+            } else if (lowerInput.includes('вес') || lowerInput.includes('тяжело')) {
+                aiResponse = "Твой сон за последние 2 дня был ниже 7 часов, и recovery score сегодня просел. Это напрямую влияет на силовой потенциал. Я бы советовал снизить рабочий вес на 10% и сфокусируемся на темпе 3-0-1.";
+            }
+
+            console.log('[AI RESPONSE RECEIVED]');
+            return aiResponse;
+        })();
+
+        const aiResponse = await Promise.race([responsePromise, timeoutPromise]) as string;
         setChatMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
-        setIsTyping(false);
-    }, 1500);
+        setChatStatus('completed');
+        console.log('[AI MESSAGE APPENDED]');
+    } catch (error) {
+        console.error('[AI RESPONSE FAILED]', error);
+        setChatStatus('failed');
+        setChatMessages(prev => [...prev, { 
+            role: 'ai', 
+            content: "Извини, не удалось связаться с Genesis Cloud. Попробуй уточнить вопрос или проверь соединение." 
+        }]);
+    } finally {
+        setTimeout(() => setChatStatus('idle'), 2000);
+    }
   };
 
   return (
@@ -108,7 +141,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
              <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
           </div>
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide p-8 space-y-10">
+          <div className="flex-1 overflow-y-auto scrollbar-hide px-8 py-6 space-y-10">
             {/* AI Coach Insights Banner - if AI event */}
             {event.aiRationale && (
                 <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10 flex gap-4 relative overflow-hidden group">
@@ -118,6 +151,51 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                     <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     <p className="text-[11px] text-primary/80 leading-relaxed font-medium italic">"{event.aiRationale}"</p>
                 </div>
+            )}
+
+            {/* Recovery Depth Module */}
+            {event.type === 'RECOVERY' && (
+                <section className="space-y-6">
+                    <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-6">
+                        <div className="flex gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                                <Activity className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-emerald-400/60 tracking-widest mb-1">Coach Strategy</p>
+                                <p className="text-xs text-emerald-100/80 leading-relaxed font-medium">
+                                    После вчерашней нагрузки твой ЦНС требует калибровки. Сегодняшний протокол восстановления поможет избежать плато.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/40 mb-3">Что делать</p>
+                                <ul className="space-y-2 text-[10px] text-white/70 font-medium">
+                                    <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Ходьба 20-30 мин</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Mobility flow</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Контрастный душ</li>
+                                </ul>
+                            </div>
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/40 mb-3">Избегать</p>
+                                <ul className="space-y-2 text-[10px] text-white/70 font-medium">
+                                    <li className="flex items-center gap-2"><X className="w-3 h-3 text-red-400" /> Осевая нагрузка</li>
+                                    <li className="flex items-center gap-2"><X className="w-3 h-3 text-red-400" /> HIIT / Спринты</li>
+                                    <li className="flex items-center gap-2"><X className="w-3 h-3 text-red-400" /> Отказные подходы</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                            <p className="text-[10px] font-black uppercase text-primary/60 mb-2">Ожидаемый эффект</p>
+                            <p className="text-[10px] text-primary/80 italic font-medium leading-relaxed">
+                                "Это поможет тебе лучше восстановиться к следующей силовой тренировке и снизит риск воспаления связок на 14%."
+                            </p>
+                        </div>
+                    </div>
+                </section>
             )}
 
             {/* Exercises Accordion */}
@@ -146,12 +224,15 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                             </div>
                             <div className="text-left">
                                <p className="text-sm font-bold text-white/90 uppercase tracking-tight">{ex.name}</p>
-                               <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-tight">
-                                 {ex.sets} SETS × {ex.reps} • {ex.weight || 'BODYWEIGHT'}
-                               </p>
+                               <div className="flex items-center gap-3 mt-1 underline decoration-primary/20 decoration-2 underline-offset-4">
+                                  <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-tight">
+                                    {ex.sets} SETS × {ex.reps} • {ex.weight || 'BODYWEIGHT'}
+                                  </span>
+                                  <span className="text-[9px] font-black text-primary/40 uppercase">TEMPO: 3-1-1</span>
+                               </div>
                             </div>
                          </div>
-                         <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", expandedExercise === idx && "rotate-180")} />
+                         <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform group-hover:text-primary", expandedExercise === idx && "rotate-180")} />
                       </button>
 
                       <AnimatePresence>
@@ -163,31 +244,52 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                             className="px-5 pb-5 pt-2 border-t border-white/5"
                           >
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4 text-left">
-                                   <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Technique Guide</p>
-                                   <ul className="space-y-2">
-                                      {(ex.technique?.steps || [
-                                        'Контролируй темп опускания (3 сек).',
-                                        'Максимальное сокращение в пиковой точке.',
-                                        'Держи корпус стабильным.'
-                                      ]).map((step, sidx) => (
-                                        <li key={sidx} className="flex gap-3 text-[11px] text-white/60 leading-relaxed">
-                                          <span className="text-primary/40 font-bold">{sidx + 1}.</span> {step}
-                                        </li>
-                                      ))}
-                                   </ul>
-                                </div>
-                                <div className="space-y-4 text-left">
-                                   <p className="text-[10px] font-black uppercase tracking-widest text-orange-400/60">Coach Insight</p>
-                                   <div className="p-4 rounded-xl bg-orange-400/5 border border-orange-400/10">
-                                      <p className="text-[11px] text-orange-200/80 italic leading-relaxed">
-                                        "{ex.technique?.coachTip || 'Сосредоточься на связи мозг-мышцы. Не используй инерцию.'}"
-                                      </p>
+                                <div className="space-y-6 text-left">
+                                   <div>
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-3">Technique & Cues</p>
+                                      <ul className="space-y-3">
+                                         {(ex.technique?.steps || [
+                                           'Контролируй темп опускания (3 сек).',
+                                           'Максимальное сокращение в пиковой точке.',
+                                           'Держи корпус стабильным.'
+                                         ]).map((step, sidx) => (
+                                           <li key={sidx} className="flex gap-3 text-[11px] text-white/60 leading-relaxed font-medium">
+                                             <span className="text-primary/40 font-bold shrink-0">{sidx + 1}.</span> {step}
+                                           </li>
+                                         ))}
+                                      </ul>
                                    </div>
-                                   <div className="flex gap-2">
-                                      {['Hypertrophy', 'Shoulders', 'Stability'].map(tag => (
-                                        <span key={tag} className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8px] font-black uppercase text-muted-foreground/40">{tag}</span>
-                                      ))}
+                                   
+                                   <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                                      <p className="text-[8px] font-black uppercase text-blue-400/60 mb-2">Дыхание / Breathwork</p>
+                                      <p className="text-[10px] text-blue-200/80 font-medium">Вдох на опускании (эксцентрика), мощный выдох на усилии (концентрика).</p>
+                                   </div>
+                                </div>
+
+                                <div className="space-y-6 text-left">
+                                   <div>
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-orange-400/60 mb-3">Coach Insight & Mistakes</p>
+                                      <div className="p-4 rounded-xl bg-orange-400/5 border border-orange-400/10 mb-4">
+                                         <p className="text-[11px] text-orange-200/80 italic leading-relaxed font-medium">
+                                           "{ex.technique?.coachTip || 'Сосредоточься на связи мозг-мышцы. Не используй инерцию для срыва веса.'}"
+                                         </p>
+                                      </div>
+                                      <div className="space-y-2">
+                                         <p className="text-[8px] font-black uppercase text-red-400/60">Частые ошибки</p>
+                                         <ul className="text-[10px] space-y-1.5 text-muted-foreground font-medium">
+                                            <li className="flex items-center gap-2"><AlertTriangle className="w-3 h-3 text-red-500/50" /> Неполная амплитуда движения</li>
+                                            <li className="flex items-center gap-2"><AlertTriangle className="w-3 h-3 text-red-500/50" /> Отрыв лопаток или корпуса</li>
+                                         </ul>
+                                      </div>
+                                   </div>
+
+                                   <div className="space-y-3">
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Genesis Replacements</p>
+                                      <div className="flex flex-wrap gap-2">
+                                         {['Smith Machine', 'Dumbbells', 'Machine Press'].map(tag => (
+                                           <span key={tag} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-bold text-muted-foreground hover:text-primary hover:border-primary/20 transition-all cursor-default">{tag}</span>
+                                         ))}
+                                      </div>
                                    </div>
                                 </div>
                              </div>
@@ -207,18 +309,31 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                      <Brain className="w-4 h-4 text-primary" />
                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">AI Coach Assistant</h3>
                   </div>
-                  <div className="flex gap-1.5">
-                     <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                     <span className="text-[8px] font-black uppercase text-primary/60">Active Thinking</span>
+                  <div className="flex gap-1.5 items-center">
+                     <AnimatePresence mode="wait">
+                       {chatStatus !== 'idle' && (
+                         <motion.span 
+                           initial={{ opacity: 0, x: 5 }}
+                           animate={{ opacity: 1, x: 0 }}
+                           exit={{ opacity: 0, x: -5 }}
+                           className="text-[8px] font-black uppercase text-primary/60 tracking-widest"
+                         >
+                            {chatStatus === 'thinking' && "Коуч анализирует..."}
+                            {chatStatus === 'retrieving_context' && "Синхронизация истории..."}
+                            {chatStatus === 'generating' && "Формирую ответ..."}
+                         </motion.span>
+                       )}
+                     </AnimatePresence>
+                     <div className={cn("w-1.5 h-1.5 rounded-full", chatStatus !== 'idle' ? "bg-primary animate-pulse" : "bg-white/10")} />
                   </div>
                </div>
 
                <div className="space-y-4 mb-6">
                   {chatMessages.length === 0 && (
                     <div className="py-10 text-center space-y-4">
-                       <p className="text-[11px] text-muted-foreground italic leading-relaxed">Есть вопросы по технике или весам? <br/> Спроси меня в контексте этой тренировки.</p>
-                       <div className="flex flex-wrap justify-center gap-2">
-                          {['Чем заменить жим?', 'Почему такой вес?', 'Болит плечо'].map(hint => (
+                       <p className="text-[11px] text-muted-foreground italic leading-relaxed">Нужна замена или хочешь обсудить нагрузку? <br/> Моя память по твоим тренировкам активна.</p>
+                       <div className="flex flex-wrap justify-center gap-2 px-10">
+                          {['Чем заменить жим?', 'Почему такой вес?', 'Болит плечо', 'Как ощущения?'].map(hint => (
                             <button 
                               key={hint}
                               onClick={() => { setChatInput(hint); }}
@@ -233,7 +348,7 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
 
                   {chatMessages.map((msg, i) => (
                     <div key={i} className={cn(
-                        "flex gap-4 p-4 rounded-2xl border animate-in slide-in-from-bottom-2",
+                        "flex gap-4 p-5 rounded-2xl border animate-in slide-in-from-bottom-2 duration-500",
                         msg.role === 'user' ? "bg-white/5 border-white/10 ml-12 text-right flex-row-reverse" : "bg-primary/5 border-primary/10 mr-12 text-left"
                     )}>
                        <div className={cn(
@@ -242,19 +357,19 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                        )}>
                           {msg.role === 'user' ? <Activity className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
                        </div>
-                       <p className="text-[11px] leading-relaxed text-white/80">{msg.content}</p>
+                       <p className="text-[11px] leading-relaxed text-white/80 font-medium whitespace-pre-line">{msg.content}</p>
                     </div>
                   ))}
 
-                  {isTyping && (
-                    <div className="flex gap-4 p-4 rounded-2xl bg-primary/5 border border-primary/10 mr-12">
+                  {chatStatus !== 'idle' && chatStatus !== 'completed' && chatStatus !== 'failed' && (
+                    <div className="flex gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/10 mr-12 mr-12">
                        <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
-                          <Brain className="w-4 h-4 animate-pulse" />
+                          <Brain className="w-4 h-4 animate-pulse text-primary shadow-[0_0_10px_rgba(223,255,0,0.4)]" />
                        </div>
                        <div className="flex items-center gap-1">
-                          <span className="w-1 h-1 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-                          <span className="w-1 h-1 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-                          <span className="w-1 h-1 rounded-full bg-primary animate-bounce" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
                        </div>
                     </div>
                   )}
@@ -264,14 +379,16 @@ export const AIEventDetailsModal: React.FC<AIEventDetailsModalProps> = ({ event,
                   <input 
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
-                    placeholder="Напиши Genesis..."
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xs focus:outline-none focus:border-primary/40 transition-all group-hover:border-white/20 pr-16"
+                    disabled={chatStatus !== 'idle'}
+                    placeholder={chatStatus !== 'idle' ? "Genesis обдумывает ответ..." : "Напиши коучу..."}
+                    className="w-full bg-black/60 border border-white/10 rounded-2xl px-6 py-5 text-xs focus:outline-none focus:border-primary/40 transition-all group-hover:border-white/20 pr-16 disabled:opacity-50"
                   />
                   <button 
                     type="submit"
-                    className="absolute right-2 top-2 bottom-2 px-4 rounded-xl bg-primary text-black hover:bg-primary/80 transition-all disabled:opacity-50"
+                    disabled={chatStatus !== 'idle' || !chatInput.trim()}
+                    className="absolute right-2.5 top-2.5 bottom-2.5 px-5 rounded-xl bg-primary text-black hover:bg-primary/80 transition-all disabled:opacity-30 disabled:cursor-not-allowed group-active:scale-95"
                   >
-                     <ChevronRight className="w-5 h-5" />
+                     <ChevronRight className="w-5 h-5 font-black" />
                   </button>
                </form>
             </section>

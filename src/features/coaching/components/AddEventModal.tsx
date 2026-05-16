@@ -138,21 +138,23 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-xl"
+        className="relative w-full max-w-xl h-[85vh] flex flex-col"
       >
-        <GlassCard className="border-white/10 overflow-hidden">
-          <form onSubmit={handleSubmit}>
-            <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+        <GlassCard className="border-white/10 overflow-hidden flex flex-col h-full shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
                     <Plus className="w-5 h-5" />
                  </div>
-                 <h2 className="text-xl font-display font-bold uppercase tracking-tight">Добавить событие</h2>
+                 <h2 className="text-xl font-display font-bold uppercase tracking-tight">
+                    {eventToEdit ? 'Изменить событие' : 'Добавить в календарь'}
+                 </h2>
               </div>
               <button type="button" onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-all"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-8 space-y-6">
               {/* Type Selection */}
               <div className="flex gap-2">
                  {(['WORKOUT', 'NUTRITION', 'RECOVERY', 'REMINDER'] as PlanEventType[]).map(type => (
@@ -397,7 +399,7 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, initialDa
               )}
             </div>
 
-            <div className="p-6 border-t border-white/5 bg-black/40 flex gap-3">
+            <div className="p-6 border-t border-white/5 bg-black/40 flex gap-3 shrink-0">
                <GradientButton 
                  type="button" 
                  variant="outline" 
