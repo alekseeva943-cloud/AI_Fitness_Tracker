@@ -278,7 +278,7 @@ export const DashboardView: React.FC = () => {
                               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Tactical Blueprint</h3>
                               <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-[8px] font-black uppercase">Live</span>
                            </div>
-                           <p className="text-3xl font-black font-display italic tracking-tight underline decoration-primary/40 decoration-4 underline-offset-4">Твой план на сегодня</p>
+                           <p className="text-3xl font-black font-display tracking-tight underline decoration-primary/40 decoration-4 underline-offset-4">Твой план на сегодня</p>
                         </div>
                      </div>
 
@@ -326,7 +326,7 @@ export const DashboardView: React.FC = () => {
                         {planEvents.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length === 0 && (
                           <div className="col-span-full py-6 flex flex-col items-center justify-center gap-3 border-2 border-dashed border-white/5 rounded-[2rem] opacity-40">
                              <Sparkles className="w-6 h-6 text-primary" />
-                             <p className="text-[10px] font-black uppercase tracking-widest italic">Нет задач на сегодня. Сгенерируй тактику.</p>
+                             <p className="text-[10px] font-black uppercase tracking-widest">Нет задач на сегодня. Сгенерируй тактику.</p>
                           </div>
                         )}
                      </div>
@@ -354,7 +354,7 @@ export const DashboardView: React.FC = () => {
                        <CheckCircle2 className="w-10 h-10" />
                     </div>
                     <div className="space-y-1">
-                       <h3 className="text-3xl font-display font-black italic uppercase tracking-tighter text-green-400">Победа! Цель достигнута!</h3>
+                       <h3 className="text-3xl font-display font-black uppercase tracking-tighter text-green-400">Победа! Цель достигнута!</h3>
                        <p className="text-muted-foreground text-lg max-w-xl">
                           Ты показал невероятный результат и достиг поставленной планки. Давай изучим твой успех подробнее и наметим новые горизонты.
                        </p>
@@ -384,9 +384,9 @@ export const DashboardView: React.FC = () => {
                         {activeGoal.title || RU.DASHBOARD.WEIGHT_TREND}
                         <ChevronRight className="w-4 h-4 opacity-0 group-hover/title:opacity-100 transition-all -ml-1" />
                       </h2>
-                      <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest text-primary/40 mt-3 pt-3 border-t border-white/5">
+                      <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest text-primary/70 mt-3 pt-3 border-t border-white/5">
                         <div className="flex flex-col gap-0.5">
-                           <span className="opacity-40 text-[8px]">Старт</span>
+                           <span className="opacity-70 text-[8px]">Старт</span>
                            <span className="text-foreground text-sm font-bold">
                               {activeGoal.startValue || 0} {activeGoal.unit}
                            </span>
@@ -403,7 +403,7 @@ export const DashboardView: React.FC = () => {
                            </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                           <span className="opacity-40 text-[8px]">Цель</span>
+                           <span className="opacity-70 text-[8px]">Цель</span>
                            <span className="text-foreground text-sm font-bold">{activeGoal.targetValue || 0} {activeGoal.unit}</span>
                         </div>
                       </div>
@@ -659,7 +659,7 @@ export const DashboardView: React.FC = () => {
                                    <div key={i} className="w-2 h-2 rounded-full bg-primary/20 border border-primary/40 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
                                ))}
                             </div>
-                            <p className="text-xs text-muted-foreground italic mb-6 leading-relaxed max-w-[240px] mx-auto">
+                            <p className="text-xs text-muted-foreground mb-6 leading-relaxed max-w-[240px] mx-auto">
                               {summary?.goal.status === 'WRONG_DIRECTION' 
                                 ? "Текущая динамика направлена в обратную сторону. Для прогноза необходимо стабилизировать прогресс."
                                 : "Добавьте минимум 3 записи (тренировки или замеры), чтобы я смог построить прогноз твоего прогресса."}
@@ -747,7 +747,7 @@ export const DashboardView: React.FC = () => {
                   </div>
                   
                   <div className="space-y-4">
-                    <p className="text-xs text-muted-foreground leading-relaxed italic border-l border-primary/30 pl-3">
+                    <p className="text-xs text-muted-foreground leading-relaxed border-l border-primary/30 pl-3">
                       {latestAnalysis ? (
                         latestAnalysis.summary
                       ) : summary ? (

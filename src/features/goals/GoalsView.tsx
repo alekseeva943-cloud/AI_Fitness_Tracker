@@ -237,7 +237,7 @@ export const GoalsView: React.FC = () => {
 
               <div className="flex-1 space-y-4">
                 {goal.motivation && (
-                  <p className="text-sm text-muted-foreground line-clamp-1 italic px-3 py-2 bg-primary/5 rounded-xl border border-primary/10">
+                  <p className="text-sm text-white/80 line-clamp-1 px-3 py-2 bg-primary/5 rounded-xl border border-primary/10">
                     "{goal.motivation}"
                   </p>
                 )}
@@ -418,7 +418,7 @@ export const GoalsView: React.FC = () => {
               {/* Data Layers (Collapsible or just secondary) */}
               <div className="space-y-6 pt-6 border-t border-white/5 opacity-80 hover:opacity-100 transition-opacity">
                 <div className="flex items-center justify-between px-2">
-                  <h4 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/40">Visual History & Data</h4>
+                  <h4 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/70">Visual History & Data</h4>
                 </div>
 
                 <div className="h-[200px] w-full bg-secondary/10 rounded-3xl p-4 border border-white/5">
